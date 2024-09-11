@@ -87,12 +87,7 @@ func LoadTemplates(options Options) (*Templates, error) {
 		path = options.Path
 	}
 
-	helperApi := mtemplate.HelperApi()
-	for k, v := range options.HelperFunctions {
-		helperApi[k] = v
-	}
-
-	infos, err := loadTemplates(options.Files, options.FilesPrefix, helperApi, nil)
+	infos, err := loadTemplates(options.Files, options.FilesPrefix, options.HelperFunctions, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +97,7 @@ func LoadTemplates(options Options) (*Templates, error) {
 			continue
 		}
 
-		addonsInfo, err := loadTemplates(a.Templates(), a.Name(), helperApi, a)
+		addonsInfo, err := loadTemplates(a.Templates(), a.Name(), options.HelperFunctions, a)
 		if err != nil {
 			return nil, err
 		}
@@ -134,13 +129,18 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		}
 
 		basename := filenameWithoutExtension(t.Name())
-		api["templateName"] = func() string {
+		helperApi := mtemplate.HelperApi()
+		for k, v := range api {
+			helperApi[k] = v
+		}
+
+		helperApi["templateName"] = func() string {
 			return mtemplate.NewName(prefix, basename).String()
 		}
 
 		// Specific addons APIs
 		if addon != nil {
-			api["addonName"] = func() string {
+			helperApi["addonName"] = func() string {
 				return addon.Name()
 			}
 		}
@@ -148,7 +148,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		infos = append(infos, &Info{
 			name:  basename,
 			data:  data,
-			api:   api,
+			api:   helperApi,
 			addon: addon,
 		})
 	}

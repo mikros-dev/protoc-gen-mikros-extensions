@@ -1,7 +1,6 @@
 package context
 
 import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
@@ -9,6 +8,7 @@ import (
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
 	mimports "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
 
@@ -249,4 +249,12 @@ func (c *Context) ValidatableMessages() []*Message {
 	}
 
 	return messages
+}
+
+func (c *Context) AddonContext(addonName string) interface{} {
+	if a, ok := c.addons[addonName]; ok {
+		return a.GetContext()
+	}
+
+	return nil
 }
