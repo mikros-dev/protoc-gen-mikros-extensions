@@ -1,15 +1,19 @@
 package imports
 
-func loadCommonTemplateImports(ctx *Context) []*Import {
-	imports := make(map[string]*Import)
+import (
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
+)
+
+func loadCommonTemplateImports(ctx *Context) []*imports.Import {
+	ipt := make(map[string]*imports.Import)
 
 	if ctx.HasProtobufValueField {
-		imports["protostruct"] = packages["protostruct"]
+		ipt["protostruct"] = packages["protostruct"]
 	}
 
 	if ctx.OutboundHasBitflagField {
-		imports["strings"] = packages["strings"]
+		ipt["strings"] = packages["strings"]
 	}
 
-	return toSlice(imports)
+	return toSlice(ipt)
 }

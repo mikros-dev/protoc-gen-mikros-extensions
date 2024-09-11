@@ -1,21 +1,25 @@
 package imports
 
-func loadHttpServerTemplateImports() []*Import {
-	imports := map[string]*Import{
+import (
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
+)
+
+func loadHttpServerTemplateImports() []*imports.Import {
+	ipt := map[string]*imports.Import{
 		packages["context"].Name:         packages["context"],
 		packages["errors"].Name:          packages["errors"],
 		packages["fasthttp"].Name:        packages["fasthttp"],
 		packages["fasthttp-router"].Name: packages["fasthttp-router"],
 	}
 
-	return toSlice(imports)
+	return toSlice(ipt)
 }
 
-func loadTestingHttpServerTemplateImports(ctx *Context) []*Import {
-	imports := map[string]*Import{
+func loadTestingHttpServerTemplateImports(ctx *Context) []*imports.Import {
+	ipt := map[string]*imports.Import{
 		packages["fasthttp-router"].Name: packages["fasthttp-router"],
 		ctx.ModuleName:                   importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),
 	}
 
-	return toSlice(imports)
+	return toSlice(ipt)
 }

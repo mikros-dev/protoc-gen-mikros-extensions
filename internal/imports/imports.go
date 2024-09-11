@@ -7,14 +7,10 @@ import (
 	"strings"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
-
-type Import struct {
-	Alias string
-	Name  string
-}
 
 type Context struct {
 	HasValidatableMessage   bool
@@ -56,8 +52,8 @@ type Method struct {
 	HasHeaderArguments bool
 }
 
-func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*Import {
-	return map[template.Name][]*Import{
+func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*imports.Import {
+	return map[template.Name][]*imports.Import{
 		template.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
 		template.NewName("api", "enum"):            loadEnumTemplateImports(),
 		template.NewName("api", "wire"):            loadWireTemplateImports(ctx),
@@ -72,18 +68,18 @@ func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name
 	}
 }
 
-func toSlice(imports map[string]*Import) []*Import {
+func toSlice(ipt map[string]*imports.Import) []*imports.Import {
 	var (
-		s     = make([]*Import, len(imports))
+		s     = make([]*imports.Import, len(ipt))
 		index = 0
 	)
 
-	for _, i := range imports {
+	for _, i := range ipt {
 		s[index] = i
 		index += 1
 	}
 
-	slices.SortFunc(s, func(a, b *Import) int {
+	slices.SortFunc(s, func(a, b *imports.Import) int {
 		if a.Alias != "" && b.Alias != "" {
 			return cmp.Compare(a.Alias, b.Alias)
 		}
@@ -100,8 +96,8 @@ func toSlice(imports map[string]*Import) []*Import {
 	return s
 }
 
-func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*Import {
-	imports := make(map[string]*Import)
+func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*imports.Import {
+	ipt := make(map[string]*imports.Import)
 
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
@@ -112,35 +108,35 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 
 			// Import user converters package?
 			if i, ok := needsUserConvertersPackage(cfg, conversionToWire); ok {
-				imports["converters"] = i
+				ipt["converters"] = i
 			}
 
 			// Import time package?
 			if f.IsProtobufTimestamp {
-				imports["time"] = packages["time"]
+				ipt["time"] = packages["time"]
 			}
 
 			// Import proto timestamp package?
 			if strings.HasPrefix(wireType, "ts.") || strings.HasPrefix(wireType, "*ts.") {
-				imports["prototimestamp"] = packages["prototimestamp"]
+				ipt["prototimestamp"] = packages["prototimestamp"]
 				continue
 			}
 
 			// Import other modules?
 			if module, ok := needsImportAnotherProtoModule(conversionToWire, wireType, ctx.ModuleName, msg.Receiver); ok {
-				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 		}
 	}
 
-	return imports
+	return ipt
 }
 
-func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*Import, bool) {
+func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*imports.Import, bool) {
 	if dep, ok := cfg.Dependencies["converters"]; ok {
 		prefix := cfg.GetDependencyModuleName("converters")
 		if strings.HasPrefix(conversionCall, prefix) {
-			return &Import{
+			return &imports.Import{
 				Alias: dep.Alias,
 				Name:  dep.Import,
 			}, true
@@ -206,8 +202,8 @@ func checkImportNeededFromFieldType(fieldType string) (string, bool) {
 	return "", false
 }
 
-func importAnotherModule(moduleName, currentModuleName, importPath string) *Import {
-	return &Import{
+func importAnotherModule(moduleName, currentModuleName, importPath string) *imports.Import {
+	return &imports.Import{
 		Alias: moduleName,
 		Name:  strings.ReplaceAll(importPath, currentModuleName, moduleName),
 	}

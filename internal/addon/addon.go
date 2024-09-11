@@ -13,13 +13,13 @@ type Addon struct {
 	addon.Addon
 }
 
-func LoadAddons(path string) ([]*Addon, error) {
+func LoadAddons(path string) ([]addon.Addon, error) {
 	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var addons []*Addon
+	var addons []addon.Addon
 	for _, f := range files {
 		if !f.IsDir() && filepath.Ext(f.Name()) == ".so" {
 			a, err := loadAddon(filepath.Join(path, f.Name()))

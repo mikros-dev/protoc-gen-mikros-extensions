@@ -4,11 +4,12 @@ import (
 	"strings"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
-	imports := map[string]*Import{
+func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*imports.Import {
+	ipt := map[string]*imports.Import{
 		"math/rand":    packages["math/rand"],
 		"reflect":      packages["reflect"],
 		ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),
@@ -22,30 +23,30 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 			)
 
 			if module, ok := needsImportAnotherProtoModule(binding, "", ctx.ModuleName, message.Receiver); ok {
-				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 
 			if i, ok := needsUserConvertersPackage(cfg, binding); ok {
-				imports["converters"] = i
+				ipt["converters"] = i
 			}
 
 			if f.IsProtobufTimestamp {
-				imports["time"] = packages["time"]
+				ipt["time"] = packages["time"]
 			}
 
 			if strings.Contains(call, "FromString") {
 				module := strings.Split(call, ".")[0]
-				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 				continue
 			}
 
 			if module, ok := getModuleFromZeroValueCall(call, f.ProtoField); ok {
-				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 		}
 	}
 
-	return toSlice(imports)
+	return toSlice(ipt)
 }
 
 func getModuleFromZeroValueCall(call string, field *protobuf.Field) (string, bool) {

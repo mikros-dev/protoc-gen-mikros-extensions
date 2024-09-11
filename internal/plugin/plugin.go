@@ -19,9 +19,10 @@ import (
 	api_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/assets/api"
 	test_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/assets/testing"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/output"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template"
+	maddon "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
 	mcontext "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/context"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	mtemplate "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
 
@@ -78,19 +79,8 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	// Initializes our output system
 	output.Enable(cfg.Debug)
 
-	// Build the context and execute templates
-	ctx, err := mcontext.BuildContext(mcontext.BuildContextOptions{
-		PluginName: pluginArgs.GetPluginName(),
-		Settings:   cfg,
-		Plugin:     plugin,
-	})
-	if err != nil {
-		return fmt.Errorf("could not build templates context: %w", err)
-	}
-	output.Println("processing module:", ctx.ModuleName)
-
 	// Load all addons
-	var addons []*addon.Addon
+	var addons []maddon.Addon
 	if cfg.Addons != nil {
 		a, err := addon.LoadAddons(cfg.Addons.Path)
 		if err != nil {
@@ -98,6 +88,18 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 		}
 		addons = a
 	}
+
+	// Build the context and execute templates
+	ctx, err := mcontext.BuildContext(mcontext.BuildContextOptions{
+		PluginName: pluginArgs.GetPluginName(),
+		Settings:   cfg,
+		Plugin:     plugin,
+		Addons:     addons,
+	})
+	if err != nil {
+		return fmt.Errorf("could not build templates context: %w", err)
+	}
+	output.Println("processing module:", ctx.ModuleName)
 
 	genTemplates := func(e execution) error {
 		templates, err := template.LoadTemplates(template.Options{

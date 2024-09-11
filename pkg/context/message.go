@@ -6,8 +6,8 @@ import (
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type Message struct {

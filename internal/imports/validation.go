@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
-	imports := make(map[string]*Import)
+func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*imports.Import {
+	ipt := make(map[string]*imports.Import)
 
 	if ctx.HasValidatableMessage {
-		imports["validation"] = packages["validation"]
+		ipt["validation"] = packages["validation"]
 	}
 
 	for _, m := range ctx.ValidatableMessages {
 		if m.ValidationNeedsCustomRuleOptions {
-			imports["errors"] = packages["errors"]
+			ipt["errors"] = packages["errors"]
 		}
 
 		for _, f := range m.Fields {
@@ -27,14 +28,14 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 			}
 
 			if validation.GetRule() == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
-				imports["regex"] = packages["regex"]
+				ipt["regex"] = packages["regex"]
 				continue
 			}
 
 			call := f.ValidationCall
 			if cfg.Validations != nil && cfg.Validations.RulePackageImport != nil {
 				if strings.Contains(call, fmt.Sprintf("%s.", cfg.Validations.RulePackageImport.Alias)) {
-					imports[cfg.Validations.RulePackageImport.Name] = &Import{
+					ipt[cfg.Validations.RulePackageImport.Name] = &imports.Import{
 						Alias: cfg.Validations.RulePackageImport.Alias,
 						Name:  cfg.Validations.RulePackageImport.Name,
 					}
@@ -43,5 +44,5 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 		}
 	}
 
-	return toSlice(imports)
+	return toSlice(ipt)
 }

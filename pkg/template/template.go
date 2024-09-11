@@ -17,7 +17,7 @@ const (
 // Validator is a behavior that the templates context and addons must implement
 // to validate their execution.
 type Validator interface {
-	GetTemplateValidator(ctx interface{}, name Name) (ValidateForExecution, bool)
+	GetTemplateValidator(name Name, ctx interface{}) (ValidateForExecution, bool)
 }
 
 type ValidateForExecution func() bool

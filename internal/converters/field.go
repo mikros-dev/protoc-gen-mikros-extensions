@@ -8,9 +8,9 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/validation"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type conversionMode int

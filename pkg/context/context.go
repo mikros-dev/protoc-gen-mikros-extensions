@@ -1,12 +1,14 @@
 package context
 
 import (
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
+	mimports "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
 
@@ -18,13 +20,16 @@ type Context struct {
 	Package    *protobuf.Protobuf
 
 	messages []*Message
-	imports  map[template.Name][]*imports.Import
+	imports  map[template.Name][]*mimports.Import
+	addons   map[string]addon.Addon
+	settings *settings.Settings
 }
 
 type BuildContextOptions struct {
 	PluginName string
 	Settings   *settings.Settings
 	Plugin     *protogen.Plugin
+	Addons     []addon.Addon
 }
 
 func BuildContext(opt BuildContextOptions) (*Context, error) {
@@ -56,20 +61,43 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 		Methods:    methods,
 		messages:   messages,
 		Package:    pkg,
+		settings:   opt.Settings,
 	}
 
+	addons := make(map[string]addon.Addon)
+	for _, a := range opt.Addons {
+		addons[a.Name()] = a
+	}
+
+	ctx.addons = addons
 	ctx.imports = imports.LoadTemplateImports(toImportsContext(ctx), opt.Settings)
 
 	return ctx, nil
 }
 
-func (c *Context) GetTemplateImports(name string) []*imports.Import {
+func (c *Context) GetTemplateImports(name string) []*mimports.Import {
 	return c.imports[template.Name(name)]
+}
+
+func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*mimports.Import {
+	if a, ok := c.addons[addonName]; ok {
+		return a.GetTemplateImports(template.Name(tplName), c, c.settings)
+	}
+
+	return nil
 }
 
 func (c *Context) HasImportFor(name string) bool {
 	d, ok := c.imports[template.Name(name)]
 	return ok && len(d) > 0
+}
+
+func (c *Context) HasAddonImportFor(addonName, tplName string) bool {
+	if a, ok := c.addons[addonName]; ok {
+		return len(a.GetTemplateImports(template.Name(tplName), c, c.settings)) > 0
+	}
+
+	return false
 }
 
 func (c *Context) IsHTTPService() bool {
@@ -121,7 +149,7 @@ func (c *Context) WireExtensions() []*Message {
 	return messages
 }
 
-func (c *Context) GetTemplateValidator(_ interface{}, name template.Name) (template.ValidateForExecution, bool) {
+func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (template.ValidateForExecution, bool) {
 	validators := map[template.Name]template.ValidateForExecution{
 		template.NewName("api", "domain"): func() bool {
 			return len(c.DomainMessages()) > 0

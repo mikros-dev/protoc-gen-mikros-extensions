@@ -1,20 +1,24 @@
 package imports
 
-func loadRoutesTemplateImports(ctx *Context) []*Import {
-	imports := map[string]*Import{
+import (
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
+)
+
+func loadRoutesTemplateImports(ctx *Context) []*imports.Import {
+	ipt := map[string]*imports.Import{
 		packages["fasthttp"].Name: packages["fasthttp"],
 	}
 
 	for _, m := range ctx.Methods {
 		if m.HasRequiredBody {
-			imports[packages["errors"].Name] = packages["errors"]
-			imports[packages["json"].Name] = packages["json"]
+			ipt[packages["errors"].Name] = packages["errors"]
+			ipt[packages["json"].Name] = packages["json"]
 		}
 
 		if m.HasQueryArguments || m.HasHeaderArguments {
-			imports[packages["fmt"].Name] = packages["fmt"]
+			ipt[packages["fmt"].Name] = packages["fmt"]
 		}
 	}
 
-	return toSlice(imports)
+	return toSlice(ipt)
 }

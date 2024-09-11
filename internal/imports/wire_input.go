@@ -1,15 +1,16 @@
 package imports
 
 import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-func loadWireInputTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
-	imports := make(map[string]*Import)
+func loadWireInputTemplateImports(ctx *Context, cfg *settings.Settings) []*imports.Import {
+	ipt := make(map[string]*imports.Import)
 
 	for k, v := range loadImportsFromMessages(ctx, cfg, ctx.WireInputMessages) {
-		imports[k] = v
+		ipt[k] = v
 	}
 
-	return toSlice(imports)
+	return toSlice(ipt)
 }

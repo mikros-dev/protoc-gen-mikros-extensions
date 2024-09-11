@@ -2,10 +2,11 @@ package imports
 
 import (
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
 )
 
-func loadWireTemplateImports(ctx *Context) []*Import {
-	imports := make(map[string]*Import)
+func loadWireTemplateImports(ctx *Context) []*imports.Import {
+	ipt := make(map[string]*imports.Import)
 
 	for _, m := range ctx.WireExtensions {
 		options := extensions.LoadMessageWireExtensionOptions(m.ProtoMessage.Proto)
@@ -20,7 +21,7 @@ func loadWireTemplateImports(ctx *Context) []*Import {
 					key = i.GetName()
 				}
 
-				imports[key] = &Import{
+				ipt[key] = &imports.Import{
 					Alias: i.GetAlias(),
 					Name:  i.GetName(),
 				}
@@ -28,5 +29,5 @@ func loadWireTemplateImports(ctx *Context) []*Import {
 		}
 	}
 
-	return toSlice(imports)
+	return toSlice(ipt)
 }

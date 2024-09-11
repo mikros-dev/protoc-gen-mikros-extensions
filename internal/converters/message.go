@@ -3,7 +3,7 @@ package converters
 import (
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type Message struct {
