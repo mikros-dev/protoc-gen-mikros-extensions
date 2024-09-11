@@ -1,0 +1,75 @@
+package context
+
+import (
+	"strings"
+
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
+)
+
+func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
+	imports := map[string]*Import{
+		"math/rand":    packages["math/rand"],
+		"reflect":      packages["reflect"],
+		ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.pkg.FullPath),
+	}
+
+	for _, message := range ctx.DomainMessages() {
+		for _, f := range message.Fields {
+			var (
+				binding = f.TestingValueBinding()
+				call    = f.TestingValueCall()
+			)
+
+			if module, ok := needsImportAnotherProtoModule(binding, "", ctx.ModuleName, f.messageReceiver); ok {
+				imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+			}
+
+			if i, ok := needsUserConvertersPackage(cfg, binding); ok {
+				imports["converters"] = i
+			}
+
+			if f.field.IsTimestamp() {
+				imports["time"] = packages["time"]
+			}
+
+			if strings.Contains(call, "FromString") {
+				module := strings.Split(call, ".")[0]
+				imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+				continue
+			}
+
+			if module, ok := getModuleFromZeroValueCall(call, f.field); ok {
+				imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+			}
+		}
+	}
+
+	return toSlice(imports)
+}
+
+func getModuleFromZeroValueCall(call string, field *protobuf.Field) (string, bool) {
+	if !strings.Contains(call, "zeroValue") || field.IsTimestamp() || field.IsMap() {
+		return "", false
+	}
+
+	parts := strings.Split(call, ".")
+	if len(parts) != 5 {
+		return "", false
+	}
+
+	return stripNonAlpha(parts[len(parts)-2]), true
+}
+
+func stripNonAlpha(s string) string {
+	var result strings.Builder
+
+	for i := 0; i < len(s); i++ {
+		b := s[i]
+		if ('a' <= b && b <= 'z') || ('A' <= b && b <= 'Z') || ('0' <= b && b <= '9') || b == ' ' {
+			result.WriteByte(b)
+		}
+	}
+
+	return result.String()
+}

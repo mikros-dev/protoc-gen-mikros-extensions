@@ -1,0 +1,156 @@
+syntax = "proto2";
+
+package mikros.extensions;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions;extensions";
+
+extend google.protobuf.MethodOptions {
+  optional HttpMethodExtensions http = 85042;
+}
+
+message HttpMethodExtensions {
+  repeated string header = 1;
+  optional HttpAuthenticationExtensions authentication = 2;
+}
+
+message HttpAuthenticationExtensions {
+  required AuthenticationMode mode = 1;
+  repeated string scope = 2;
+}
+
+enum AuthenticationMode {
+  AUTHENTICATION_MODE_NO_AUTH = 0;
+  AUTHENTICATION_MODE_SCOPED = 1;
+}
+
+extend google.protobuf.EnumOptions {
+  optional EnumApiExtensions api = 85042;
+}
+
+message EnumApiExtensions {
+  // Sets that the enum is of bit flag kind, which will provide an API to use
+  // its value as bits for uin64 variables.
+  optional bool bitflag = 1;
+}
+
+extend google.protobuf.EnumValueOptions {
+  optional EnumEntry entry = 85042;
+}
+
+message EnumEntry {
+  optional string name = 1;
+}
+
+extend google.protobuf.FieldOptions {
+  optional FieldDomainOptions domain = 85042;
+  optional FieldDatabaseOptions database = 85043;
+  optional FieldInboundOptions inbound = 85044;
+  optional FieldOutboundOptions outbound = 85045;
+  optional FieldValidateOptions validate = 85046;
+}
+
+message FieldDomainOptions {
+  optional string name = 1;
+  optional string tag = 2;
+  optional bool optional = 3;
+}
+
+message FieldDatabaseOptions {
+  optional string name = 1;
+  optional bool allow_empty = 2;
+}
+
+message FieldInboundOptions {
+  optional string name = 1;
+}
+
+message FieldOutboundOptions {
+  optional string name = 1;
+  optional bool hide = 2;
+  optional OutboundBitflagField bitflag = 3;
+  optional bool allow_empty = 4;
+}
+
+message OutboundBitflagField {
+  // Values must point to a valid enum name which holds all the values that the
+  // bitflag represents.
+  required string values = 1;
+
+  // Sets an optional prefix string that is present in all values that represents
+  // the bitflag.
+  required string prefix = 2;
+}
+
+message FieldValidateOptions {
+  optional FieldValidatorRule rule = 1;
+  repeated string rule_args = 2;
+  optional string custom_rule = 3;
+  optional bool required = 4;
+  optional int32 min = 5;
+  optional int32 max = 6;
+  optional int32 max_length = 7;
+  optional bool dive = 8;
+  optional string required_if = 9;
+  optional string required_if_not = 10;
+  optional string required_with = 11;
+  optional string required_without = 12;
+  optional string required_all = 13;
+  optional string required_any = 14;
+  optional string error_message = 15;
+}
+
+enum FieldValidatorRule {
+  FIELD_VALIDATOR_RULE_UNSPECIFIED = 0;
+  FIELD_VALIDATOR_RULE_CUSTOM = 1;
+  FIELD_VALIDATOR_RULE_ID = 2;
+  FIELD_VALIDATOR_RULE_EMAIL = 3;
+  FIELD_VALIDATOR_RULE_DATETIME = 4;
+  FIELD_VALIDATOR_RULE_PERSON_DOCUMENT = 5;
+  FIELD_VALIDATOR_RULE_ENTERPRISE_DOCUMENT = 6;
+  FIELD_VALIDATOR_RULE_DOCUMENT = 7;
+  FIELD_VALIDATOR_RULE_PHONE = 8;
+  FIELD_VALIDATOR_RULE_PASSWORD = 9;
+  FIELD_VALIDATOR_RULE_REGEX = 10;
+}
+
+extend google.protobuf.MessageOptions {
+  optional MessageDomainExpansionOptions domain_expansion = 85042;
+  optional MessageWireExpansionOptions wire_expansion = 85043;
+  optional MessageInboundOptions inbound_options = 85044;
+  optional MessageOutboundOptions outbound_options = 85045;
+}
+
+message MessageDomainExpansionOptions {
+  optional bool dont_export = 1;
+}
+
+message MessageWireExpansionOptions {
+  repeated WireCodeExpansion custom_code = 1;
+}
+
+message WireCodeExpansion {
+  required string signature = 1;
+  required string body  = 2;
+  repeated WireCodeExpansionImport import = 3;
+}
+
+message WireCodeExpansionImport {
+  optional string alias = 1;
+  required string name = 2;
+}
+
+message MessageInboundOptions {
+  optional NamingMode naming_mode = 1;
+}
+
+message MessageOutboundOptions {
+  optional bool export = 1;
+  optional NamingMode naming_mode = 2;
+}
+
+enum NamingMode {
+  NAMING_MODE_SNAKE_CASE = 0;
+  NAMING_MODE_CAMEL_CASE = 1;
+}

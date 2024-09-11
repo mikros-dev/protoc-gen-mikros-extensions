@@ -20,3 +20,7 @@
 # Go workspace file
 go.work
 go.work.sum
+
+# Proto generated files
+examples/plugins
+examples/gen
