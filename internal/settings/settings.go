@@ -22,6 +22,7 @@ type Settings struct {
 	Templates    *Templates             `toml:"templates"`
 	Dependencies map[string]*Dependency `toml:"dependencies"`
 	Validations  *Validations           `toml:"validations"`
+	Addons       *Addons                `toml:"addons"`
 }
 
 type Suffix struct {
@@ -68,6 +69,10 @@ type ValidationRule struct {
 type Import struct {
 	Name  string `toml:"name"`
 	Alias string `toml:"alias"`
+}
+
+type Addons struct {
+	Path string `toml:"path"`
 }
 
 func LoadSettings(filename string) (*Settings, error) {

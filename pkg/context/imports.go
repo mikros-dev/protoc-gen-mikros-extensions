@@ -1,0 +1,87 @@
+package context
+
+import (
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/imports"
+)
+
+func toImportsContext(ctx *Context) *imports.Context {
+	var (
+		methods        []*imports.Method
+		domain         []*imports.Message
+		outbound       []*imports.Message
+		validate       []*imports.Message
+		wireExtensions []*imports.Message
+		wireInput      []*imports.Message
+	)
+
+	fieldToImportField := func(f *Field) *imports.Field {
+		return &imports.Field{
+			IsProtobufTimestamp:            f.ProtoField.IsTimestamp(),
+			IsOutboundBitflag:              f.IsOutboundBitflag(),
+			ConversionDomainToWire:         f.ConvertDomainTypeToWireType(),
+			ConversionWireOutputToOutbound: f.ConvertWireOutputToOutbound("r"),
+			WireType:                       f.WireType(),
+			OutboundType:                   f.OutboundType(),
+			TestingBinding:                 f.TestingValueBinding(),
+			TestingCall:                    f.TestingValueCall(),
+			ValidationCall:                 f.ValidationCall(),
+			ProtoField:                     f.ProtoField,
+		}
+	}
+
+	messageToImportMessage := func(m *Message) *imports.Message {
+		var fields []*imports.Field
+		for _, f := range m.Fields {
+			fields = append(fields, fieldToImportField(f))
+		}
+
+		return &imports.Message{
+			ValidationNeedsCustomRuleOptions: m.ValidationNeedsCustomRuleOptions(),
+			Receiver:                         m.receiver,
+			Fields:                           fields,
+			ProtoMessage:                     m.ProtoMessage,
+		}
+	}
+
+	for _, m := range ctx.Methods {
+		methods = append(methods, &imports.Method{
+			HasRequiredBody:    m.HasRequiredBody(),
+			HasQueryArguments:  m.HasHeaderArguments(),
+			HasHeaderArguments: m.HasQueryArguments(),
+		})
+	}
+
+	for _, m := range ctx.DomainMessages() {
+		domain = append(domain, messageToImportMessage(m))
+	}
+
+	for _, m := range ctx.OutboundMessages() {
+		outbound = append(outbound, messageToImportMessage(m))
+	}
+
+	for _, m := range ctx.WireInputMessages() {
+		wireInput = append(wireInput, messageToImportMessage(m))
+	}
+
+	for _, m := range ctx.WireExtensions() {
+		wireExtensions = append(wireExtensions, messageToImportMessage(m))
+	}
+
+	for _, m := range ctx.ValidatableMessages() {
+		validate = append(validate, messageToImportMessage(m))
+	}
+
+	return &imports.Context{
+		HasValidatableMessage:   ctx.HasValidatableMessage(),
+		HasProtobufValueField:   ctx.HasProtobufValueField(),
+		OutboundHasBitflagField: ctx.OutboundHasBitflagField(),
+		ModuleName:              ctx.ModuleName,
+		FullPath:                ctx.Package.FullPath,
+		Methods:                 methods,
+		DomainMessages:          domain,
+		OutboundMessages:        outbound,
+		ValidatableMessages:     validate,
+		WireExtensions:          wireExtensions,
+		WireInputMessages:       wireInput,
+	}
+}

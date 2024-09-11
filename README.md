@@ -51,7 +51,7 @@ message PersonWire {
 }
 ```
 
-For a more complete example, check the [examples](examples/README.md) directory.
+For a more complete example, check the [examples](examples/protobuf/README.md) directory.
 
 ## License
 
