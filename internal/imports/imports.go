@@ -137,12 +137,12 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 }
 
 func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*Import, bool) {
-	if dep, ok := cfg.Dependencies["converters"]; ok {
+	if dep, ok := cfg.Dependencies["converters"]; ok && dep.Import != nil {
 		prefix := cfg.GetDependencyModuleName("converters")
 		if strings.HasPrefix(conversionCall, prefix) {
 			return &Import{
-				Alias: dep.Alias,
-				Name:  dep.Import,
+				Alias: dep.Import.Alias,
+				Name:  dep.Import.Name,
 			}, true
 		}
 	}
