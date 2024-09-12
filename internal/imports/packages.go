@@ -1,12 +1,8 @@
 package imports
 
-import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
-)
-
 // packages represents a list of common packages that can be imported by several
 // templates.
-var packages = map[string]*imports.Import{
+var packages = map[string]*Import{
 	"context": {
 		Name: "context",
 	},

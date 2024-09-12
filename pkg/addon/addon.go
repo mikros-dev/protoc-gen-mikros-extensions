@@ -3,7 +3,6 @@ package addon
 import (
 	"embed"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
@@ -21,7 +20,7 @@ type Addon interface {
 
 	// GetTemplateImports should return a slice of all required imports for a
 	// specific template.
-	GetTemplateImports(name template.Name, ctx interface{}, cfg *settings.Settings) []*imports.Import
+	GetTemplateImports(name template.Name, ctx interface{}, cfg *settings.Settings) []*Import
 
 	// GetContext should return a structure that will be available to used or
 	// accessed inside templates.
@@ -30,4 +29,9 @@ type Addon interface {
 	// Validator is the template package validator system that the plugin
 	// must also implement.
 	template.Validator
+}
+
+type Import struct {
+	Alias string
+	Name  string
 }

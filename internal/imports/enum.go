@@ -1,11 +1,7 @@
 package imports
 
-import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
-)
-
-func loadEnumTemplateImports() []*imports.Import {
-	ipt := map[string]*imports.Import{
+func loadEnumTemplateImports() []*Import {
+	ipt := map[string]*Import{
 		"strings": packages["strings"],
 	}
 

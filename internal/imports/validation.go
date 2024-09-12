@@ -5,12 +5,11 @@ import (
 	"strings"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*imports.Import {
-	ipt := make(map[string]*imports.Import)
+func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
+	ipt := make(map[string]*Import)
 
 	if ctx.HasValidatableMessage {
 		ipt["validation"] = packages["validation"]
@@ -35,7 +34,7 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*impo
 			call := f.ValidationCall
 			if cfg.Validations != nil && cfg.Validations.RulePackageImport != nil {
 				if strings.Contains(call, fmt.Sprintf("%s.", cfg.Validations.RulePackageImport.Alias)) {
-					ipt[cfg.Validations.RulePackageImport.Name] = &imports.Import{
+					ipt[cfg.Validations.RulePackageImport.Name] = &Import{
 						Alias: cfg.Validations.RulePackageImport.Alias,
 						Name:  cfg.Validations.RulePackageImport.Name,
 					}

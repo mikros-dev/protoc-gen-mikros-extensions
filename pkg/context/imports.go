@@ -2,7 +2,34 @@ package context
 
 import (
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/imports"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
+
+type templateImport struct {
+	Alias string
+	Name  string
+}
+
+func loadImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*templateImport {
+	var (
+		tplImports = imports.LoadTemplateImports(toImportsContext(ctx), cfg)
+		ctxImport  = make(map[template.Name][]*templateImport)
+	)
+
+	for k, ipt := range tplImports {
+		v := make([]*templateImport, len(ipt))
+		for i, ii := range ipt {
+			v[i] = &templateImport{
+				Alias: ii.Alias,
+				Name:  ii.Name,
+			}
+		}
+		ctxImport[k] = v
+	}
+
+	return ctxImport
+}
 
 func toImportsContext(ctx *Context) *imports.Context {
 	var (

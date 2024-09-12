@@ -27,7 +27,6 @@ func LoadAddons(path string) ([]addon.Addon, error) {
 				return nil, err
 			}
 
-			println("carregou addon:", a.Name())
 			addons = append(addons, a)
 		}
 	}

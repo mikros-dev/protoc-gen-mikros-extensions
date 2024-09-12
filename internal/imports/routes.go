@@ -1,11 +1,7 @@
 package imports
 
-import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
-)
-
-func loadRoutesTemplateImports(ctx *Context) []*imports.Import {
-	ipt := map[string]*imports.Import{
+func loadRoutesTemplateImports(ctx *Context) []*Import {
+	ipt := map[string]*Import{
 		packages["fasthttp"].Name: packages["fasthttp"],
 	}
 

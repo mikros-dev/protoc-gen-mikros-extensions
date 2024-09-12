@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
@@ -52,8 +51,13 @@ type Method struct {
 	HasHeaderArguments bool
 }
 
-func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*imports.Import {
-	return map[template.Name][]*imports.Import{
+type Import struct {
+	Alias string
+	Name  string
+}
+
+func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*Import {
+	return map[template.Name][]*Import{
 		template.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
 		template.NewName("api", "enum"):            loadEnumTemplateImports(),
 		template.NewName("api", "wire"):            loadWireTemplateImports(ctx),
@@ -68,9 +72,9 @@ func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name
 	}
 }
 
-func toSlice(ipt map[string]*imports.Import) []*imports.Import {
+func toSlice(ipt map[string]*Import) []*Import {
 	var (
-		s     = make([]*imports.Import, len(ipt))
+		s     = make([]*Import, len(ipt))
 		index = 0
 	)
 
@@ -79,7 +83,7 @@ func toSlice(ipt map[string]*imports.Import) []*imports.Import {
 		index += 1
 	}
 
-	slices.SortFunc(s, func(a, b *imports.Import) int {
+	slices.SortFunc(s, func(a, b *Import) int {
 		if a.Alias != "" && b.Alias != "" {
 			return cmp.Compare(a.Alias, b.Alias)
 		}
@@ -96,8 +100,8 @@ func toSlice(ipt map[string]*imports.Import) []*imports.Import {
 	return s
 }
 
-func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*imports.Import {
-	ipt := make(map[string]*imports.Import)
+func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*Import {
+	ipt := make(map[string]*Import)
 
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
@@ -132,11 +136,11 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 	return ipt
 }
 
-func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*imports.Import, bool) {
+func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*Import, bool) {
 	if dep, ok := cfg.Dependencies["converters"]; ok {
 		prefix := cfg.GetDependencyModuleName("converters")
 		if strings.HasPrefix(conversionCall, prefix) {
-			return &imports.Import{
+			return &Import{
 				Alias: dep.Alias,
 				Name:  dep.Import,
 			}, true
@@ -202,8 +206,8 @@ func checkImportNeededFromFieldType(fieldType string) (string, bool) {
 	return "", false
 }
 
-func importAnotherModule(moduleName, currentModuleName, importPath string) *imports.Import {
-	return &imports.Import{
+func importAnotherModule(moduleName, currentModuleName, importPath string) *Import {
+	return &Import{
 		Alias: moduleName,
 		Name:  strings.ReplaceAll(importPath, currentModuleName, moduleName),
 	}

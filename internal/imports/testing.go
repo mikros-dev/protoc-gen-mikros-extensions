@@ -4,12 +4,11 @@ import (
 	"strings"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*imports.Import {
-	ipt := map[string]*imports.Import{
+func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
+	ipt := map[string]*Import{
 		"math/rand":    packages["math/rand"],
 		"reflect":      packages["reflect"],
 		ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),

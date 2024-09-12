@@ -185,7 +185,6 @@ func (t *Templates) Execute() ([]*Generated, error) {
 		}
 
 		templateValidator, ok := tplValidator(mtemplate.NewName(prefix, tpl.name), t.context)
-		println("validator:", prefix, ok)
 		if !ok && t.strictValidators {
 			// The validator should not be executed in this case, since we don't
 			// have one for this template, we can skip it.

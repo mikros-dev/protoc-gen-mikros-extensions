@@ -1,11 +1,7 @@
 package imports
 
-import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
-)
-
-func loadCommonTemplateImports(ctx *Context) []*imports.Import {
-	ipt := make(map[string]*imports.Import)
+func loadCommonTemplateImports(ctx *Context) []*Import {
+	ipt := make(map[string]*Import)
 
 	if ctx.HasProtobufValueField {
 		ipt["protostruct"] = packages["protostruct"]

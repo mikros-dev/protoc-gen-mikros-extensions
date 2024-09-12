@@ -4,10 +4,8 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
-	mimports "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
@@ -20,7 +18,7 @@ type Context struct {
 	Package    *protobuf.Protobuf
 
 	messages []*Message
-	imports  map[template.Name][]*mimports.Import
+	imports  map[template.Name][]*templateImport
 	addons   map[string]addon.Addon
 	settings *settings.Settings
 }
@@ -70,18 +68,30 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 	}
 
 	ctx.addons = addons
-	ctx.imports = imports.LoadTemplateImports(toImportsContext(ctx), opt.Settings)
+	ctx.imports = loadImports(ctx, opt.Settings)
 
 	return ctx, nil
 }
 
-func (c *Context) GetTemplateImports(name string) []*mimports.Import {
+func (c *Context) GetTemplateImports(name string) []*templateImport {
 	return c.imports[template.Name(name)]
 }
 
-func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*mimports.Import {
+func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*templateImport {
 	if a, ok := c.addons[addonName]; ok {
-		return a.GetTemplateImports(template.Name(tplName), c, c.settings)
+		var (
+			ipt          = a.GetTemplateImports(template.Name(tplName), c, c.settings)
+			addonImports = make([]*templateImport, len(ipt))
+		)
+
+		for i, ii := range ipt {
+			addonImports[i] = &templateImport{
+				Alias: ii.Alias,
+				Name:  ii.Name,
+			}
+		}
+
+		return addonImports
 	}
 
 	return nil

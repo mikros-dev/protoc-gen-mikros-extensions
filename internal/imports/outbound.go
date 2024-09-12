@@ -3,12 +3,11 @@ package imports
 import (
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/imports"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-func loadOutboundTemplateImports(ctx *Context, cfg *settings.Settings) []*imports.Import {
-	ipt := make(map[string]*imports.Import)
+func loadOutboundTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
+	ipt := make(map[string]*Import)
 
 	for k, v := range loadOutboundImportsFromMessages(ctx, cfg, ctx.OutboundMessages) {
 		ipt[k] = v
@@ -17,8 +16,8 @@ func loadOutboundTemplateImports(ctx *Context, cfg *settings.Settings) []*import
 	return toSlice(ipt)
 }
 
-func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*imports.Import {
-	ipt := make(map[string]*imports.Import)
+func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*Import {
+	ipt := make(map[string]*Import)
 
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
