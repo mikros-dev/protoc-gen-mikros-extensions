@@ -8,7 +8,7 @@ import (
 )
 
 func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
-	ipt := map[string]*Import{
+	imports := map[string]*Import{
 		"math/rand":    packages["math/rand"],
 		"reflect":      packages["reflect"],
 		ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),
@@ -22,30 +22,30 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 			)
 
 			if module, ok := needsImportAnotherProtoModule(binding, "", ctx.ModuleName, message.Receiver); ok {
-				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 
 			if i, ok := needsUserConvertersPackage(cfg, binding); ok {
-				ipt["converters"] = i
+				imports["converters"] = i
 			}
 
 			if f.IsProtobufTimestamp {
-				ipt["time"] = packages["time"]
+				imports["time"] = packages["time"]
 			}
 
 			if strings.Contains(call, "FromString") {
 				module := strings.Split(call, ".")[0]
-				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 				continue
 			}
 
 			if module, ok := getModuleFromZeroValueCall(call, f.ProtoField); ok {
-				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 		}
 	}
 
-	return toSlice(ipt)
+	return toSlice(imports)
 }
 
 func getModuleFromZeroValueCall(call string, field *protobuf.Field) (string, bool) {

@@ -5,7 +5,7 @@ import (
 )
 
 func loadWireTemplateImports(ctx *Context) []*Import {
-	ipt := make(map[string]*Import)
+	imports := make(map[string]*Import)
 
 	for _, m := range ctx.WireExtensions {
 		options := extensions.LoadMessageWireExtensionOptions(m.ProtoMessage.Proto)
@@ -20,7 +20,7 @@ func loadWireTemplateImports(ctx *Context) []*Import {
 					key = i.GetName()
 				}
 
-				ipt[key] = &Import{
+				imports[key] = &Import{
 					Alias: i.GetAlias(),
 					Name:  i.GetName(),
 				}
@@ -28,5 +28,5 @@ func loadWireTemplateImports(ctx *Context) []*Import {
 		}
 	}
 
-	return toSlice(ipt)
+	return toSlice(imports)
 }

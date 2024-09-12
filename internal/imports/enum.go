@@ -1,9 +1,9 @@
 package imports
 
 func loadEnumTemplateImports() []*Import {
-	ipt := map[string]*Import{
+	imports := map[string]*Import{
 		"strings": packages["strings"],
 	}
 
-	return toSlice(ipt)
+	return toSlice(imports)
 }

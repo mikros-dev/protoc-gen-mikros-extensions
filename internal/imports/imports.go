@@ -101,7 +101,7 @@ func toSlice(ipt map[string]*Import) []*Import {
 }
 
 func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*Import {
-	ipt := make(map[string]*Import)
+	imports := make(map[string]*Import)
 
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
@@ -112,28 +112,28 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 
 			// Import user converters package?
 			if i, ok := needsUserConvertersPackage(cfg, conversionToWire); ok {
-				ipt["converters"] = i
+				imports["converters"] = i
 			}
 
 			// Import time package?
 			if f.IsProtobufTimestamp {
-				ipt["time"] = packages["time"]
+				imports["time"] = packages["time"]
 			}
 
 			// Import proto timestamp package?
 			if strings.HasPrefix(wireType, "ts.") || strings.HasPrefix(wireType, "*ts.") {
-				ipt["prototimestamp"] = packages["prototimestamp"]
+				imports["prototimestamp"] = packages["prototimestamp"]
 				continue
 			}
 
 			// Import other modules?
 			if module, ok := needsImportAnotherProtoModule(conversionToWire, wireType, ctx.ModuleName, msg.Receiver); ok {
-				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 		}
 	}
 
-	return ipt
+	return imports
 }
 
 func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*Import, bool) {

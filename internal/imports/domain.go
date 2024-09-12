@@ -5,11 +5,11 @@ import (
 )
 
 func loadDomainTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
-	ipt := make(map[string]*Import)
+	imports := make(map[string]*Import)
 
 	for k, v := range loadImportsFromMessages(ctx, cfg, ctx.DomainMessages) {
-		ipt[k] = v
+		imports[k] = v
 	}
 
-	return toSlice(ipt)
+	return toSlice(imports)
 }

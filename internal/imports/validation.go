@@ -9,15 +9,15 @@ import (
 )
 
 func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
-	ipt := make(map[string]*Import)
+	imports := make(map[string]*Import)
 
 	if ctx.HasValidatableMessage {
-		ipt["validation"] = packages["validation"]
+		imports["validation"] = packages["validation"]
 	}
 
 	for _, m := range ctx.ValidatableMessages {
 		if m.ValidationNeedsCustomRuleOptions {
-			ipt["errors"] = packages["errors"]
+			imports["errors"] = packages["errors"]
 		}
 
 		for _, f := range m.Fields {
@@ -27,14 +27,14 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 			}
 
 			if validation.GetRule() == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
-				ipt["regex"] = packages["regex"]
+				imports["regex"] = packages["regex"]
 				continue
 			}
 
 			call := f.ValidationCall
 			if cfg.Validations != nil && cfg.Validations.RulePackageImport != nil {
 				if strings.Contains(call, fmt.Sprintf("%s.", cfg.Validations.RulePackageImport.Alias)) {
-					ipt[cfg.Validations.RulePackageImport.Name] = &Import{
+					imports[cfg.Validations.RulePackageImport.Name] = &Import{
 						Alias: cfg.Validations.RulePackageImport.Alias,
 						Name:  cfg.Validations.RulePackageImport.Name,
 					}
@@ -43,5 +43,5 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 		}
 	}
 
-	return toSlice(ipt)
+	return toSlice(imports)
 }

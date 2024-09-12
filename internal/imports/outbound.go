@@ -7,17 +7,17 @@ import (
 )
 
 func loadOutboundTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
-	ipt := make(map[string]*Import)
+	imports := make(map[string]*Import)
 
 	for k, v := range loadOutboundImportsFromMessages(ctx, cfg, ctx.OutboundMessages) {
-		ipt[k] = v
+		imports[k] = v
 	}
 
-	return toSlice(ipt)
+	return toSlice(imports)
 }
 
 func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*Import {
-	ipt := make(map[string]*Import)
+	imports := make(map[string]*Import)
 
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
@@ -28,18 +28,18 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 
 			// Import user converters package?
 			if i, ok := needsUserConvertersPackage(cfg, conversionCall); ok {
-				ipt["converters"] = i
+				imports["converters"] = i
 			}
 
 			// Import time package?
 			if f.IsProtobufTimestamp {
-				ipt["time"] = packages["time"]
+				imports["time"] = packages["time"]
 				continue
 			}
 
 			// Import proto timestamp package?
 			if strings.HasPrefix(outboundType, "ts.") {
-				ipt["prototimestamp"] = packages["prototimestamp"]
+				imports["prototimestamp"] = packages["prototimestamp"]
 				continue
 			}
 
@@ -50,7 +50,7 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 					valuesVar := parts[1]
 					if strings.Contains(valuesVar, ".") {
 						module := strings.TrimSpace(strings.Split(valuesVar, ".")[0])
-						ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+						imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 					}
 				}
 
@@ -59,11 +59,11 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 
 			// Import other modules?
 			if module, ok := needsImportAnotherProtoModule("", outboundType, ctx.ModuleName, msg.Receiver); ok {
-				ipt[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 				continue
 			}
 		}
 	}
 
-	return ipt
+	return imports
 }
