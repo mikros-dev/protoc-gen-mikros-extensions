@@ -16,12 +16,12 @@ import (
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/args"
-	api_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/assets/api"
-	test_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/assets/testing"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/output"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template"
+	api_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template/api"
+	test_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template/testing"
 	maddon "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
 	mcontext "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/context"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/output"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	mtemplate "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
