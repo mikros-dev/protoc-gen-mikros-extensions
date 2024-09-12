@@ -1,4 +1,4 @@
-package context
+package imports
 
 import (
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
@@ -7,8 +7,8 @@ import (
 func loadWireTemplateImports(ctx *Context) []*Import {
 	imports := make(map[string]*Import)
 
-	for _, m := range ctx.WireExtensions() {
-		options := extensions.LoadMessageWireExtensionOptions(m.message.Proto)
+	for _, m := range ctx.WireExtensions {
+		options := extensions.LoadMessageWireExtensionOptions(m.ProtoMessage.Proto)
 		if options == nil {
 			continue
 		}

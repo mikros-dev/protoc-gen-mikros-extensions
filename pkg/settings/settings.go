@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"dario.cat/mergo"
@@ -22,6 +23,7 @@ type Settings struct {
 	Templates    *Templates             `toml:"templates"`
 	Dependencies map[string]*Dependency `toml:"dependencies"`
 	Validations  *Validations           `toml:"validations"`
+	Addons       *Addons                `toml:"addons"`
 }
 
 type Suffix struct {
@@ -48,8 +50,7 @@ type Templates struct {
 }
 
 type Dependency struct {
-	Import      string                 `toml:"import"`
-	Alias       string                 `toml:"alias"`
+	Import      *Import                `toml:"import"`
 	PackageName string                 `toml:"package_name"`
 	Calls       map[string]interface{} `toml:"calls"`
 }
@@ -68,6 +69,10 @@ type ValidationRule struct {
 type Import struct {
 	Name  string `toml:"name"`
 	Alias string `toml:"alias"`
+}
+
+type Addons struct {
+	Path string `toml:"path"`
 }
 
 func LoadSettings(filename string) (*Settings, error) {
@@ -122,15 +127,25 @@ func (s *Settings) GetDependencyCall(dep, function string) string {
 }
 
 func (s *Settings) GetDependencyModuleName(dep string) string {
-	if dependency, ok := s.Dependencies[dep]; ok {
-		if dependency.Alias != "" {
-			return dependency.Alias
+	if dependency, ok := s.Dependencies[dep]; ok && dependency.Import != nil {
+		if dependency.Import.Alias != "" {
+			return dependency.Import.Alias
 		}
 
-		return dependency.PackageName
+		parts := strings.Split(dependency.Import.Name, "/")
+		if isVersionPattern(parts[len(parts)-1]) {
+			return parts[len(parts)-2]
+		}
+
+		return parts[len(parts)-1]
 	}
 
 	return ""
+}
+
+func isVersionPattern(s string) bool {
+	re := regexp.MustCompile(`^v\d+$`)
+	return re.MatchString(s)
 }
 
 func (s *Settings) IsSupportedCustomValidationRule(ruleName string) error {

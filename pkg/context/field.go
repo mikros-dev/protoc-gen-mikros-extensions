@@ -9,9 +9,9 @@ import (
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/testing"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type Field struct {
@@ -30,13 +30,13 @@ type Field struct {
 	OutboundName    string
 	OutboundTag     string
 	OutboundTagName string
+	MessageReceiver string
 	Location        FieldLocation
+	ProtoField      *protobuf.Field
 
-	moduleName      string
-	messageReceiver string
-	field           *protobuf.Field
-	converter       *converters.Field
-	testing         *testing.Field
+	moduleName string
+	converter  *converters.Field
+	testing    *testing.Field
 }
 
 type LoadFieldOptions struct {
@@ -90,8 +90,8 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 		OutboundTagName: converter.OutboundTagName(),
 		Location:        getFieldLocation(opt.Field.Proto, opt.Endpoint),
 		moduleName:      opt.ModuleName,
-		messageReceiver: opt.Receiver,
-		field:           opt.Field,
+		MessageReceiver: opt.Receiver,
+		ProtoField:      opt.Field,
 		converter:       converter,
 		testing: testing.NewField(&testing.NewFieldOptions{
 			IsArray:        isArray,
@@ -117,7 +117,7 @@ func (f *Field) Validate() error {
 }
 
 func (f *Field) isBitflag() bool {
-	if outbound := extensions.LoadFieldOutbound(f.field.Proto); outbound != nil {
+	if outbound := extensions.LoadFieldOutbound(f.ProtoField.Proto); outbound != nil {
 		return outbound.Bitflag != nil
 	}
 
@@ -125,11 +125,11 @@ func (f *Field) isBitflag() bool {
 }
 
 func (f *Field) IsPointer() bool {
-	return (f.IsProtoOptional && !f.field.IsProtoStruct()) || f.field.IsProtobufWrapper() || f.IsMessage
+	return (f.IsProtoOptional && !f.ProtoField.IsProtoStruct()) || f.ProtoField.IsProtobufWrapper() || f.IsMessage
 }
 
 func (f *Field) IsScalar() bool {
-	if (f.IsMessage && !f.field.IsTimestamp()) || f.IsMap || f.IsArray {
+	if (f.IsMessage && !f.ProtoField.IsTimestamp()) || f.IsMap || f.IsArray {
 		return false
 	}
 
@@ -137,7 +137,7 @@ func (f *Field) IsScalar() bool {
 }
 
 func (f *Field) IsBindable() bool {
-	return f.IsScalar() || (f.field.IsTimestamp() && !f.IsArray) || f.field.IsProtoStruct()
+	return f.IsScalar() || (f.ProtoField.IsTimestamp() && !f.IsArray) || f.ProtoField.IsProtoStruct()
 }
 
 func (f *Field) DomainType() string {
@@ -177,7 +177,7 @@ func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
 }
 
 func (f *Field) OutboundHide() bool {
-	if outbound := extensions.LoadFieldOutbound(f.field.Proto); outbound != nil {
+	if outbound := extensions.LoadFieldOutbound(f.ProtoField.Proto); outbound != nil {
 		return outbound.GetHide()
 	}
 
@@ -185,7 +185,7 @@ func (f *Field) OutboundHide() bool {
 }
 
 func (f *Field) IsOutboundBitflag() bool {
-	if outbound := extensions.LoadFieldOutbound(f.field.Proto); outbound != nil {
+	if outbound := extensions.LoadFieldOutbound(f.ProtoField.Proto); outbound != nil {
 		return outbound.GetBitflag() != nil
 	}
 
@@ -193,11 +193,11 @@ func (f *Field) IsOutboundBitflag() bool {
 }
 
 func (f *Field) IsProtobufValue() bool {
-	return f.field.IsProtoValue()
+	return f.ProtoField.IsProtoValue()
 }
 
 func (f *Field) IsValidatable() bool {
-	validate := extensions.LoadFieldValidate(f.field.Proto)
+	validate := extensions.LoadFieldValidate(f.ProtoField.Proto)
 	return validate != nil
 }
 

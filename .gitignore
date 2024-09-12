@@ -22,5 +22,6 @@ go.work
 go.work.sum
 
 # Proto generated files
-examples/plugins
-examples/gen
+examples/protobuf/plugins
+examples/protobuf/gen
+examples/protobuf/addons

@@ -1,27 +1,27 @@
-package context
+package imports
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
 	imports := make(map[string]*Import)
 
-	if ctx.HasValidatableMessage() {
+	if ctx.HasValidatableMessage {
 		imports["validation"] = packages["validation"]
 	}
 
-	for _, m := range ctx.ValidatableMessages() {
-		if m.ValidationNeedsCustomRuleOptions() {
+	for _, m := range ctx.ValidatableMessages {
+		if m.ValidationNeedsCustomRuleOptions {
 			imports["errors"] = packages["errors"]
 		}
 
 		for _, f := range m.Fields {
-			validation := extensions.LoadFieldValidate(f.field.Proto)
+			validation := extensions.LoadFieldValidate(f.ProtoField.Proto)
 			if validation == nil {
 				continue
 			}
@@ -31,7 +31,7 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 				continue
 			}
 
-			call := f.ValidationCall()
+			call := f.ValidationCall
 			if cfg.Validations != nil && cfg.Validations.RulePackageImport != nil {
 				if strings.Contains(call, fmt.Sprintf("%s.", cfg.Validations.RulePackageImport.Alias)) {
 					imports[cfg.Validations.RulePackageImport.Name] = &Import{

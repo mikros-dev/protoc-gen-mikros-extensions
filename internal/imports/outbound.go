@@ -1,15 +1,15 @@
-package context
+package imports
 
 import (
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 func loadOutboundTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
 	imports := make(map[string]*Import)
 
-	for k, v := range loadOutboundImportsFromMessages(ctx, cfg, ctx.OutboundMessages()) {
+	for k, v := range loadOutboundImportsFromMessages(ctx, cfg, ctx.OutboundMessages) {
 		imports[k] = v
 	}
 
@@ -22,8 +22,8 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
 			var (
-				outboundType   = strings.TrimPrefix(f.OutboundType(), "[]*")
-				conversionCall = f.ConvertWireOutputToOutbound("r")
+				outboundType   = strings.TrimPrefix(f.OutboundType, "[]*")
+				conversionCall = f.ConversionWireOutputToOutbound
 			)
 
 			// Import user converters package?
@@ -32,7 +32,7 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 			}
 
 			// Import time package?
-			if f.field.IsTimestamp() {
+			if f.IsProtobufTimestamp {
 				imports["time"] = packages["time"]
 				continue
 			}
@@ -44,13 +44,13 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 			}
 
 			// Import strings?
-			if f.IsOutboundBitflag() {
+			if f.IsOutboundBitflag {
 				// Is this bitflag from another module?
-				if parts := strings.Split(f.ConvertWireOutputToOutbound("r"), ","); len(parts) == 3 {
+				if parts := strings.Split(f.ConversionWireOutputToOutbound, ","); len(parts) == 3 {
 					valuesVar := parts[1]
 					if strings.Contains(valuesVar, ".") {
 						module := strings.TrimSpace(strings.Split(valuesVar, ".")[0])
-						imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+						imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 					}
 				}
 
@@ -58,8 +58,8 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 			}
 
 			// Import other modules?
-			if module, ok := needsImportAnotherProtoModule("", outboundType, ctx.ModuleName, f.messageReceiver); ok {
-				imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+			if module, ok := needsImportAnotherProtoModule("", outboundType, ctx.ModuleName, msg.Receiver); ok {
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 				continue
 			}
 		}

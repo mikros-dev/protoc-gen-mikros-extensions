@@ -5,8 +5,9 @@ import (
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
 
 type Context struct {
@@ -14,16 +15,19 @@ type Context struct {
 	ModuleName string
 	Enums      []*Enum
 	Methods    []*Method
+	Package    *protobuf.Protobuf
 
 	messages []*Message
-	imports  map[template.Name][]*Import
-	pkg      *protobuf.Protobuf
+	imports  map[template.Name][]*templateImport
+	addons   map[string]addon.Addon
+	settings *settings.Settings
 }
 
 type BuildContextOptions struct {
 	PluginName string
 	Settings   *settings.Settings
 	Plugin     *protogen.Plugin
+	Addons     []addon.Addon
 }
 
 func BuildContext(opt BuildContextOptions) (*Context, error) {
@@ -54,17 +58,43 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 		Enums:      loadEnums(pkg),
 		Methods:    methods,
 		messages:   messages,
-		imports:    make(map[template.Name][]*Import),
-		pkg:        pkg,
+		Package:    pkg,
+		settings:   opt.Settings,
 	}
 
-	ctx.imports = LoadTemplateImports(ctx, opt.Settings)
+	addons := make(map[string]addon.Addon)
+	for _, a := range opt.Addons {
+		addons[a.Name()] = a
+	}
+
+	ctx.addons = addons
+	ctx.imports = loadImports(ctx, opt.Settings)
 
 	return ctx, nil
 }
 
-func (c *Context) GetTemplateImports(name string) []*Import {
+func (c *Context) GetTemplateImports(name string) []*templateImport {
 	return c.imports[template.Name(name)]
+}
+
+func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*templateImport {
+	if a, ok := c.addons[addonName]; ok {
+		var (
+			ipt          = a.GetTemplateImports(template.Name(tplName), c, c.settings)
+			addonImports = make([]*templateImport, len(ipt))
+		)
+
+		for i, ii := range ipt {
+			addonImports[i] = &templateImport{
+				Alias: ii.Alias,
+				Name:  ii.Name,
+			}
+		}
+
+		return addonImports
+	}
+
+	return nil
 }
 
 func (c *Context) HasImportFor(name string) bool {
@@ -72,8 +102,16 @@ func (c *Context) HasImportFor(name string) bool {
 	return ok && len(d) > 0
 }
 
+func (c *Context) HasAddonImportFor(addonName, tplName string) bool {
+	if a, ok := c.addons[addonName]; ok {
+		return len(a.GetTemplateImports(template.Name(tplName), c, c.settings)) > 0
+	}
+
+	return false
+}
+
 func (c *Context) IsHTTPService() bool {
-	return c.pkg.Service != nil && c.pkg.Service.IsHTTP()
+	return c.Package.Service != nil && c.Package.Service.IsHTTP()
 }
 
 func (c *Context) DomainMessages() []*Message {
@@ -121,9 +159,8 @@ func (c *Context) WireExtensions() []*Message {
 	return messages
 }
 
-// ValidateForExecution sets rules to execute or not templates while running.
-func (c *Context) ValidateForExecution(name template.Name) (template.Validator, bool) {
-	validators := map[template.Name]template.Validator{
+func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (template.ValidateForExecution, bool) {
+	validators := map[template.Name]template.ValidateForExecution{
 		template.NewName("api", "domain"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
@@ -168,8 +205,8 @@ func (c *Context) Extension() string {
 }
 
 func (c *Context) ServiceName() string {
-	if c.pkg.Service != nil {
-		return c.pkg.Service.Name
+	if c.Package.Service != nil {
+		return c.Package.Service.Name
 	}
 
 	return c.ModuleName
@@ -222,4 +259,12 @@ func (c *Context) ValidatableMessages() []*Message {
 	}
 
 	return messages
+}
+
+func (c *Context) AddonContext(addonName string) interface{} {
+	if a, ok := c.addons[addonName]; ok {
+		return a.GetContext()
+	}
+
+	return nil
 }

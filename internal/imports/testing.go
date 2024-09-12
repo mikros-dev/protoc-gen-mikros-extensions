@@ -1,46 +1,46 @@
-package context
+package imports
 
 import (
 	"strings"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
 	imports := map[string]*Import{
 		"math/rand":    packages["math/rand"],
 		"reflect":      packages["reflect"],
-		ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.pkg.FullPath),
+		ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),
 	}
 
-	for _, message := range ctx.DomainMessages() {
+	for _, message := range ctx.DomainMessages {
 		for _, f := range message.Fields {
 			var (
-				binding = f.TestingValueBinding()
-				call    = f.TestingValueCall()
+				binding = f.TestingBinding
+				call    = f.TestingCall
 			)
 
-			if module, ok := needsImportAnotherProtoModule(binding, "", ctx.ModuleName, f.messageReceiver); ok {
-				imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+			if module, ok := needsImportAnotherProtoModule(binding, "", ctx.ModuleName, message.Receiver); ok {
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 
 			if i, ok := needsUserConvertersPackage(cfg, binding); ok {
 				imports["converters"] = i
 			}
 
-			if f.field.IsTimestamp() {
+			if f.IsProtobufTimestamp {
 				imports["time"] = packages["time"]
 			}
 
 			if strings.Contains(call, "FromString") {
 				module := strings.Split(call, ".")[0]
-				imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 				continue
 			}
 
-			if module, ok := getModuleFromZeroValueCall(call, f.field); ok {
-				imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+			if module, ok := getModuleFromZeroValueCall(call, f.ProtoField); ok {
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 		}
 	}

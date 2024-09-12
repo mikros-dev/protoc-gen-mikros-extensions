@@ -71,11 +71,3 @@ func (e *Enum) HasEntryDefinition() bool {
 
 	return false
 }
-
-func loadEnumTemplateImports() []*Import {
-	imports := map[string]*Import{
-		"strings": packages["strings"],
-	}
-
-	return toSlice(imports)
-}

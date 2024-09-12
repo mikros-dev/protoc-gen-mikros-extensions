@@ -6,8 +6,8 @@ import (
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type Message struct {
@@ -17,11 +17,11 @@ type Message struct {
 	OutboundName string
 	Type         converters.MessageKind
 	Fields       []*Field
+	ProtoMessage *protobuf.Message
 
 	isHTTPService bool
 	receiver      string
 	converter     *converters.Message
-	message       *protobuf.Message
 }
 
 type LoadMessagesOptions struct {
@@ -73,7 +73,7 @@ func loadMessages(pkg *protobuf.Protobuf, opt LoadMessagesOptions) ([]*Message, 
 			isHTTPService: pkg.Service != nil && pkg.Service.IsHTTP(),
 			receiver:      receiver,
 			converter:     converter,
-			message:       m,
+			ProtoMessage:  m,
 		}
 	}
 
@@ -153,7 +153,7 @@ func (m *Message) ArrayFields() []*Field {
 }
 
 func (m *Message) DomainExport() bool {
-	if options := extensions.LoadMessageDomainOptions(m.message.Proto); options != nil {
+	if options := extensions.LoadMessageDomainOptions(m.ProtoMessage.Proto); options != nil {
 		return !options.GetDontExport()
 	}
 
@@ -165,7 +165,7 @@ func (m *Message) OutboundExport() bool {
 	if m.Type == converters.WireOutputMessage && m.isHTTPService {
 		return true
 	}
-	if options := extensions.LoadMessageOutboundOptions(m.message.Proto); options != nil {
+	if options := extensions.LoadMessageOutboundOptions(m.ProtoMessage.Proto); options != nil {
 		return options.GetExport()
 	}
 
@@ -184,7 +184,7 @@ func (m *Message) MapFields() []*Field {
 }
 
 func (m *Message) HasWireCustomCodeExtension() bool {
-	if options := extensions.LoadMessageWireExtensionOptions(m.message.Proto); options != nil {
+	if options := extensions.LoadMessageWireExtensionOptions(m.ProtoMessage.Proto); options != nil {
 		return len(options.GetCustomCode()) > 0
 	}
 
@@ -199,7 +199,7 @@ type CustomCode struct {
 func (m *Message) WireCustomCode() []*CustomCode {
 	var customCodes []*CustomCode
 
-	if options := extensions.LoadMessageWireExtensionOptions(m.message.Proto); options != nil {
+	if options := extensions.LoadMessageWireExtensionOptions(m.ProtoMessage.Proto); options != nil {
 		for _, c := range options.GetCustomCode() {
 			customCodes = append(customCodes, &CustomCode{
 				Signature: c.GetSignature(),
@@ -263,7 +263,7 @@ func (m *Message) HasValidatableField() bool {
 
 func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 	for _, field := range m.Fields {
-		if validation := extensions.LoadFieldValidate(field.field.Proto); validation != nil {
+		if validation := extensions.LoadFieldValidate(field.ProtoField.Proto); validation != nil {
 			nonCustomRules := []extensions.FieldValidatorRule{
 				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX,
 				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED,

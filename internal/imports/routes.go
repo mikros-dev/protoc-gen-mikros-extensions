@@ -1,4 +1,4 @@
-package context
+package imports
 
 func loadRoutesTemplateImports(ctx *Context) []*Import {
 	imports := map[string]*Import{
@@ -6,12 +6,12 @@ func loadRoutesTemplateImports(ctx *Context) []*Import {
 	}
 
 	for _, m := range ctx.Methods {
-		if m.HasRequiredBody() {
+		if m.HasRequiredBody {
 			imports[packages["errors"].Name] = packages["errors"]
 			imports[packages["json"].Name] = packages["json"]
 		}
 
-		if m.HasQueryArguments() || m.HasHeaderArguments() {
+		if m.HasQueryArguments || m.HasHeaderArguments {
 			imports[packages["fmt"].Name] = packages["fmt"]
 		}
 	}

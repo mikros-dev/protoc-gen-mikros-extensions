@@ -1,4 +1,4 @@
-package context
+package imports
 
 func loadHttpServerTemplateImports() []*Import {
 	imports := map[string]*Import{
@@ -14,7 +14,7 @@ func loadHttpServerTemplateImports() []*Import {
 func loadTestingHttpServerTemplateImports(ctx *Context) []*Import {
 	imports := map[string]*Import{
 		packages["fasthttp-router"].Name: packages["fasthttp-router"],
-		ctx.ModuleName:                   importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.pkg.FullPath),
+		ctx.ModuleName:                   importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),
 	}
 
 	return toSlice(imports)

@@ -1,4 +1,4 @@
-package context
+package imports
 
 import (
 	"cmp"
@@ -6,60 +6,49 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/settings"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
 
-var (
-	mapTypeRe = regexp.MustCompile(`^map\[\S+]`)
-)
+type Context struct {
+	HasValidatableMessage   bool
+	HasProtobufValueField   bool
+	OutboundHasBitflagField bool
+	ModuleName              string
+	FullPath                string
+	Methods                 []*Method
+	DomainMessages          []*Message
+	OutboundMessages        []*Message
+	ValidatableMessages     []*Message
+	WireExtensions          []*Message
+	WireInputMessages       []*Message
+}
 
-// packages represents a list of common packages that can be imported by several
-// templates.
-var packages = map[string]*Import{
-	"context": {
-		Name: "context",
-	},
-	"errors": {
-		Name: "errors",
-	},
-	"fmt": {
-		Name: "fmt",
-	},
-	"json": {
-		Name: "encoding/json",
-	},
-	"math/rand": {
-		Name: "math/rand",
-	},
-	"reflect": {
-		Name: "reflect",
-	},
-	"regex": {
-		Name: "regexp",
-	},
-	"strings": {
-		Name: "strings",
-	},
-	"time": {
-		Name: "time",
-	},
-	"prototimestamp": {
-		Name:  "google.golang.org/protobuf/types/known/timestamppb",
-		Alias: "ts",
-	},
-	"protostruct": {
-		Name: "google.golang.org/protobuf/types/known/structpb",
-	},
-	"fasthttp": {
-		Name: "github.com/valyala/fasthttp",
-	},
-	"fasthttp-router": {
-		Name: "github.com/fasthttp/router",
-	},
-	"validation": {
-		Name: "github.com/go-ozzo/ozzo-validation/v4",
-	},
+type Message struct {
+	ValidationNeedsCustomRuleOptions bool
+	Receiver                         string
+	Fields                           []*Field
+	ProtoMessage                     *protobuf.Message
+}
+
+type Field struct {
+	IsProtobufTimestamp            bool
+	IsOutboundBitflag              bool
+	ConversionDomainToWire         string
+	ConversionWireOutputToOutbound string
+	WireType                       string
+	OutboundType                   string
+	TestingBinding                 string
+	TestingCall                    string
+	ValidationCall                 string
+	ProtoField                     *protobuf.Field
+}
+
+type Method struct {
+	HasRequiredBody    bool
+	HasQueryArguments  bool
+	HasHeaderArguments bool
 }
 
 type Import struct {
@@ -83,13 +72,13 @@ func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name
 	}
 }
 
-func toSlice(imports map[string]*Import) []*Import {
+func toSlice(ipt map[string]*Import) []*Import {
 	var (
-		s     = make([]*Import, len(imports))
+		s     = make([]*Import, len(ipt))
 		index = 0
 	)
 
-	for _, i := range imports {
+	for _, i := range ipt {
 		s[index] = i
 		index += 1
 	}
@@ -117,8 +106,8 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
 			var (
-				conversionToWire = f.ConvertDomainTypeToWireType()
-				wireType         = strings.TrimPrefix(f.WireType(), "[]*")
+				conversionToWire = f.ConversionDomainToWire
+				wireType         = strings.TrimPrefix(f.WireType, "[]*")
 			)
 
 			// Import user converters package?
@@ -127,7 +116,7 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 			}
 
 			// Import time package?
-			if f.field.IsTimestamp() {
+			if f.IsProtobufTimestamp {
 				imports["time"] = packages["time"]
 			}
 
@@ -138,8 +127,8 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 			}
 
 			// Import other modules?
-			if module, ok := needsImportAnotherProtoModule(conversionToWire, wireType, ctx.ModuleName, f.messageReceiver); ok {
-				imports[module] = importAnotherModule(module, ctx.pkg.ModuleName, ctx.pkg.FullPath)
+			if module, ok := needsImportAnotherProtoModule(conversionToWire, wireType, ctx.ModuleName, msg.Receiver); ok {
+				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 		}
 	}
@@ -148,12 +137,12 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 }
 
 func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*Import, bool) {
-	if dep, ok := cfg.Dependencies["converters"]; ok {
+	if dep, ok := cfg.Dependencies["converters"]; ok && dep.Import != nil {
 		prefix := cfg.GetDependencyModuleName("converters")
 		if strings.HasPrefix(conversionCall, prefix) {
 			return &Import{
-				Alias: dep.Alias,
-				Name:  dep.Import,
+				Alias: dep.Import.Alias,
+				Name:  dep.Import.Name,
 			}, true
 		}
 	}
@@ -195,6 +184,10 @@ func checkImportNeededFromConversionCall(conversionCall, moduleName, receiver st
 
 	return parts[0], true
 }
+
+var (
+	mapTypeRe = regexp.MustCompile(`^map\[\S+]`)
+)
 
 func checkImportNeededFromFieldType(fieldType string) (string, bool) {
 	if strings.HasPrefix(fieldType, "map[") {
