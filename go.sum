@@ -6,8 +6,8 @@ github.com/bufbuild/protocompile v0.9.0 h1:DI8qLG5PEO0Mu1Oj51YFPqtx6I3qYXUAhJVJ/
 github.com/bufbuild/protocompile v0.9.0/go.mod h1:s89m1O8CqSYpyE/YaSGtg1r1YFMF5nLTwh4vlj6O444=
 github.com/bufbuild/protoplugin v0.0.0-20240323223605-e2735f6c31ee h1:E6ET8YUcYJ1lAe6ctR3as7yqzW2BNItDFnaB5zQq/8M=
 github.com/bufbuild/protoplugin v0.0.0-20240323223605-e2735f6c31ee/go.mod h1:HjGFxsck9RObrTJp2hXQZfWhPgZqnR6sR1U5fCA/Kus=
-github.com/creasty/defaults v1.7.0 h1:eNdqZvc5B509z18lD8yc212CAqJNvfT1Jq6L8WowdBA=
-github.com/creasty/defaults v1.7.0/go.mod h1:iGzKe6pbEHnpMPtfDXZEr0NVxWnPTjb1bbDy08fPzYM=
+github.com/creasty/defaults v1.8.0 h1:z27FJxCAa0JKt3utc0sCImAEb+spPucmKoOdLHvHYKk=
+github.com/creasty/defaults v1.8.0/go.mod h1:iGzKe6pbEHnpMPtfDXZEr0NVxWnPTjb1bbDy08fPzYM=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fatih/camelcase v1.0.0 h1:hxNvNX/xYBp0ovncs8WyWZrOrpBNub/JfaMvbURyft8=

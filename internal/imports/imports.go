@@ -13,8 +13,8 @@ import (
 
 type Context struct {
 	HasValidatableMessage   bool
-	HasProtobufValueField   bool
 	OutboundHasBitflagField bool
+	UseCommonConverters     bool
 	ModuleName              string
 	FullPath                string
 	Methods                 []*Method
@@ -137,13 +137,19 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 }
 
 func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*Import, bool) {
-	if dep, ok := cfg.Dependencies["converters"]; ok && dep.Import != nil {
-		prefix := cfg.GetDependencyModuleName("converters")
-		if strings.HasPrefix(conversionCall, prefix) {
-			return &Import{
-				Alias: dep.Import.Alias,
-				Name:  dep.Import.Name,
-			}, true
+	if cfg.Templates.Common != nil {
+		for _, dep := range cfg.Templates.Common.Api {
+			var moduleName string
+			if dep.Import != nil {
+				moduleName = dep.Import.ModuleName()
+			}
+
+			if strings.HasPrefix(conversionCall, moduleName) {
+				return &Import{
+					Alias: dep.Import.Alias,
+					Name:  dep.Import.Name,
+				}, true
+			}
 		}
 	}
 

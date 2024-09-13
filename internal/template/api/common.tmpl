@@ -9,7 +9,42 @@ import (
 )
 {{end}}
 
-{{if .HasProtobufValueField}}
+{{- if .OutboundHasBitflagField}}
+// currentEnumValues returns all flags enabled from an enum in a string
+// format.
+func currentEnumValues(flags uint64, values map[int32]string, prefixFilter ...string) []string {
+	var flagValues []string
+
+	for k, v := range values {
+		if k != 0 {
+			bit := uint64(1 << (k - 1))
+			if isBitSet(flags, bit) {
+				if filter, ok := needsFiltering(prefixFilter...); ok {
+					v = strings.TrimPrefix(v, filter)
+				}
+
+				flagValues = append(flagValues, v)
+			}
+		}
+	}
+
+	return flagValues
+}
+
+func isBitSet(flags, bit uint64) bool {
+	return bit&flags != 0
+}
+
+func needsFiltering(prefixFilter ...string) (string, bool) {
+	if len(prefixFilter) > 0 {
+		return prefixFilter[0], true
+	}
+
+	return "", false
+}
+{{- end}}
+
+{{- if .UseCommonConverters}}
 // convertToProtobufValue converts an interface{} value into a protobuf.Value
 // structure.
 func convertToProtobufValue(value interface{}) *structpb.Value {
@@ -53,39 +88,30 @@ func convertToProtobufValue(value interface{}) *structpb.Value {
 
     return nil
 }
-{{- end}}
 
-{{- if .OutboundHasBitflagField}}
-// currentEnumValues returns all flags enabled from an enum in a string
-// format.
-func currentEnumValues(flags uint64, values map[int32]string, prefixFilter ...string) []string {
-	var flagValues []string
-
-	for k, v := range values {
-		if k != 0 {
-			bit := uint64(1 << (k - 1))
-			if isBitSet(flags, bit) {
-				if filter, ok := needsFiltering(prefixFilter...); ok {
-					v = strings.TrimPrefix(v, filter)
-				}
-
-				flagValues = append(flagValues, v)
-			}
-		}
-	}
-
-	return flagValues
+func toPtr[T any](x T) *T {
+	return &x
 }
 
-func isBitSet(flags, bit uint64) bool {
-	return bit&flags != 0
-}
-
-func needsFiltering(prefixFilter ...string) (string, bool) {
-	if len(prefixFilter) > 0 {
-		return prefixFilter[0], true
+func protoTimestampToTime(value *ts.Timestamp) time.Time {
+	var t time.Time
+	if value != nil {
+		t = value.AsTime()
 	}
 
-	return "", false
+	return t
+}
+
+func timeToProtoTimestamp(t *time.Time) *ts.Timestamp {
+    if t != nil {
+    	return ts.New(*t)
+    }
+
+    return nil
+}
+
+func mapToGrpcStruct(m map[string]interface{}) *structpb.Struct {
+	s, _ := structpb.NewStruct(m)
+	return s
 }
 {{- end}}
