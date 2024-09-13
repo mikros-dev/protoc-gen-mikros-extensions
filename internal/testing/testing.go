@@ -44,9 +44,7 @@ func (f *Field) BindingValue(isPointer bool) string {
 			return "v.([]*time.Time)"
 		}
 
-		return fmt.Sprintf("%s.%s(v.(time.Time))",
-			f.settings.GetDependencyModuleName("converters"),
-			f.settings.GetDependencyCall("converters", "to_ptr"))
+		return f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
 	}
 
 	if f.proto.IsProtoStruct() {
@@ -65,10 +63,8 @@ func (f *Field) BindingValue(isPointer bool) string {
 
 	binding := fmt.Sprintf("v.(%v)", t)
 	if f.proto.IsOptional() {
-		binding = fmt.Sprintf("%s.%s(%v)",
-			f.settings.GetDependencyModuleName("converters"),
-			f.settings.GetDependencyCall("converters", "to_ptr"),
-			binding)
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		binding = fmt.Sprintf("%s(%v)", call, binding)
 	}
 
 	return binding

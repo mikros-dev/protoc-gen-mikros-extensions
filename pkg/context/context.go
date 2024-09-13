@@ -183,7 +183,7 @@ func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (templ
 			return len(c.WireInputMessages()) > 0 && c.IsHTTPService()
 		},
 		template.NewName("api", "common"): func() bool {
-			return c.HasProtobufValueField() || c.OutboundHasBitflagField()
+			return c.UseCommonConverters() || c.OutboundHasBitflagField()
 		},
 		template.NewName("api", "validation"): func() bool {
 			return c.HasValidatableMessage()
@@ -236,16 +236,6 @@ func (c *Context) OutboundHasBitflagField() bool {
 	return false
 }
 
-func (c *Context) HasProtobufValueField() bool {
-	for _, m := range c.messages {
-		if m.HasProtobufValueField() {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (c *Context) HasValidatableMessage() bool {
 	return len(c.ValidatableMessages()) > 0
 }
@@ -267,4 +257,12 @@ func (c *Context) AddonContext(addonName string) interface{} {
 	}
 
 	return nil
+}
+
+func (c *Context) UseCommonConverters() bool {
+	if c.settings.Templates.Common != nil {
+		return c.settings.Templates.Common.Converters
+	}
+
+	return false
 }
