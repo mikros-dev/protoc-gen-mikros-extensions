@@ -117,7 +117,7 @@ func LoadSettings(filename string) (*Settings, error) {
 		return nil, err
 	}
 
-	if err := mergo.Merge(&settings, defaultSettings, mergo.WithoutDereference); err != nil {
+	if err := mergo.Merge(&settings, defaultSettings); err != nil {
 		return nil, err
 	}
 
