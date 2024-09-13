@@ -241,16 +241,6 @@ func (m *Message) HasBitflagField() bool {
 	return false
 }
 
-func (m *Message) HasProtobufValueField() bool {
-	for _, field := range m.Fields {
-		if field.IsProtobufValue() {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (m *Message) HasValidatableField() bool {
 	for _, field := range m.Fields {
 		if field.IsValidatable() {

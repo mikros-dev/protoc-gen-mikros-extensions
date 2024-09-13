@@ -16,14 +16,13 @@ import (
 )
 
 type Settings struct {
-	Debug        bool                   `toml:"debug"`
-	Suffix       *Suffix                `toml:"suffix"`
-	Database     *Database              `toml:"database"`
-	Http         *Http                  `toml:"http"`
-	Templates    *Templates             `toml:"templates"`
-	Dependencies map[string]*Dependency `toml:"dependencies"`
-	Validations  *Validations           `toml:"validations"`
-	Addons       *Addons                `toml:"addons"`
+	Debug       bool         `toml:"debug"`
+	Suffix      *Suffix      `toml:"suffix" default:"{}"`
+	Database    *Database    `toml:"database" default:"{}"`
+	Http        *Http        `toml:"http" default:"{}"`
+	Templates   *Templates   `toml:"templates" default:"{}"`
+	Validations *Validations `toml:"validations"`
+	Addons      *Addons      `toml:"addons"`
 }
 
 type Suffix struct {
@@ -43,10 +42,16 @@ type Http struct {
 }
 
 type Templates struct {
-	Api      bool   `toml:"api" default:"true"`
-	Test     bool   `toml:"test" default:"true"`
-	TestPath string `toml:"test_path"`
-	ApiPath  string `toml:"api_path"`
+	Api      bool    `toml:"api" default:"true"`
+	Test     bool    `toml:"test" default:"true"`
+	TestPath string  `toml:"test_path" default:"test"`
+	ApiPath  string  `toml:"api_path" default:"go"`
+	Common   *Common `toml:"common" default:"{}"`
+}
+
+type Common struct {
+	Converters bool                   `toml:"converters" default:"true"`
+	Api        map[string]*Dependency `toml:"api"`
 }
 
 type Dependency struct {
@@ -71,6 +76,27 @@ type Import struct {
 	Alias string `toml:"alias"`
 }
 
+func (i *Import) ModuleName() string {
+	var (
+		parts = strings.Split(i.Name, "/")
+	)
+
+	prefix := parts[len(parts)-1]
+	if isVersionPattern(parts[len(parts)-1]) {
+		prefix = parts[len(parts)-2]
+	}
+	if i.Alias != "" {
+		prefix = i.Alias
+	}
+
+	return prefix
+}
+
+func isVersionPattern(s string) bool {
+	re := regexp.MustCompile(`^v\d+$`)
+	return re.MatchString(s)
+}
+
 type Addons struct {
 	Path string `toml:"path"`
 }
@@ -91,7 +117,7 @@ func LoadSettings(filename string) (*Settings, error) {
 		return nil, err
 	}
 
-	if err := mergo.Merge(&settings, defaultSettings); err != nil {
+	if err := mergo.Merge(&settings, defaultSettings, mergo.WithoutDereference); err != nil {
 		return nil, err
 	}
 
@@ -114,38 +140,6 @@ func (s *Settings) Validate() error {
 	}
 
 	return nil
-}
-
-func (s *Settings) GetDependencyCall(dep, function string) string {
-	if dependency, ok := s.Dependencies[dep]; ok {
-		if f, ok := dependency.Calls[function]; ok {
-			return f.(string)
-		}
-	}
-
-	return ""
-}
-
-func (s *Settings) GetDependencyModuleName(dep string) string {
-	if dependency, ok := s.Dependencies[dep]; ok && dependency.Import != nil {
-		if dependency.Import.Alias != "" {
-			return dependency.Import.Alias
-		}
-
-		parts := strings.Split(dependency.Import.Name, "/")
-		if isVersionPattern(parts[len(parts)-1]) {
-			return parts[len(parts)-2]
-		}
-
-		return parts[len(parts)-1]
-	}
-
-	return ""
-}
-
-func isVersionPattern(s string) bool {
-	re := regexp.MustCompile(`^v\d+$`)
-	return re.MatchString(s)
 }
 
 func (s *Settings) IsSupportedCustomValidationRule(ruleName string) error {
@@ -187,4 +181,57 @@ func (s *Settings) GetValidationCustomRule(name string) (*ValidationRule, error)
 	}
 
 	return nil, nil
+}
+
+type CommonApi string
+
+const (
+	CommonApiConverters CommonApi = "converters"
+)
+
+func (c CommonApi) String() string {
+	return string(c)
+}
+
+type CommonCall struct {
+	api       CommonApi
+	call      string
+	fieldName string
+}
+
+// Supported common APIs.
+var (
+	CommonCallToPtr        = CommonCall{CommonApiConverters, "toPtr", "to_ptr"}
+	CommonCallProtoToTime  = CommonCall{CommonApiConverters, "protoTimestampToTime", "proto_timestamp_to_go_time"}
+	CommonCallTimeToProto  = CommonCall{CommonApiConverters, "timeToProtoTimestamp", "go_time_to_proto_timestamp"}
+	CommonCallMapToStruct  = CommonCall{CommonApiConverters, "mapToGrpcStruct", "go_map_to_proto_struct"}
+	CommonCallToProtoValue = CommonCall{CommonApiConverters, "toProtoValue", "go_interface_to_proto_value"}
+)
+
+func (s *Settings) GetCommonCall(apiName CommonApi, call CommonCall) string {
+	if s.Templates.Common.Converters {
+		return call.call
+	}
+
+	if api, ok := s.Templates.Common.Api[apiName.String()]; ok {
+		if c, ok := buildDependencyCall(api, call); ok {
+			return c
+		}
+	}
+
+	return ""
+}
+
+func buildDependencyCall(d *Dependency, call CommonCall) (string, bool) {
+	var prefix string
+	if d.Import != nil {
+		prefix = d.Import.ModuleName()
+	}
+
+	c, ok := d.Calls[call.fieldName]
+	if !ok {
+		return "", false
+	}
+
+	return fmt.Sprintf("%s.%s", prefix, c.(string)), true
 }

@@ -100,8 +100,8 @@ func toImportsContext(ctx *Context) *imports.Context {
 
 	return &imports.Context{
 		HasValidatableMessage:   ctx.HasValidatableMessage(),
-		HasProtobufValueField:   ctx.HasProtobufValueField(),
 		OutboundHasBitflagField: ctx.OutboundHasBitflagField(),
+		UseCommonConverters:     ctx.UseCommonConverters(),
 		ModuleName:              ctx.ModuleName,
 		FullPath:                ctx.Package.FullPath,
 		Methods:                 methods,

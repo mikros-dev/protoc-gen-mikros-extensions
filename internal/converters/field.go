@@ -365,22 +365,17 @@ func (f *Field) ConvertToWireType() string {
 	}
 
 	if f.proto.IsProtoValue() {
-		return fmt.Sprintf("convertToProtobufValue(%s.%s)", f.receiver, f.DomainName())
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToProtoValue)
+		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
 	if f.proto.IsTimestamp() {
-		call := fmt.Sprintf("%s.%s",
-			f.settings.GetDependencyModuleName("converters"),
-			f.settings.GetDependencyCall("converters", "go_time_to_proto_timestamp"))
-
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallTimeToProto)
 		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
 	if f.proto.IsProtoStruct() {
-		call := fmt.Sprintf("%s.%s",
-			f.settings.GetDependencyModuleName("converters"),
-			f.settings.GetDependencyCall("converters", "go_map_to_proto_struct"))
-
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallMapToStruct)
 		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
@@ -397,7 +392,7 @@ func (f *Field) enumWireType() string {
 		prefix string
 	)
 
-	// Condition the enum is from another package we need to add the module name
+	// If the enum is from another package we need to add the module name
 	// as its prefix.
 	module, n, ok := f.handleOtherModuleField(f.goType)
 	if ok {
@@ -428,10 +423,7 @@ func (f *Field) ConvertDomainTypeToArrayWireType(receiver string) string {
 	}
 
 	if f.proto.IsTimestamp() {
-		call := fmt.Sprintf("%s.%s",
-			f.settings.GetDependencyModuleName("converters"),
-			f.settings.GetDependencyCall("converters", "go_time_to_proto_timestamp"))
-
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallTimeToProto)
 		return fmt.Sprintf("%s(%s)", call, receiver)
 	}
 
@@ -451,10 +443,7 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string) string {
 
 	if valueKind.Kind() == protoreflect.MessageKind {
 		if strings.Contains(value, "ts.Timestamp") {
-			call := fmt.Sprintf("%s.%s",
-				f.settings.GetDependencyModuleName("converters"),
-				f.settings.GetDependencyCall("converters", "go_time_to_proto_timestamp"))
-
+			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallTimeToProto)
 			return fmt.Sprintf("%s(%s)", call, receiver)
 		}
 
@@ -483,10 +472,7 @@ func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 	}
 
 	if f.proto.IsTimestamp() {
-		call := fmt.Sprintf("%s.%s",
-			f.settings.GetDependencyModuleName("converters"),
-			f.settings.GetDependencyCall("converters", "proto_timestamp_to_go_time"))
-
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTime)
 		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
@@ -521,10 +507,7 @@ func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
 	}
 
 	if f.proto.IsTimestamp() {
-		call := fmt.Sprintf("%s.%s",
-			f.settings.GetDependencyModuleName("converters"),
-			f.settings.GetDependencyCall("converters", "proto_timestamp_to_go_time"))
-
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTime)
 		return fmt.Sprintf("%s(%s)", call, receiver)
 	}
 
