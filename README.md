@@ -2,6 +2,16 @@
 
 A mikros framework protoc/buf plugin to extend features for services and applications.
 
+## Features
+
+The plugin can add the following features for generated source code:
+
+* New entities for domain, inbound and outbound.
+* Validation for wire input messages.
+* HTTP server routes for HTTP services.
+* Unit test helpers API for creating entities.
+* The possibility of extending the plugin using [addons](docs/addons.md).
+
 ## Building and installing
 
 In order to compile and install the plugin locally you'll need to follow the steps:

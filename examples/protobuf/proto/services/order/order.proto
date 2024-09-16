@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package services.order;
+
+option go_package = "examples/gen/go/services/order;order";
+
+import "mikros/extensions/extensions.proto";
+import "services/product/product.proto";
+import "services/user/user.proto";
+import "services/shared/shared.proto";
+
+message OrderWire {
+  string id = 1;
+  user.UserWire user = 2;
+  repeated product.ProductWire products = 3;
+  shared.Status status = 4;
+}
+
+service OrderService {
+  rpc GetOrderByID(GetOrderByIDRequest) returns (GetOrderByIDResponse);
+  rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse);
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc UpdateOrder(UpdateOrderRequest) returns (UpdateOrderResponse);
+  rpc DeleteOrder(DeleteOrderRequest) returns (DeleteOrderResponse);
+}
+
+message GetOrderByIDRequest {
+  repeated string order_id = 1 [(mikros.extensions.validate) = {
+    dive: true,
+    required: true,
+    error_message: "custom error message"
+  }];
+}
+
+message GetOrderByIDResponse {
+  OrderWire order = 1;
+}
+
+message GetOrdersRequest {
+  // You can add filtering options here if needed
+}
+
+message GetOrdersResponse {
+  repeated OrderWire orders = 1;
+}
+
+message CreateOrderRequest {
+  string user_id = 1;
+  repeated string products_id = 2;
+}
+
+message CreateOrderResponse {
+  OrderWire order = 1;
+}
+
+message UpdateOrderRequest {
+  string order_id = 1;
+  repeated string products_id = 2;
+}
+
+message UpdateOrderResponse {
+  OrderWire order = 1;
+}
+
+message DeleteOrderRequest {
+  string order_id = 1;
+}
+
+message DeleteOrderResponse {
+  OrderWire order = 1;
+}

@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package services.product;
+
+option go_package = "examples/gen/go/services/product;product";
+
+import "domain_improve.proto";
+
+message ProductWire {
+  option (mikros_addon.domain_improve.improve) = {
+    new_api: true
+  };
+
+  string id = 1;
+  string name = 2;
+  double price = 3;
+  bool in_stock = 4;
+}
+
+service ProductService {
+  rpc GetProductByID(GetProductByIDRequest) returns (GetProductByIDResponse);
+  rpc GetProducts(GetProductsRequest) returns (GetProductsResponse);
+  rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
+  rpc UpdateProduct(UpdateProductRequest) returns (UpdateProductResponse);
+  rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse);
+}
+
+message GetProductByIDRequest {
+  string product_id = 1;
+}
+
+message GetProductByIDResponse {
+  ProductWire product = 1;
+}
+
+message GetProductsRequest {
+  // You can add filtering options here if needed
+}
+
+message GetProductsResponse {
+  repeated ProductWire products = 1;
+}
+
+message CreateProductRequest {
+  string name = 1;
+  double price = 2;
+  bool in_stock = 3;
+}
+
+message CreateProductResponse {
+  ProductWire product = 1;
+}
+
+message UpdateProductRequest {
+  string product_id = 1;
+  string name = 2;
+  double price = 3;
+  bool in_stock = 4;
+}
+
+message UpdateProductResponse {
+  ProductWire product = 1;
+}
+
+message DeleteProductRequest {
+  string product_id = 1;
+}
+
+message DeleteProductResponse {
+  ProductWire product = 1;
+}

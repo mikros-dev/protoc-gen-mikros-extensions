@@ -102,6 +102,11 @@ func protoTimestampToTime(value *ts.Timestamp) time.Time {
 	return t
 }
 
+func protoTimestampToTimePtr(value *ts.Timestamp) *time.Time {
+    t := protoTimestampToTime(value)
+	return &t
+}
+
 func timeToProtoTimestamp(t *time.Time) *ts.Timestamp {
     if t != nil {
     	return ts.New(*t)

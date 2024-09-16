@@ -472,7 +472,7 @@ func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 	}
 
 	if f.proto.IsTimestamp() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTime)
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTimePtr)
 		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
@@ -507,7 +507,7 @@ func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
 	}
 
 	if f.proto.IsTimestamp() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTime)
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTimePtr)
 		return fmt.Sprintf("%s(%s)", call, receiver)
 	}
 

@@ -44,7 +44,8 @@ func (f *Field) BindingValue(isPointer bool) string {
 			return "v.([]*time.Time)"
 		}
 
-		return f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		return fmt.Sprintf("%s(v.(time.Time))", call)
 	}
 
 	if f.proto.IsProtoStruct() {

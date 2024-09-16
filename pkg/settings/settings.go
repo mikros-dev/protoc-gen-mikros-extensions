@@ -201,11 +201,11 @@ type CommonCall struct {
 
 // Supported common APIs.
 var (
-	CommonCallToPtr        = CommonCall{CommonApiConverters, "toPtr", "to_ptr"}
-	CommonCallProtoToTime  = CommonCall{CommonApiConverters, "protoTimestampToTime", "proto_timestamp_to_go_time"}
-	CommonCallTimeToProto  = CommonCall{CommonApiConverters, "timeToProtoTimestamp", "go_time_to_proto_timestamp"}
-	CommonCallMapToStruct  = CommonCall{CommonApiConverters, "mapToGrpcStruct", "go_map_to_proto_struct"}
-	CommonCallToProtoValue = CommonCall{CommonApiConverters, "toProtoValue", "go_interface_to_proto_value"}
+	CommonCallToPtr          = CommonCall{CommonApiConverters, "toPtr", "to_ptr"}
+	CommonCallProtoToTimePtr = CommonCall{CommonApiConverters, "protoTimestampToTimePtr", "proto_timestamp_to_go_time_ptr"}
+	CommonCallTimeToProto    = CommonCall{CommonApiConverters, "timeToProtoTimestamp", "go_time_to_proto_timestamp"}
+	CommonCallMapToStruct    = CommonCall{CommonApiConverters, "mapToGrpcStruct", "go_map_to_proto_struct"}
+	CommonCallToProtoValue   = CommonCall{CommonApiConverters, "convertToProtobufValue", "go_interface_to_proto_value"}
 )
 
 func (s *Settings) GetCommonCall(apiName CommonApi, call CommonCall) string {
