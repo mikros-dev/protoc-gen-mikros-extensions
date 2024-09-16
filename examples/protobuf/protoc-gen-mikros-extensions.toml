@@ -1,0 +1,34 @@
+# This is an example of the plugin settings file with custom values for
+# this protobuf monorepo.
+
+debug = true
+
+[suffix]
+domain = "Domain"
+outbound = "Outbound"
+wire = "Wire"
+wire_input = "Request"
+wire_output = "Response"
+
+[database]
+kind = "mongo"
+
+[http]
+framework = "fasthttp"
+
+[templates]
+api = true
+api_path = "go"
+test = true
+test_path = "test"
+
+[validations]
+rule_package_import.name = "github.com/rsfreitas/mikros-essentials/validation"
+rule_package_import.alias = "v"
+custom.contract_code.name = "v.ContractCode"
+custom.product.name = "v.Product"
+custom.any_id.name = "v.AnyID"
+custom.id.name = "v.ID"
+
+[addons]
+path = "addons"

@@ -253,7 +253,7 @@ func (c *Context) ValidatableMessages() []*Message {
 
 func (c *Context) AddonContext(addonName string) interface{} {
 	if a, ok := c.addons[addonName]; ok {
-		return a.GetContext()
+		return a.GetContext(c)
 	}
 
 	return nil

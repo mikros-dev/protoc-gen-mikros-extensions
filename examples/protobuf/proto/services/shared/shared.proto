@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package services.shared;
+
+option go_package = "examples/gen/go/services/shared;shared";
+
+import "mikros/extensions/extensions.proto";
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1;
+  STATUS_INACTIVE = 2;
+  STATUS_SUSPENDED = 3;
+}
+
+enum EntityFeatures {
+  option (mikros.extensions.api) = {
+    bitflag: true
+  };
+
+  ENTITY_FEATURES_UNSPECIFIED = 0;
+  ENTITY_FEATURES_DATABASE_SYNCED = 1;
+}
+
+message PaginationRequestWire {
+  option (mikros.extensions.outbound_options) = {
+    export: true,
+  };
+
+  int32 size = 1;
+  int32 limit = 2;
+}

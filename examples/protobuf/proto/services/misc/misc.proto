@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package services.misc;
+
+option go_package = "examples/gen/go/services/misc;misc";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "mikros/extensions/extensions.proto";
+import "services/shared/shared.proto";
+
+message MiscCompletedWire {
+  option (mikros.extensions.outbound_options) = {
+    export: true,
+    naming_mode: NAMING_MODE_SNAKE_CASE
+  };
+
+  uint64 bitflag = 1 [(mikros.extensions.outbound) = {
+    name: "some_string_features"
+    bitflag {
+      values: "shared.EntityFeatures_name"
+      prefix: "ENTITY_FEATURES_"
+    }
+  }];
+
+  google.protobuf.Timestamp date = 2;
+  google.protobuf.Value generic = 3;
+  google.protobuf.Struct metadata = 4;
+  MiscAnotherWire local_message = 5;
+  LocalMisc local_enum = 6;
+  shared.Status outside_enum = 7;
+  shared.PaginationRequestWire outside_message = 8;
+}
+
+message MiscAnotherWire {
+  option (mikros.extensions.outbound_options) = {
+    export: true
+  };
+
+  string scalar_string = 1 [(mikros.extensions.outbound) = {allow_empty: true}];
+  int32 scalar_int32 = 2;
+  int64 scalar_int64 = 3;
+  uint32 scalar_uint32 = 4;
+  uint64 scalar_uint64 = 5;
+  sint32 scalar_sint32 = 6;
+  sint64 scalar_sint64 = 7;
+  sfixed32 scalar_sfixed32 = 8;
+  sfixed64 scalar_sfixed64 = 9;
+  fixed32 scalar_fixed32 = 10;
+  fixed64 scalar_fixed64 = 11;
+  float scalar_float = 12;
+  double scalar_double = 13;
+  double scalar_double_hidden = 14 [(mikros.extensions.outbound) = {hide: true}];
+}
+
+message MiscMapWire {
+  option (mikros.extensions.outbound_options) = {
+    export: true,
+  };
+
+  map<string, string> map_string_to_string = 1;
+  map<string, int32> map_string_to_int32 = 2;
+  map<string, LocalMisc> map_local_enum = 3;
+  map<string, MiscArrayWire> map_local_message = 4;
+  map<string, shared.Status> map_outside_enum = 5;
+  map<string, shared.PaginationRequestWire> map_outside_message = 6;
+}
+
+message MiscArrayWire {
+  option (mikros.extensions.outbound_options) = {
+    export: true,
+  };
+
+  repeated string scalar_string = 1;
+  repeated int32 scalar_int32 = 2;
+  repeated int64 scalar_int64 = 3;
+  repeated uint32 scalar_uint32 = 4;
+  repeated uint64 scalar_uint64 = 5;
+  repeated sint32 scalar_sint32 = 6;
+  repeated sint64 scalar_sint64 = 7;
+  repeated sfixed32 scalar_sfixed32 = 8;
+  repeated sfixed64 scalar_sfixed64 = 9;
+  repeated fixed32 scalar_fixed32 = 10;
+  repeated fixed64 scalar_fixed64 = 11;
+  repeated float scalar_float = 12;
+  repeated double scalar_double = 13;
+  repeated LocalMisc local_enums = 14;
+  repeated google.protobuf.Timestamp dates = 15;
+  repeated MiscAnotherWire local_messages = 16;
+  repeated shared.Status outside_enums = 17;
+  repeated shared.PaginationRequestWire outside_message = 18;
+  string scalar_string_hidden = 19 [(mikros.extensions.outbound) = {hide: true}];
+}
+
+enum LocalMisc {
+  LOCAL_MISC_UNSPECIFIED = 0;
+  LOCAL_MISC_EXAMPLE_1 = 1;
+  LOCAL_MISC_EXAMPLE_2 = 2;
+}

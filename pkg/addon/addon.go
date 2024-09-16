@@ -19,12 +19,12 @@ type Addon interface {
 	Kind() template.Kind
 
 	// GetTemplateImports should return a slice of all required imports for a
-	// specific template.
+	// specific addon template.
 	GetTemplateImports(name template.Name, ctx interface{}, cfg *settings.Settings) []*Import
 
-	// GetContext should return a structure that will be available to used or
-	// accessed inside templates.
-	GetContext() interface{}
+	// GetContext should return a structure that will be available to be used
+	// or accessed inside addons templates.
+	GetContext(ctx interface{}) interface{}
 
 	// Validator is the template package validator system that the plugin
 	// must also implement.

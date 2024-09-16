@@ -33,6 +33,9 @@ func NewRandom{{.DomainName}}(custom ...map[string]interface{}) *{{$packageName}
     return res
 }
 {{end}}
+func toPtr[T any](x T) *T {
+	return &x
+}
 
 // getCustom retrieves a custom (user) value found inside the custom map argument
 // for creating new entities.

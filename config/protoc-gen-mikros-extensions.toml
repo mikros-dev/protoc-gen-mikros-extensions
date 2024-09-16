@@ -1,0 +1,44 @@
+debug = true
+
+[suffix]
+domain = "Domain"
+outbound = "Outbound"
+wire = "Wire"
+wire_input = "Request"
+wire_output = "Response"
+
+[database]
+kind = "mongo"
+
+[http]
+framework = "fasthttp"
+
+[templates]
+api = true
+api_path = "go"
+test = true
+test_path = "test"
+
+[templates.common]
+converters = false
+
+[templates.common.api.converters]
+import.name = "<converters package name>"
+import.alias = "<converters package alias>"
+calls.go_time_to_proto_timestamp = "<TimeToProtoTimestamp function name>"
+calls.proto_timestamp_to_go_time = "<ProtoTimestampToTimePtr function name>"
+calls.go_map_to_proto_struct = "<MapToProtoStruct function name>"
+calls.to_ptr = "<ToPtr function name>"
+calls.go_interface_to_proto_value = "<interfaceToProtoValue function name>"
+
+[validations]
+rule_package_import.name = "<package that implements validation rules>"
+rule_package_import.alias = "<package validation rules alias>"
+rule.id.name = "v.ID"
+rule.id.args_required = true
+custom.contract_code.name = "v.ContractCode"
+custom.product.name = "v.Product"
+custom.any_id.name = "v.AnyID"
+
+[addons]
+path = "addons"
