@@ -21,14 +21,23 @@ In order to compile and install the plugin locally you'll need to follow the ste
   * `go generate`
   * `go build && go install`
 
-## Extensions available
+## Protobuf extensions available
 
+* [Service](docs/service.md)
 * [Enum](docs/enum.md)
 * [RPC Methods](docs/method.md)
 * [Fields](docs/field.md)
 * [Messages](docs/message.md)
 
-## Usage example
+## Usage
+
+The plugin should be used according your environment, if you're using `buf` or
+`protoc`. It does not need any mandatory option to execute over your proto files.
+
+But, if you want to use custom settings, the option named **settings** must point
+to a valid TOML file in your system. Its syntax details are described [here](docs/settings.md).
+
+## Example
 
 Using the extensions inside a .proto file:
 

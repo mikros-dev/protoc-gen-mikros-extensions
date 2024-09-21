@@ -9,6 +9,10 @@ import "mikros/extensions/extensions.proto";
 import "services/user/user.proto";
 
 service UserBffService {
+  option (mikros.extensions.authorization) = {
+    mode: AUTHORIZATION_MODE_SCOPED
+  };
+
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
     option (google.api.http) = {
       post: "/user-bff/v1/users/{name}"
@@ -16,11 +20,7 @@ service UserBffService {
     };
 
     option (mikros.extensions.http) = {
-      authentication: {
-        mode: AUTHENTICATION_MODE_SCOPED
-        scope: "WRITE"
-      }
-
+      scope: "WRITE"
       header: "debug"
     };
   }
