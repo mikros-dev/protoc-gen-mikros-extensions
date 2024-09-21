@@ -15,24 +15,24 @@ import (
 )
 
 type Field struct {
-	IsMessage       bool
-	IsMap           bool
-	IsArray         bool
-	IsProtoOptional bool
-	Type            descriptor.FieldDescriptorProto_Type
-	GoType          string
-	GoName          string
-	JsonName        string
-	ProtoName       string
-	DomainName      string
-	DomainTag       string
-	InboundTag      string
-	OutboundName    string
-	OutboundTag     string
-	OutboundTagName string
-	MessageReceiver string
-	Location        FieldLocation
-	ProtoField      *protobuf.Field
+	IsMessage                bool
+	IsMap                    bool
+	IsArray                  bool
+	IsProtoOptional          bool
+	Type                     descriptor.FieldDescriptorProto_Type
+	GoType                   string
+	GoName                   string
+	JsonName                 string
+	ProtoName                string
+	DomainName               string
+	DomainTag                string
+	InboundTag               string
+	OutboundName             string
+	OutboundTag              string
+	OutboundJsonTagFieldName string
+	MessageReceiver          string
+	Location                 FieldLocation
+	ProtoField               *protobuf.Field
 
 	moduleName string
 	converter  *converters.Field
@@ -73,26 +73,26 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 	}
 
 	field := &Field{
-		IsMessage:       opt.Field.IsMessage(),
-		IsMap:           opt.Field.IsMap(),
-		IsArray:         isArray,
-		IsProtoOptional: opt.Field.Proto.GetProto3Optional(),
-		Type:            opt.Field.Proto.GetType(),
-		GoType:          goType,
-		GoName:          goName,
-		JsonName:        strings.ToLower(strcase.ToSnake(opt.Field.Proto.GetJsonName())),
-		ProtoName:       opt.Field.Proto.GetName(),
-		DomainName:      converter.DomainName(),
-		DomainTag:       converter.DomainTag(),
-		InboundTag:      converter.InboundTag(),
-		OutboundName:    converter.OutboundName(),
-		OutboundTag:     converter.OutboundTag(),
-		OutboundTagName: converter.OutboundTagName(),
-		Location:        getFieldLocation(opt.Field.Proto, opt.Endpoint),
-		moduleName:      opt.ModuleName,
-		MessageReceiver: opt.Receiver,
-		ProtoField:      opt.Field,
-		converter:       converter,
+		IsMessage:                opt.Field.IsMessage(),
+		IsMap:                    opt.Field.IsMap(),
+		IsArray:                  isArray,
+		IsProtoOptional:          opt.Field.Proto.GetProto3Optional(),
+		Type:                     opt.Field.Proto.GetType(),
+		GoType:                   goType,
+		GoName:                   goName,
+		JsonName:                 strings.ToLower(strcase.ToSnake(opt.Field.Proto.GetJsonName())),
+		ProtoName:                opt.Field.Proto.GetName(),
+		DomainName:               converter.DomainName(),
+		DomainTag:                converter.DomainTag(),
+		InboundTag:               converter.InboundTag(),
+		OutboundName:             converter.OutboundName(),
+		OutboundTag:              converter.OutboundTag(),
+		OutboundJsonTagFieldName: converter.OutboundJsonTagFieldName(),
+		Location:                 getFieldLocation(opt.Field.Proto, opt.Endpoint),
+		moduleName:               opt.ModuleName,
+		MessageReceiver:          opt.Receiver,
+		ProtoField:               opt.Field,
+		converter:                converter,
 		testing: testing.NewField(&testing.NewFieldOptions{
 			IsArray:        isArray,
 			GoType:         goType,
@@ -110,7 +110,11 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 
 func (f *Field) Validate() error {
 	if f.isBitflag() && f.GoType != "uint64" {
-		return fmt.Errorf("field '%s' has an unsupported type '%s' to be a bitflag", f.GoName, f.GoType)
+		return fmt.Errorf("field '%s' has an unsupported type '%s' to be a bitflag", f.ProtoName, f.GoType)
+	}
+
+	if f.hasJsonStructTag() {
+		return fmt.Errorf("field '%s' cannot have a custom json struct tag", f.ProtoName)
 	}
 
 	return nil
@@ -119,6 +123,18 @@ func (f *Field) Validate() error {
 func (f *Field) isBitflag() bool {
 	if outbound := extensions.LoadFieldOutbound(f.ProtoField.Proto); outbound != nil {
 		return outbound.Bitflag != nil
+	}
+
+	return false
+}
+
+func (f *Field) hasJsonStructTag() bool {
+	if domain := extensions.LoadFieldDomain(f.ProtoField.Proto); domain != nil {
+		for _, st := range domain.GetStructTag() {
+			if strings.Contains(st.GetName(), "json") {
+				return true
+			}
+		}
 	}
 
 	return false

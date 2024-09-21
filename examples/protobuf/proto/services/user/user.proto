@@ -30,7 +30,17 @@ message UserWire {
     naming_mode: NAMING_MODE_SNAKE_CASE
   };
 
-  string id = 1;
+  string id = 1 [(mikros.extensions.domain) = {
+    struct_tag: {
+      name: "validate",
+      value: "omitempty,min=10,max=42"
+    }
+    struct_tag: {
+      name: "gorm",
+      value: "primaryKey"
+    }
+  }];
+
   string name = 2;
   shared.Status status = 3;
   string email = 4;

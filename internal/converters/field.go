@@ -33,6 +33,7 @@ type Field struct {
 	outbound        *extensions.FieldOutboundOptions
 	messageInbound  *extensions.MessageInboundOptions
 	messageOutbound *extensions.MessageOutboundOptions
+	messageDomain   *extensions.MessageDomainExpansionOptions
 	proto           *protobuf.Field
 	settings        *settings.Settings
 	validation      *validation.Call
@@ -76,6 +77,7 @@ func NewField(options FieldOptions) (*Field, error) {
 		outbound:        extensions.LoadFieldOutbound(options.ProtoField.Proto),
 		messageInbound:  extensions.LoadMessageInboundOptions(options.ProtoMessage.Proto),
 		messageOutbound: extensions.LoadMessageOutboundOptions(options.ProtoMessage.Proto),
+		messageDomain:   extensions.LoadMessageDomainOptions(options.ProtoMessage.Proto),
 		proto:           options.ProtoField,
 		settings:        options.Settings,
 		validation:      call,
@@ -288,8 +290,32 @@ func (f *Field) OutboundName() string {
 }
 
 func (f *Field) DomainTag() string {
-	fieldName := strcase.ToSnake(f.DomainName())
-	return fmt.Sprintf("`json:\"%s,omitempty\" %s`", fieldName, f.db.Tag(fieldName))
+	var (
+		fieldName = strcase.ToSnake(f.DomainName())
+		jsonTag   = ",omitempty"
+	)
+
+	if f.messageDomain != nil {
+		if f.messageDomain.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			fieldName = strcase.ToLowerCamel(f.DomainName())
+		}
+	}
+
+	if f.domain != nil {
+		if f.domain.GetAllowEmpty() {
+			jsonTag = ""
+		}
+	}
+
+	tag := fmt.Sprintf("`json:\"%s%s\" %s", fieldName, jsonTag, f.db.Tag(fieldName))
+	if f.domain != nil {
+		for _, st := range f.domain.GetStructTag() {
+			tag += fmt.Sprintf(` %s:"%s"`, st.GetName(), st.GetValue())
+		}
+	}
+	tag += "`"
+
+	return tag
 }
 
 func (f *Field) InboundTag() string {
@@ -313,8 +339,8 @@ func (f *Field) InboundTag() string {
 
 func (f *Field) OutboundTag() string {
 	var (
-		name = f.DomainName()
-		tag  = ",omitempty"
+		name    = f.DomainName()
+		jsonTag = ",omitempty"
 	)
 
 	if f.outbound != nil {
@@ -322,7 +348,7 @@ func (f *Field) OutboundTag() string {
 			name = n
 		}
 		if f.outbound.GetAllowEmpty() {
-			tag = ""
+			jsonTag = ""
 		}
 	}
 
@@ -334,10 +360,18 @@ func (f *Field) OutboundTag() string {
 		}
 	}
 
-	return fmt.Sprintf("`json:\"%s%s\"`", fieldName, tag)
+	tag := fmt.Sprintf("`json:\"%s%s\"", fieldName, jsonTag)
+	if f.outbound != nil {
+		for _, st := range f.outbound.GetStructTag() {
+			tag += fmt.Sprintf(` %s:"%s"`, st.GetName(), st.GetValue())
+		}
+	}
+	tag += "`"
+
+	return tag
 }
 
-func (f *Field) OutboundTagName() string {
+func (f *Field) OutboundJsonTagFieldName() string {
 	var (
 		name = f.DomainName()
 	)
