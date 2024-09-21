@@ -48,7 +48,7 @@ package services.person;
 
 import "protoc-gen-mikros-extensions/mikros/extensions/extensions.proto";
 
-option go_package = "github.com/example/services/gen/go/services/person;person;"
+option go_package = "github.com/example/services/gen/go/services/person;person;";
 
 service PersonService {
   rpc CreatePerson(CreatePersonRequest) returns (CreatePersonResponse);
