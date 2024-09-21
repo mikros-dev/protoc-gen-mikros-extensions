@@ -23,7 +23,7 @@ func (w *routesWrapper) {{.Name}}(ctx *fasthttp.RequestCtx) {
     }
     w.Logger.Infof(ctx, "request received", requestAttributes)
 
-    {{if .HasAuthentication}}
+    {{if .HasAuth}}
     if w.AuthHandler != nil {
         handlers := map[string]interface{}{
             "{{.AuthModeKey}}": {{.AuthModeValue}},

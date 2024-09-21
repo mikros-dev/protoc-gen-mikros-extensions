@@ -6,23 +6,26 @@ import "google/protobuf/descriptor.proto";
 
 option go_package = "github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions;extensions";
 
+extend google.protobuf.ServiceOptions {
+  optional HttpAuthorizationExtensions authorization = 85042;
+}
+
+message HttpAuthorizationExtensions {
+  required AuthorizationMode mode = 1;
+}
+
+enum AuthorizationMode {
+  AUTHORIZATION_MODE_NO_AUTH = 0;
+  AUTHORIZATION_MODE_SCOPED = 1;
+}
+
 extend google.protobuf.MethodOptions {
   optional HttpMethodExtensions http = 85042;
 }
 
 message HttpMethodExtensions {
   repeated string header = 1;
-  optional HttpAuthenticationExtensions authentication = 2;
-}
-
-message HttpAuthenticationExtensions {
-  required AuthenticationMode mode = 1;
   repeated string scope = 2;
-}
-
-enum AuthenticationMode {
-  AUTHENTICATION_MODE_NO_AUTH = 0;
-  AUTHENTICATION_MODE_SCOPED = 1;
 }
 
 extend google.protobuf.EnumOptions {

@@ -217,3 +217,14 @@ func LoadMethodHttpExtensionOptions(method *descriptor.MethodDescriptorProto) *H
 
 	return nil
 }
+
+func LoadServiceAuthorizationExtensions(service *descriptor.ServiceDescriptorProto) *HttpAuthorizationExtensions {
+	if service.Options != nil {
+		v := proto.GetExtension(service.Options, E_Authorization)
+		if val, ok := v.(*HttpAuthorizationExtensions); ok {
+			return val
+		}
+	}
+
+	return nil
+}
