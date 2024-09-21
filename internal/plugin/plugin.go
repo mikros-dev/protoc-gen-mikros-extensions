@@ -52,9 +52,6 @@ func Handle(
 	if err != nil {
 		return err
 	}
-	if err := pluginArgs.Validate(); err != nil {
-		return fmt.Errorf("could not load plugin arguments: %w", err)
-	}
 
 	if err := handleProtogenPlugin(plugin, pluginArgs); err != nil {
 		return err

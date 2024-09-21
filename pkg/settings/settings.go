@@ -102,14 +102,17 @@ type Addons struct {
 }
 
 func LoadSettings(filename string) (*Settings, error) {
-	file, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
 	var settings Settings
-	if err := toml.Unmarshal(file, &settings); err != nil {
-		return nil, err
+
+	if filename != "" {
+		file, err := os.ReadFile(filename)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := toml.Unmarshal(file, &settings); err != nil {
+			return nil, err
+		}
 	}
 
 	defaultSettings, err := loadDefaultSettings()

@@ -18,8 +18,9 @@ type Method struct {
 	QueryArguments        []*MethodField
 	HeaderArguments       []*MethodField
 
-	endpoint *Endpoint
-	http     *extensions.HttpMethodExtensions
+	endpoint      *Endpoint
+	http          *extensions.HttpMethodExtensions
+	authorization *extensions.HttpAuthorizationExtensions
 }
 
 type HttpRule struct {
@@ -38,7 +39,11 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 		return nil, nil
 	}
 
-	methods := make([]*Method, len(pkg.Service.Methods))
+	var (
+		methods       = make([]*Method, len(pkg.Service.Methods))
+		authorization = extensions.LoadServiceAuthorizationExtensions(pkg.Service.Proto)
+	)
+
 	for i, method := range pkg.Service.Methods {
 		var (
 			msg            *Message
@@ -76,6 +81,7 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 			HeaderArguments:       header,
 			endpoint:              endpoint,
 			http:                  httpExtensions,
+			authorization:         authorization,
 		}
 	}
 
@@ -255,9 +261,9 @@ func (m *Method) HasRequiredBody() bool {
 }
 
 func (m *Method) AuthModeKey() string {
-	if m.http != nil && m.http.Authentication != nil {
-		mode := m.http.Authentication.GetMode()
-		if mode == extensions.AuthenticationMode_AUTHENTICATION_MODE_SCOPED {
+	if m.authorization != nil {
+		mode := m.authorization.GetMode()
+		if mode == extensions.AuthorizationMode_AUTHORIZATION_MODE_SCOPED {
 			return "auth-scopes"
 		}
 	}
@@ -266,8 +272,8 @@ func (m *Method) AuthModeKey() string {
 }
 
 func (m *Method) AuthModeValue() string {
-	if m.http != nil && m.http.Authentication != nil {
-		return `[]string{"` + strings.Join(m.http.Authentication.GetScope(), `","`) + `"}`
+	if m.http != nil {
+		return `[]string{"` + strings.Join(m.http.GetScope(), `","`) + `"}`
 	}
 
 	return ""
@@ -281,9 +287,9 @@ func (m *Method) HasHeaderArguments() bool {
 	return len(m.HeaderArguments) > 0
 }
 
-func (m *Method) HasAuthentication() bool {
-	if m.http != nil && m.http.Authentication != nil {
-		return m.http.GetAuthentication().GetMode() != extensions.AuthenticationMode_AUTHENTICATION_MODE_NO_AUTH
+func (m *Method) HasAuth() bool {
+	if m.authorization != nil {
+		return m.authorization.GetMode() != extensions.AuthorizationMode_AUTHORIZATION_MODE_NO_AUTH
 	}
 
 	return false

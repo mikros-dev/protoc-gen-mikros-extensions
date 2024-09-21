@@ -6,16 +6,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/go-playground/validator/v10"
 )
 
 type Args struct {
-	SettingsFilename string `validate:"required"`
+	SettingsFilename string
 	flags            flag.FlagSet
 }
 
 func NewArgsFromString(s string) (*Args, error) {
+	if s == "" {
+		return &Args{}, nil
+	}
+
 	var (
 		args       = &Args{}
 		parameters = strings.Split(s, ",")
@@ -50,15 +52,6 @@ func NewArgs() *Args {
 
 func (a *Args) FlagsSet() func(string, string) error {
 	return a.flags.Set
-}
-
-func (a *Args) Validate() error {
-	validate := validator.New()
-	if err := validate.Struct(a); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (a *Args) GetPluginName() string {
