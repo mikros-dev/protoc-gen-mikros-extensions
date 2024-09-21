@@ -2,18 +2,21 @@
 
 A message can have the following options available:
 
-| Name                                  | Modifier | Description                                            |
-|---------------------------------------|----------|--------------------------------------------------------|
-| [domain_expansion](#domain-expansion) | optional | Options that modify the domain version of the message. | 
-| [wire_expansion](#wire-expansion)     | optional | Options that modify the wire version of the message.   |
+| Name                                  | Modifier | Description                                              |
+|---------------------------------------|----------|----------------------------------------------------------|
+| [domain_expansion](#domain-expansion) | optional | Options that modify the domain version of the message.   | 
+| [wire_expansion](#wire-expansion)     | optional | Options that modify the wire version of the message.     |
+| [inbound_options](#inbound-options)   | optional | Options that modify the inbound version of the message.  |
+| [outbound_options](#outbound-options) | optional | Options that modify the outbound version of the message. |
 
 ## Domain expansion
 
 Available options:
 
-| Name        | Type | Modifier | Description                                                   |
-|-------------|------|----------|---------------------------------------------------------------|
-| dont_export | bool | optional | Sets that the message won't have a domain equivalent message. |
+| Name                        | Type | Modifier | Description                                                   |
+|-----------------------------|------|----------|---------------------------------------------------------------|
+| dont_export                 | bool | optional | Sets that the message won't have a domain equivalent message. |
+| [naming_mode](#Naming-Mode) | enum | optional | Sets the naming output format.                                |
 
 ## Wire expansion
 
@@ -82,3 +85,29 @@ func (p *Person) SayHello() {
     fmt.Println("Hello")
 }
 ```
+
+## Inbound Options
+
+Available options:
+
+| Name                        | Type | Modifier | Description                    |
+|-----------------------------|------|----------|--------------------------------|
+| [naming_mode](#Naming-Mode) | enum | optional | Sets the naming output format. |
+
+## Outbound Options
+
+Available options:
+
+| Name                        | Type | Modifier | Description                                                     |
+|-----------------------------|------|----------|-----------------------------------------------------------------|
+| export                      | bool | optional | Sets that the message will have an outbound equivalent message. |
+| [naming_mode](#Naming-Mode) | enum | optional | Sets the naming output format.                                  |
+
+## Naming Mode
+
+Available options:
+
+| Name                   | Description                                |
+|------------------------|--------------------------------------------|
+| NAMING_MODE_SNAKE_CASE | Sets the output name case as `snake_case`. |
+| NAMING_MODE_CAMEL_CASE | Sets the output name as lower `camelCase`. |
