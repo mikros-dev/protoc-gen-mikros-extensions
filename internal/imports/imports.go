@@ -33,6 +33,7 @@ type Message struct {
 }
 
 type Field struct {
+	IsArray                        bool
 	IsProtobufTimestamp            bool
 	IsOutboundBitflag              bool
 	ConversionDomainToWire         string
@@ -118,7 +119,10 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 			// Import time package?
 			if f.IsProtobufTimestamp {
 				imports["time"] = packages["time"]
-				continue
+
+				if !f.IsArray {
+					continue
+				}
 			}
 
 			// Import proto timestamp package?

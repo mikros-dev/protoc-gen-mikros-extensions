@@ -7,7 +7,11 @@ import "google/protobuf/descriptor.proto";
 option go_package = "github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions;extensions";
 
 extend google.protobuf.ServiceOptions {
-  optional HttpAuthorizationExtensions authorization = 85042;
+  optional MikrosServiceExtensions service_options = 85042;
+}
+
+message MikrosServiceExtensions {
+  optional HttpAuthorizationExtensions authorization = 1;
 }
 
 message HttpAuthorizationExtensions {
@@ -20,7 +24,11 @@ enum AuthorizationMode {
 }
 
 extend google.protobuf.MethodOptions {
-  optional HttpMethodExtensions http = 85042;
+  optional MikrosMethodExtensions method_options = 85042;
+}
+
+message MikrosMethodExtensions {
+  optional HttpMethodExtensions http = 1;
 }
 
 message HttpMethodExtensions {
@@ -29,7 +37,11 @@ message HttpMethodExtensions {
 }
 
 extend google.protobuf.EnumOptions {
-  optional EnumApiExtensions api = 85042;
+  optional MikrosEnumExtensions enum_options = 85042;
+}
+
+message MikrosEnumExtensions {
+  optional EnumApiExtensions api = 1;
 }
 
 message EnumApiExtensions {
@@ -39,7 +51,11 @@ message EnumApiExtensions {
 }
 
 extend google.protobuf.EnumValueOptions {
-  optional EnumEntry entry = 85042;
+  optional MikrosEnumValueExtensions enum_value_options = 85042;
+}
+
+message MikrosEnumValueExtensions {
+  optional EnumEntry entry = 1;
 }
 
 message EnumEntry {
@@ -47,11 +63,15 @@ message EnumEntry {
 }
 
 extend google.protobuf.FieldOptions {
-  optional FieldDomainOptions domain = 85042;
-  optional FieldDatabaseOptions database = 85043;
-  optional FieldInboundOptions inbound = 85044;
-  optional FieldOutboundOptions outbound = 85045;
-  optional FieldValidateOptions validate = 85046;
+  optional MikrosFieldExtensions field_options = 85042;
+}
+
+message MikrosFieldExtensions {
+  optional FieldDomainOptions domain = 1;
+  optional FieldDatabaseOptions database = 2;
+  optional FieldInboundOptions inbound = 3;
+  optional FieldOutboundOptions outbound = 4;
+  optional FieldValidateOptions validate = 5;
 }
 
 message FieldDomainOptions {
@@ -117,11 +137,15 @@ enum FieldValidatorRule {
 }
 
 extend google.protobuf.MessageOptions {
-  optional MessageDomainExpansionOptions domain_expansion = 85042;
-  optional MessageWireExpansionOptions wire_expansion = 85043;
-  optional MessageInboundOptions inbound_options = 85044;
-  optional MessageOutboundOptions outbound_options = 85045;
-  optional MessageWireInputOptions wire_input_options = 85046;
+  optional MikrosMessageExtensions message_options = 85042;
+}
+
+message MikrosMessageExtensions {
+  optional MessageDomainExpansionOptions domain = 1;
+  optional MessageWireExpansionOptions wire = 2;
+  optional MessageInboundOptions inbound = 3;
+  optional MessageOutboundOptions outbound = 4;
+  optional MessageWireInputOptions wire_input = 5;
 }
 
 message MessageDomainExpansionOptions {

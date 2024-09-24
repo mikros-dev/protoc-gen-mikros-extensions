@@ -21,22 +21,18 @@ const (
 )
 
 type Field struct {
-	isArray         bool
-	isHTTPService   bool
-	goType          string
-	goName          string
-	receiver        string
-	msg             *Message
-	db              *Database
-	domain          *extensions.FieldDomainOptions
-	inbound         *extensions.FieldInboundOptions
-	outbound        *extensions.FieldOutboundOptions
-	messageInbound  *extensions.MessageInboundOptions
-	messageOutbound *extensions.MessageOutboundOptions
-	messageDomain   *extensions.MessageDomainExpansionOptions
-	proto           *protobuf.Field
-	settings        *settings.Settings
-	validation      *validation.Call
+	isArray           bool
+	isHTTPService     bool
+	goType            string
+	goName            string
+	receiver          string
+	msg               *Message
+	db                *Database
+	fieldExtensions   *extensions.MikrosFieldExtensions
+	messageExtensions *extensions.MikrosMessageExtensions
+	proto             *protobuf.Field
+	settings          *settings.Settings
+	validation        *validation.Call
 }
 
 type FieldOptions struct {
@@ -52,11 +48,15 @@ type FieldOptions struct {
 }
 
 func NewField(options FieldOptions) (*Field, error) {
+	var (
+		fieldExtensions = extensions.LoadFieldExtensions(options.ProtoField.Proto)
+	)
+
 	call, err := validation.NewCall(&validation.CallOptions{
 		IsArray:   options.IsArray,
 		ProtoName: options.ProtoField.Name,
 		Receiver:  options.Receiver,
-		Options:   extensions.LoadFieldValidate(options.ProtoField.Proto),
+		Options:   fieldExtensions,
 		Settings:  options.Settings,
 		Message:   options.ProtoMessage,
 	})
@@ -65,22 +65,18 @@ func NewField(options FieldOptions) (*Field, error) {
 	}
 
 	return &Field{
-		isArray:         options.IsArray,
-		isHTTPService:   options.IsHTTPService,
-		goType:          options.GoType,
-		goName:          options.GoName,
-		receiver:        options.Receiver,
-		msg:             options.Message,
-		db:              databaseFromString(options.Settings.Database.Kind, extensions.LoadFieldDatabase(options.ProtoField.Proto)),
-		domain:          extensions.LoadFieldDomain(options.ProtoField.Proto),
-		inbound:         extensions.LoadFieldInbound(options.ProtoField.Proto),
-		outbound:        extensions.LoadFieldOutbound(options.ProtoField.Proto),
-		messageInbound:  extensions.LoadMessageInboundOptions(options.ProtoMessage.Proto),
-		messageOutbound: extensions.LoadMessageOutboundOptions(options.ProtoMessage.Proto),
-		messageDomain:   extensions.LoadMessageDomainOptions(options.ProtoMessage.Proto),
-		proto:           options.ProtoField,
-		settings:        options.Settings,
-		validation:      call,
+		isArray:           options.IsArray,
+		isHTTPService:     options.IsHTTPService,
+		goType:            options.GoType,
+		goName:            options.GoName,
+		receiver:          options.Receiver,
+		msg:               options.Message,
+		db:                databaseFromString(options.Settings.Database.Kind, fieldExtensions),
+		fieldExtensions:   fieldExtensions,
+		messageExtensions: extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
+		proto:             options.ProtoField,
+		settings:          options.Settings,
+		validation:        call,
 	}, nil
 }
 
@@ -201,9 +197,11 @@ func (f *Field) convertFromWireType(isPointer, testMode bool, mode conversionMod
 }
 
 func (f *Field) convertFromWireTypeToOutbound() string {
-	if f.outbound != nil {
-		if f.outbound.GetBitflag() != nil {
-			return "[]string"
+	if f.fieldExtensions != nil {
+		if outbound := f.fieldExtensions.GetOutbound(); outbound != nil {
+			if outbound.GetBitflag() != nil {
+				return "[]string"
+			}
 		}
 	}
 
@@ -276,9 +274,11 @@ func (f *Field) hasModuleAsPrefix(fieldType string) bool {
 }
 
 func (f *Field) DomainName() string {
-	if f.domain != nil {
-		if n := f.domain.GetName(); n != "" {
-			return strcase.ToCamel(n)
+	if f.fieldExtensions != nil {
+		if domain := f.fieldExtensions.GetDomain(); domain != nil {
+			if n := domain.GetName(); n != "" {
+				return strcase.ToCamel(n)
+			}
 		}
 	}
 
@@ -291,25 +291,32 @@ func (f *Field) OutboundName() string {
 
 func (f *Field) DomainTag() string {
 	var (
+		domain    *extensions.FieldDomainOptions
 		fieldName = strcase.ToSnake(f.DomainName())
 		jsonTag   = ",omitempty"
 	)
 
-	if f.messageDomain != nil {
-		if f.messageDomain.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-			fieldName = strcase.ToLowerCamel(f.DomainName())
+	if f.messageExtensions != nil {
+		if messageDomain := f.messageExtensions.GetDomain(); messageDomain != nil {
+			if messageDomain.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+				fieldName = strcase.ToLowerCamel(f.DomainName())
+			}
 		}
 	}
 
-	if f.domain != nil {
-		if f.domain.GetAllowEmpty() {
+	if f.fieldExtensions != nil {
+		domain = f.fieldExtensions.GetDomain()
+	}
+
+	if domain != nil {
+		if domain.GetAllowEmpty() {
 			jsonTag = ""
 		}
 	}
 
 	tag := fmt.Sprintf("`json:\"%s%s\" %s", fieldName, jsonTag, f.db.Tag(fieldName))
-	if f.domain != nil {
-		for _, st := range f.domain.GetStructTag() {
+	if domain != nil {
+		for _, st := range domain.GetStructTag() {
 			tag += fmt.Sprintf(` %s:"%s"`, st.GetName(), st.GetValue())
 		}
 	}
@@ -320,17 +327,21 @@ func (f *Field) DomainTag() string {
 
 func (f *Field) InboundTag() string {
 	name := f.DomainName()
-	if f.inbound != nil {
-		if n := f.inbound.GetName(); n != "" {
-			name = n
+	if f.fieldExtensions != nil {
+		if inbound := f.fieldExtensions.GetInbound(); inbound != nil {
+			if n := inbound.GetName(); n != "" {
+				name = n
+			}
 		}
 	}
 
 	// Default is snake_case
 	fieldName := strcase.ToSnake(name)
-	if f.messageInbound != nil {
-		if f.messageInbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-			fieldName = inboundOutboundCamelCase(name)
+	if f.messageExtensions != nil {
+		if messageInbound := f.messageExtensions.GetInbound(); messageInbound != nil {
+			if messageInbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+				fieldName = inboundOutboundCamelCase(name)
+			}
 		}
 	}
 
@@ -339,30 +350,37 @@ func (f *Field) InboundTag() string {
 
 func (f *Field) OutboundTag() string {
 	var (
-		name    = f.DomainName()
-		jsonTag = ",omitempty"
+		outbound *extensions.FieldOutboundOptions
+		name     = f.DomainName()
+		jsonTag  = ",omitempty"
 	)
 
-	if f.outbound != nil {
-		if n := f.outbound.GetName(); n != "" {
+	if f.fieldExtensions != nil {
+		outbound = f.fieldExtensions.GetOutbound()
+	}
+
+	if outbound != nil {
+		if n := outbound.GetName(); n != "" {
 			name = n
 		}
-		if f.outbound.GetAllowEmpty() {
+		if outbound.GetAllowEmpty() {
 			jsonTag = ""
 		}
 	}
 
 	// Default is snake_case
 	fieldName := strcase.ToSnake(name)
-	if f.messageOutbound != nil {
-		if f.messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-			fieldName = inboundOutboundCamelCase(name)
+	if f.messageExtensions != nil {
+		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
+			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+				fieldName = inboundOutboundCamelCase(name)
+			}
 		}
 	}
 
 	tag := fmt.Sprintf("`json:\"%s%s\"", fieldName, jsonTag)
-	if f.outbound != nil {
-		for _, st := range f.outbound.GetStructTag() {
+	if outbound != nil {
+		for _, st := range outbound.GetStructTag() {
 			tag += fmt.Sprintf(` %s:"%s"`, st.GetName(), st.GetValue())
 		}
 	}
@@ -376,17 +394,21 @@ func (f *Field) OutboundJsonTagFieldName() string {
 		name = f.DomainName()
 	)
 
-	if f.outbound != nil {
-		if n := f.outbound.GetName(); n != "" {
-			name = n
+	if f.fieldExtensions != nil {
+		if outbound := f.fieldExtensions.GetOutbound(); outbound != nil {
+			if n := outbound.GetName(); n != "" {
+				name = n
+			}
 		}
 	}
 
 	// Default is snake_case
 	fieldName := strcase.ToSnake(name)
-	if f.messageOutbound != nil {
-		if f.messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-			fieldName = inboundOutboundCamelCase(name)
+	if f.messageExtensions != nil {
+		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
+			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+				fieldName = inboundOutboundCamelCase(name)
+			}
 		}
 	}
 
@@ -500,13 +522,15 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) 
 }
 
 func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
-	if f.outbound != nil && f.outbound.GetBitflag() != nil {
-		var (
-			valuesVar = f.outbound.GetBitflag().GetValues()
-			prefix    = f.outbound.GetBitflag().GetPrefix()
-		)
+	if f.fieldExtensions != nil {
+		if outbound := f.fieldExtensions.GetOutbound(); outbound != nil && outbound.GetBitflag() != nil {
+			var (
+				valuesVar = outbound.GetBitflag().GetValues()
+				prefix    = outbound.GetBitflag().GetPrefix()
+			)
 
-		return fmt.Sprintf("currentEnumValues(%s.%s, %s, \"%s\")", receiver, f.goName, valuesVar, prefix)
+			return fmt.Sprintf("currentEnumValues(%s.%s, %s, \"%s\")", receiver, f.goName, valuesVar, prefix)
+		}
 	}
 
 	if f.proto.IsEnum() {

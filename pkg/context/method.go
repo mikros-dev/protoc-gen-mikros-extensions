@@ -18,9 +18,9 @@ type Method struct {
 	QueryArguments        []*MethodField
 	HeaderArguments       []*MethodField
 
-	endpoint      *Endpoint
-	http          *extensions.HttpMethodExtensions
-	authorization *extensions.HttpAuthorizationExtensions
+	endpoint *Endpoint
+	service  *extensions.MikrosServiceExtensions
+	method   *extensions.MikrosMethodExtensions
 }
 
 type HttpRule struct {
@@ -40,15 +40,15 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 	}
 
 	var (
-		methods       = make([]*Method, len(pkg.Service.Methods))
-		authorization = extensions.LoadServiceAuthorizationExtensions(pkg.Service.Proto)
+		methods = make([]*Method, len(pkg.Service.Methods))
+		service = extensions.LoadServiceExtensions(pkg.Service.Proto)
 	)
 
 	for i, method := range pkg.Service.Methods {
 		var (
-			msg            *Message
-			endpoint       = getEndpoint(method)
-			httpExtensions = extensions.LoadMethodHttpExtensionOptions(method.Proto)
+			msg              *Message
+			endpoint         = getEndpoint(method)
+			methodExtensions = extensions.LoadMethodExtensions(method.Proto)
 		)
 
 		index := slices.IndexFunc(messages, func(m *Message) bool {
@@ -63,7 +63,7 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 			return nil, err
 		}
 
-		header, err := getHeaderArguments(msg, httpExtensions)
+		header, err := getHeaderArguments(msg, methodExtensions)
 		if err != nil {
 			return nil, err
 		}
@@ -77,11 +77,11 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 			AdditionalHTTPMethods: getAdditionalHttpRules(method),
 			Request:               msg,
 			PathArguments:         path,
-			QueryArguments:        getQueryArguments(msg, endpoint, httpExtensions),
+			QueryArguments:        getQueryArguments(msg, endpoint, methodExtensions),
 			HeaderArguments:       header,
 			endpoint:              endpoint,
-			http:                  httpExtensions,
-			authorization:         authorization,
+			service:               service,
+			method:                methodExtensions,
 		}
 	}
 
@@ -112,11 +112,15 @@ func getPathArguments(m *Message, endpoint *Endpoint) ([]*MethodField, error) {
 	return fields, nil
 }
 
-func getHeaderArguments(m *Message, httpExtensions *extensions.HttpMethodExtensions) ([]*MethodField, error) {
+func getHeaderArguments(m *Message, methodExtensions *extensions.MikrosMethodExtensions) ([]*MethodField, error) {
 	var fields []*MethodField
 
-	if httpExtensions != nil {
-		for _, header := range httpExtensions.GetHeader() {
+	if methodExtensions == nil {
+		return fields, nil
+	}
+
+	if httpExtension := methodExtensions.GetHttp(); httpExtension != nil {
+		for _, header := range httpExtension.GetHeader() {
 			index := slices.IndexFunc(m.Fields, func(f *Field) bool {
 				return f.ProtoName == header
 			})
@@ -136,12 +140,12 @@ func getHeaderArguments(m *Message, httpExtensions *extensions.HttpMethodExtensi
 	return fields, nil
 }
 
-func getQueryArguments(m *Message, endpoint *Endpoint, httpExtensions *extensions.HttpMethodExtensions) []*MethodField {
+func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *extensions.MikrosMethodExtensions) []*MethodField {
 	var fields []*MethodField
 
 	if endpoint != nil {
 		var (
-			filteredParameters = getParametersToFilter(m, endpoint, httpExtensions)
+			filteredParameters = getParametersToFilter(m, endpoint, methodExtensions)
 			queryParameters    []string
 		)
 
@@ -172,14 +176,16 @@ func getQueryArguments(m *Message, endpoint *Endpoint, httpExtensions *extension
 	return fields
 }
 
-func getParametersToFilter(m *Message, endpoint *Endpoint, httpExtensions *extensions.HttpMethodExtensions) []string {
+func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *extensions.MikrosMethodExtensions) []string {
 	parameters := getBodyParameters(m, endpoint)
 
 	if endpoint != nil {
 		parameters = append(parameters, endpoint.Parameters...)
 	}
-	if httpExtensions != nil {
-		parameters = append(parameters, httpExtensions.GetHeader()...)
+	if methodExtensions != nil {
+		if httpExtensions := methodExtensions.GetHttp(); httpExtensions != nil {
+			parameters = append(parameters, httpExtensions.GetHeader()...)
+		}
 	}
 
 	return parameters
@@ -261,10 +267,12 @@ func (m *Method) HasRequiredBody() bool {
 }
 
 func (m *Method) AuthModeKey() string {
-	if m.authorization != nil {
-		mode := m.authorization.GetMode()
-		if mode == extensions.AuthorizationMode_AUTHORIZATION_MODE_SCOPED {
-			return "auth-scopes"
+	if m.service != nil {
+		if authorization := m.service.GetAuthorization(); authorization != nil {
+			mode := authorization.GetMode()
+			if mode == extensions.AuthorizationMode_AUTHORIZATION_MODE_SCOPED {
+				return "auth-scopes"
+			}
 		}
 	}
 
@@ -272,8 +280,10 @@ func (m *Method) AuthModeKey() string {
 }
 
 func (m *Method) AuthModeValue() string {
-	if m.http != nil {
-		return `[]string{"` + strings.Join(m.http.GetScope(), `","`) + `"}`
+	if m.method != nil {
+		if http := m.method.GetHttp(); http != nil {
+			return `[]string{"` + strings.Join(http.GetScope(), `","`) + `"}`
+		}
 	}
 
 	return ""
@@ -288,8 +298,10 @@ func (m *Method) HasHeaderArguments() bool {
 }
 
 func (m *Method) HasAuth() bool {
-	if m.authorization != nil {
-		return m.authorization.GetMode() != extensions.AuthorizationMode_AUTHORIZATION_MODE_NO_AUTH
+	if m.service != nil {
+		if authorization := m.service.GetAuthorization(); authorization != nil {
+			return authorization.GetMode() != extensions.AuthorizationMode_AUTHORIZATION_MODE_NO_AUTH
+		}
 	}
 
 	return false

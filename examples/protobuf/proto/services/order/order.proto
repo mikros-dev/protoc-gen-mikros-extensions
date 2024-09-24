@@ -25,10 +25,12 @@ service OrderService {
 }
 
 message GetOrderByIDRequest {
-  repeated string order_id = 1 [(mikros.extensions.validate) = {
-    dive: true,
-    required: true,
-    error_message: "custom error message"
+  repeated string order_id = 1 [(mikros.extensions.field_options) = {
+    validate: {
+      dive: true,
+      required: true,
+      error_message: "custom error message"
+    }
   }];
 }
 

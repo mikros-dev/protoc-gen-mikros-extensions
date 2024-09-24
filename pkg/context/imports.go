@@ -43,6 +43,7 @@ func toImportsContext(ctx *Context) *imports.Context {
 
 	fieldToImportField := func(f *Field) *imports.Field {
 		return &imports.Field{
+			IsArray:                        f.IsArray,
 			IsProtobufTimestamp:            f.ProtoField.IsTimestamp(),
 			IsOutboundBitflag:              f.IsOutboundBitflag(),
 			ConversionDomainToWire:         f.ConvertDomainTypeToWireType(),

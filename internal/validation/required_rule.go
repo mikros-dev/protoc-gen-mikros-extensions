@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
 )
 
 type RequiredCondition struct {
@@ -33,11 +35,14 @@ type requiredRuleParseOptions struct {
 // loadRequiredCondition parses the required field condition, if any. It
 // ensures that only one required option is used at the moment.
 func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
-	var found = 0
+	var (
+		found             = 0
+		validationOptions *extensions.FieldValidateOptions
+	)
 
 	requiredIf, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
-		Condition:        options.Options.GetRequiredIf(),
-		Reverse:          options.Options.GetRequiredIfNot(),
+		Condition:        validationOptions.GetRequiredIf(),
+		Reverse:          validationOptions.GetRequiredIfNot(),
 		MaxFieldsToParse: 2,
 	})
 	if err != nil {
@@ -48,8 +53,8 @@ func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 	}
 
 	requiredWith, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
-		Condition:        options.Options.GetRequiredWith(),
-		Reverse:          options.Options.GetRequiredWithout(),
+		Condition:        validationOptions.GetRequiredWith(),
+		Reverse:          validationOptions.GetRequiredWithout(),
 		MaxFieldsToParse: 1,
 	})
 	if err != nil {
@@ -60,7 +65,7 @@ func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 	}
 
 	requiredAll, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
-		Condition: options.Options.GetRequiredAll(),
+		Condition: validationOptions.GetRequiredAll(),
 	})
 	if err != nil {
 		return nil, err
@@ -70,7 +75,7 @@ func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 	}
 
 	requiredAny, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
-		Condition: options.Options.GetRequiredAny(),
+		Condition: validationOptions.GetRequiredAny(),
 	})
 	if err != nil {
 		return nil, err

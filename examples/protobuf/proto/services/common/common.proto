@@ -14,8 +14,10 @@ enum Status {
 }
 
 enum EntityFeatures {
-  option (mikros.extensions.api) = {
-    bitflag: true
+  option (mikros.extensions.enum_options) ={
+    api: {
+      bitflag: true
+    }
   };
 
   ENTITY_FEATURES_UNSPECIFIED = 0;
@@ -23,8 +25,10 @@ enum EntityFeatures {
 }
 
 message PaginationRequestWire {
-  option (mikros.extensions.outbound_options) = {
-    export: true,
+  option (mikros.extensions.message_options) = {
+    outbound: {
+      export: true,
+    }
   };
 
   int32 size = 1;

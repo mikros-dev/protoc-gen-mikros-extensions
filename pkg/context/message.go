@@ -22,6 +22,7 @@ type Message struct {
 	isHTTPService bool
 	receiver      string
 	converter     *converters.Message
+	extensions    *extensions.MikrosMessageExtensions
 }
 
 type LoadMessagesOptions struct {
@@ -70,10 +71,11 @@ func loadMessages(pkg *protobuf.Protobuf, opt LoadMessagesOptions) ([]*Message, 
 			OutboundName:  converter.WireOutputToOutbound(m.Name),
 			Type:          converter.Kind(m.Name),
 			Fields:        fields,
+			ProtoMessage:  m,
 			isHTTPService: pkg.Service != nil && pkg.Service.IsHTTP(),
 			receiver:      receiver,
 			converter:     converter,
-			ProtoMessage:  m,
+			extensions:    extensions.LoadMessageExtensions(m.Proto),
 		}
 	}
 
@@ -153,8 +155,10 @@ func (m *Message) ArrayFields() []*Field {
 }
 
 func (m *Message) DomainExport() bool {
-	if options := extensions.LoadMessageDomainOptions(m.ProtoMessage.Proto); options != nil {
-		return !options.GetDontExport()
+	if m.extensions != nil {
+		if options := m.extensions.GetDomain(); options != nil {
+			return !options.GetDontExport()
+		}
 	}
 
 	return true
@@ -165,8 +169,10 @@ func (m *Message) OutboundExport() bool {
 	if m.Type == converters.WireOutputMessage && m.isHTTPService {
 		return true
 	}
-	if options := extensions.LoadMessageOutboundOptions(m.ProtoMessage.Proto); options != nil {
-		return options.GetExport()
+	if m.extensions != nil {
+		if options := m.extensions.GetOutbound(); options != nil {
+			return options.GetExport()
+		}
 	}
 
 	return false
@@ -184,8 +190,10 @@ func (m *Message) MapFields() []*Field {
 }
 
 func (m *Message) HasWireCustomCodeExtension() bool {
-	if options := extensions.LoadMessageWireExtensionOptions(m.ProtoMessage.Proto); options != nil {
-		return len(options.GetCustomCode()) > 0
+	if m.extensions != nil {
+		if options := m.extensions.GetWire(); options != nil {
+			return len(options.GetCustomCode()) > 0
+		}
 	}
 
 	return false
@@ -199,12 +207,14 @@ type CustomCode struct {
 func (m *Message) WireCustomCode() []*CustomCode {
 	var customCodes []*CustomCode
 
-	if options := extensions.LoadMessageWireExtensionOptions(m.ProtoMessage.Proto); options != nil {
-		for _, c := range options.GetCustomCode() {
-			customCodes = append(customCodes, &CustomCode{
-				Signature: c.GetSignature(),
-				Body:      c.GetBody(),
-			})
+	if m.extensions != nil {
+		if options := m.extensions.GetWire(); options != nil {
+			for _, c := range options.GetCustomCode() {
+				customCodes = append(customCodes, &CustomCode{
+					Signature: c.GetSignature(),
+					Body:      c.GetBody(),
+				})
+			}
 		}
 	}
 
@@ -253,7 +263,12 @@ func (m *Message) HasValidatableField() bool {
 
 func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 	for _, field := range m.Fields {
-		if validation := extensions.LoadFieldValidate(field.ProtoField.Proto); validation != nil {
+		ext := extensions.LoadFieldExtensions(field.ProtoField.Proto)
+		if ext == nil {
+			continue
+		}
+
+		if validation := ext.GetValidate(); validation != nil {
 			nonCustomRules := []extensions.FieldValidatorRule{
 				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX,
 				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED,

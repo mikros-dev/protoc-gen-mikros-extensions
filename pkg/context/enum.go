@@ -29,8 +29,10 @@ func loadEnums(pkg *protobuf.Protobuf) []*Enum {
 			Entries: loadEnumEntries(e.Proto),
 		}
 
-		if decodingOptions := extensions.LoadEnumDecodingOptions(e.Proto); decodingOptions != nil {
-			enum.IsBitflagKind = decodingOptions.GetBitflag()
+		if enumExtensions := extensions.LoadEnumExtensions(e.Proto); enumExtensions != nil {
+			if decodingOptions := enumExtensions.GetApi(); decodingOptions != nil {
+				enum.IsBitflagKind = decodingOptions.GetBitflag()
+			}
 		}
 
 		enums[i] = enum
@@ -45,11 +47,13 @@ func loadEnumEntries(enum *descriptor.EnumDescriptorProto) []*EnumEntry {
 	for _, protoEntry := range enum.GetValue() {
 		var (
 			name string
-			defs = extensions.LoadEnumEntry(protoEntry)
+			defs = extensions.LoadEnumValueExtensions(protoEntry)
 		)
 
 		if defs != nil {
-			name = defs.GetName()
+			if entry := defs.GetEntry(); entry != nil {
+				name = entry.GetName()
+			}
 		}
 
 		entries = append(entries, &EnumEntry{

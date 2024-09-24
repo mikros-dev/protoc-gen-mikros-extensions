@@ -37,6 +37,7 @@ type Field struct {
 	moduleName string
 	converter  *converters.Field
 	testing    *testing.Field
+	extensions *extensions.MikrosFieldExtensions
 }
 
 type LoadFieldOptions struct {
@@ -88,10 +89,10 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 		OutboundName:             converter.OutboundName(),
 		OutboundTag:              converter.OutboundTag(),
 		OutboundJsonTagFieldName: converter.OutboundJsonTagFieldName(),
-		Location:                 getFieldLocation(opt.Field.Proto, opt.Endpoint),
-		moduleName:               opt.ModuleName,
 		MessageReceiver:          opt.Receiver,
+		Location:                 getFieldLocation(opt.Field.Proto, opt.Endpoint),
 		ProtoField:               opt.Field,
+		moduleName:               opt.ModuleName,
 		converter:                converter,
 		testing: testing.NewField(&testing.NewFieldOptions{
 			IsArray:        isArray,
@@ -100,6 +101,7 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 			Settings:       opt.Settings,
 			FieldConverter: converter,
 		}),
+		extensions: extensions.LoadFieldExtensions(opt.Field.Proto),
 	}
 	if err := field.Validate(); err != nil {
 		return nil, err
@@ -121,15 +123,15 @@ func (f *Field) Validate() error {
 }
 
 func (f *Field) isBitflag() bool {
-	if outbound := extensions.LoadFieldOutbound(f.ProtoField.Proto); outbound != nil {
-		return outbound.Bitflag != nil
-	}
-
-	return false
+	return f.extensions != nil && f.extensions.GetOutbound() != nil && f.extensions.GetOutbound().GetBitflag() != nil
 }
 
 func (f *Field) hasJsonStructTag() bool {
-	if domain := extensions.LoadFieldDomain(f.ProtoField.Proto); domain != nil {
+	if f.extensions == nil {
+		return false
+	}
+
+	if domain := f.extensions.GetDomain(); domain != nil {
 		for _, st := range domain.GetStructTag() {
 			if strings.Contains(st.GetName(), "json") {
 				return true
@@ -205,19 +207,11 @@ func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
 }
 
 func (f *Field) OutboundHide() bool {
-	if outbound := extensions.LoadFieldOutbound(f.ProtoField.Proto); outbound != nil {
-		return outbound.GetHide()
-	}
-
-	return false
+	return f.extensions != nil && f.extensions.GetOutbound() != nil && f.extensions.GetOutbound().GetHide()
 }
 
 func (f *Field) IsOutboundBitflag() bool {
-	if outbound := extensions.LoadFieldOutbound(f.ProtoField.Proto); outbound != nil {
-		return outbound.GetBitflag() != nil
-	}
-
-	return false
+	return f.extensions != nil && f.extensions.GetOutbound() != nil && f.extensions.GetOutbound().GetBitflag() != nil
 }
 
 func (f *Field) IsProtobufValue() bool {
@@ -225,8 +219,7 @@ func (f *Field) IsProtobufValue() bool {
 }
 
 func (f *Field) IsValidatable() bool {
-	validate := extensions.LoadFieldValidate(f.ProtoField.Proto)
-	return validate != nil
+	return f.extensions != nil && f.extensions.GetValidate() != nil
 }
 
 func (f *Field) ValidationName(receiver string) string {
