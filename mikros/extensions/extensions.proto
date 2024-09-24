@@ -121,6 +121,7 @@ extend google.protobuf.MessageOptions {
   optional MessageWireExpansionOptions wire_expansion = 85043;
   optional MessageInboundOptions inbound_options = 85044;
   optional MessageOutboundOptions outbound_options = 85045;
+  optional MessageWireInputOptions wire_input_options = 85046;
 }
 
 message MessageDomainExpansionOptions {
@@ -150,6 +151,10 @@ message MessageInboundOptions {
 message MessageOutboundOptions {
   optional bool export = 1;
   optional NamingMode naming_mode = 2;
+}
+
+message MessageWireInputOptions {
+  optional bool export = 1;
 }
 
 enum NamingMode {

@@ -207,6 +207,17 @@ func LoadMessageOutboundOptions(message *descriptor.DescriptorProto) *MessageOut
 	return nil
 }
 
+func LoadMessageWireInputOptions(message *descriptor.DescriptorProto) *MessageWireInputOptions {
+	if message.Options != nil {
+		v := proto.GetExtension(message.Options, E_WireInputOptions)
+		if val, ok := v.(*MessageWireInputOptions); ok {
+			return val
+		}
+	}
+
+	return nil
+}
+
 func LoadMethodHttpExtensionOptions(method *descriptor.MethodDescriptorProto) *HttpMethodExtensions {
 	if method.Options != nil {
 		v := proto.GetExtension(method.Options, E_Http)

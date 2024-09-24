@@ -43,7 +43,7 @@ type Http struct {
 
 type Templates struct {
 	Api      bool    `toml:"api" default:"true"`
-	Test     bool    `toml:"test" default:"true"`
+	Test     bool    `toml:"test" default:"false"`
 	TestPath string  `toml:"test_path" default:"test"`
 	ApiPath  string  `toml:"api_path" default:"go"`
 	Common   *Common `toml:"common" default:"{}"`

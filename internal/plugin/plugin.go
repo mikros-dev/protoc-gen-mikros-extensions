@@ -39,16 +39,12 @@ func Handle(
 	w protoplugin.ResponseWriter,
 	r protoplugin.Request,
 ) error {
-	plugin, err := protogen.Options{}.New(r.CodeGeneratorRequest())
+	pluginArgs, err := args.NewArgsFromString(r.Parameter())
 	if err != nil {
 		return err
 	}
 
-	plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL) | uint64(pluginpb.CodeGeneratorResponse_FEATURE_SUPPORTS_EDITIONS)
-	plugin.SupportedEditionsMinimum = descriptorpb.Edition_EDITION_PROTO2
-	plugin.SupportedEditionsMaximum = descriptorpb.Edition_EDITION_2023
-
-	pluginArgs, err := args.NewArgsFromString(r.Parameter())
+	plugin, err := protogen.Options{}.New(r.CodeGeneratorRequest())
 	if err != nil {
 		return err
 	}
@@ -59,6 +55,8 @@ func Handle(
 
 	response := plugin.Response()
 	w.AddCodeGeneratorResponseFiles(response.GetFile()...)
+	w.SetSupportedFeatures(uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL) | uint64(pluginpb.CodeGeneratorResponse_FEATURE_SUPPORTS_EDITIONS))
+	w.SetFeatureSupportsEditions(descriptorpb.Edition_EDITION_PROTO2, descriptorpb.Edition_EDITION_2024)
 
 	return nil
 }

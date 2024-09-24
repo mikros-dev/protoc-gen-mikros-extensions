@@ -205,7 +205,7 @@ func getBodyParameters(m *Message, endpoint *Endpoint) []string {
 
 func validateBodyArguments(m *Message, endpoint *Endpoint) error {
 	// Checks if body parameters were declared inside the inbound message.
-	if endpoint != nil && endpoint.Body != "*" {
+	if endpoint != nil && endpoint.Body != "*" && endpoint.Body != "" {
 		parameters := strings.Split(endpoint.Body, " ")
 		for _, param := range parameters {
 			index := slices.IndexFunc(m.Fields, func(f *Field) bool {

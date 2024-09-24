@@ -7,7 +7,7 @@ option go_package = "examples/gen/go/services/misc;misc";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "mikros/extensions/extensions.proto";
-import "services/shared/shared.proto";
+import "services/common/common.proto";
 
 message MiscCompletedWire {
   option (mikros.extensions.outbound_options) = {
@@ -18,7 +18,7 @@ message MiscCompletedWire {
   uint64 bitflag = 1 [(mikros.extensions.outbound) = {
     name: "some_string_features"
     bitflag {
-      values: "shared.EntityFeatures_name"
+      values: "common.EntityFeatures_name"
       prefix: "ENTITY_FEATURES_"
     }
   }];
@@ -28,8 +28,8 @@ message MiscCompletedWire {
   google.protobuf.Struct metadata = 4;
   MiscAnotherWire local_message = 5;
   LocalMisc local_enum = 6;
-  shared.Status outside_enum = 7;
-  shared.PaginationRequestWire outside_message = 8;
+  common.Status outside_enum = 7;
+  common.PaginationRequestWire outside_message = 8;
 }
 
 message MiscAnotherWire {
@@ -62,8 +62,8 @@ message MiscMapWire {
   map<string, int32> map_string_to_int32 = 2;
   map<string, LocalMisc> map_local_enum = 3;
   map<string, MiscArrayWire> map_local_message = 4;
-  map<string, shared.Status> map_outside_enum = 5;
-  map<string, shared.PaginationRequestWire> map_outside_message = 6;
+  map<string, common.Status> map_outside_enum = 5;
+  map<string, common.PaginationRequestWire> map_outside_message = 6;
 }
 
 message MiscArrayWire {
@@ -87,8 +87,8 @@ message MiscArrayWire {
   repeated LocalMisc local_enums = 14;
   repeated google.protobuf.Timestamp dates = 15;
   repeated MiscAnotherWire local_messages = 16;
-  repeated shared.Status outside_enums = 17;
-  repeated shared.PaginationRequestWire outside_message = 18;
+  repeated common.Status outside_enums = 17;
+  repeated common.PaginationRequestWire outside_message = 18;
   string scalar_string_hidden = 19 [(mikros.extensions.outbound) = {hide: true}];
 }
 

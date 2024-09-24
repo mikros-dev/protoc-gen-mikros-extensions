@@ -10,12 +10,13 @@ import (
 {{end}}
 
 {{range .WireInputMessages}}{{$receiver := .GetReceiverName}}
+{{- if .IsWireInputKind}}
 type {{.DomainName}} struct {
     {{- range .GetFields templateName}}
     {{.DomainName}} {{.DomainType}} {{.InboundTag}}
     {{- end}}
 }
-
+{{end}}
 func ({{$receiver}} *{{.DomainName}}) IntoWireInput() *{{.WireName}} {
     if {{$receiver}} == nil {
         return nil
@@ -23,30 +24,30 @@ func ({{$receiver}} *{{.DomainName}}) IntoWireInput() *{{.WireName}} {
     {{if or .HasArrayField .HasMapField}}
     wire := &{{.WireName}}{
     {{- range .BindableFields templateName}}
-        {{.GoName}}: {{.ConvertDomainTypeToWireType}},
+        {{.GoName}}: {{.ConvertDomainTypeToWireInputType}},
     {{- end}}
     }
 
     {{range .ArrayFields}}{{$name := toLowerCamelCase .GoName}}
-    var {{$name}} {{.WireType}}
+    var {{$name}}Elements {{.WireType}}
     for _, {{$loopReceiver := firstLower .GoName}}{{$loopReceiver}} := range {{$receiver}}.{{.GoName}} {
-        {{$name}} = append({{$name}}, {{.ConvertDomainTypeToArrayWireType $loopReceiver}})
+        {{$name}}Elements = append({{$name}}Elements, {{.ConvertDomainTypeToArrayWireInputType $loopReceiver}})
     }
-    wire.{{.GoName}} = {{$name}}
+    wire.{{.GoName}} = {{$name}}Elements
     {{end -}}
     {{range .MapFields}}{{$name := toLowerCamelCase .GoName}}
-    {{$name}} := make({{.WireType}})
+    {{$name}}Elements := make({{.WireType}})
     for k, v := range {{$receiver}}.{{.GoName}} {
-        {{$name}}[k] = {{.ConvertDomainTypeToMapWireType "v"}}
+        {{$name}}Elements[k] = {{.ConvertDomainTypeToMapWireInputType "v"}}
     }
-    wire.{{.GoName}} = {{$name}}
+    wire.{{.GoName}} = {{$name}}Elements
     {{end}}
 
     return wire
     {{- else}}
     return &{{.WireName}}{
     {{- range .GetFields templateName}}
-        {{.GoName}}: {{.ConvertDomainTypeToWireType}},
+        {{.GoName}}: {{.ConvertDomainTypeToWireInputType}},
     {{- end}}
     }
     {{- end}}

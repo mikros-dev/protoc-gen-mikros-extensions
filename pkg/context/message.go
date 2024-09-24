@@ -267,3 +267,7 @@ func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 
 	return false
 }
+
+func (m *Message) IsWireInputKind() bool {
+	return m.Type == converters.WireInputMessage
+}

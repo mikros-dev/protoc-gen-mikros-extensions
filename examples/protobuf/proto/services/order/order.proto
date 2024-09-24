@@ -7,13 +7,13 @@ option go_package = "examples/gen/go/services/order;order";
 import "mikros/extensions/extensions.proto";
 import "services/product/product.proto";
 import "services/user/user.proto";
-import "services/shared/shared.proto";
+import "services/common/common.proto";
 
 message OrderWire {
   string id = 1;
   user.UserWire user = 2;
   repeated product.ProductWire products = 3;
-  shared.Status status = 4;
+  common.Status status = 4;
 }
 
 service OrderService {
