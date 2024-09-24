@@ -1,6 +1,7 @@
 package context
 
 import (
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
@@ -129,12 +130,21 @@ func (c *Context) DomainMessages() []*Message {
 func (c *Context) WireInputMessages() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
-		if m.Type == converters.WireInputMessage && m.DomainExport() {
+		isWireInput := m.Type == converters.WireInputMessage || manualExportToWireInput(m)
+		if isWireInput && m.DomainExport() {
 			messages = append(messages, m)
 		}
 	}
 
 	return messages
+}
+
+func manualExportToWireInput(m *Message) bool {
+	if wireInput := extensions.LoadMessageWireInputOptions(m.ProtoMessage.Proto); wireInput != nil {
+		return wireInput.GetExport()
+	}
+
+	return false
 }
 
 func (c *Context) OutboundMessages() []*Message {
@@ -180,7 +190,7 @@ func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (templ
 			return c.IsHTTPService() || len(c.OutboundMessages()) > 0
 		},
 		template.NewName("api", "wire_input"): func() bool {
-			return len(c.WireInputMessages()) > 0 && c.IsHTTPService()
+			return len(c.WireInputMessages()) > 0
 		},
 		template.NewName("api", "common"): func() bool {
 			return c.UseCommonConverters() || c.OutboundHasBitflagField()
@@ -189,10 +199,10 @@ func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (templ
 			return c.HasValidatableMessage()
 		},
 		template.NewName("testing", "testing"): func() bool {
-			return len(c.DomainMessages()) > 0
+			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test
 		},
 		template.NewName("testing", "http_server"): func() bool {
-			return c.IsHTTPService()
+			return c.IsHTTPService() && c.settings.Templates.Test
 		},
 	}
 

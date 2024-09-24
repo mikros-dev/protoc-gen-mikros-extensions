@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package services.shared;
+package services.common;
 
-option go_package = "examples/gen/go/services/shared;shared";
+option go_package = "examples/gen/go/services/common;common";
 
 import "mikros/extensions/extensions.proto";
 

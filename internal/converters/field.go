@@ -393,7 +393,7 @@ func (f *Field) OutboundJsonTagFieldName() string {
 	return fieldName
 }
 
-func (f *Field) ConvertToWireType() string {
+func (f *Field) ConvertToWireType(wireInput bool) string {
 	if f.proto.IsEnum() {
 		return f.enumWireType()
 	}
@@ -414,6 +414,10 @@ func (f *Field) ConvertToWireType() string {
 	}
 
 	if f.proto.IsMessage() {
+		if wireInput {
+			return fmt.Sprintf("%s.%s.IntoWireInput()", f.receiver, f.DomainName())
+		}
+
 		return fmt.Sprintf("%s.%s.IntoWire()", f.receiver, f.DomainName())
 	}
 
@@ -441,7 +445,7 @@ func (f *Field) enumWireType() string {
 	return fmt.Sprintf("%[1]s.FromString(%[1]s(0), %s.%s)", name, f.receiver, f.goName)
 }
 
-func (f *Field) ConvertDomainTypeToArrayWireType(receiver string) string {
+func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool) string {
 	if f.proto.IsEnum() {
 		name := TrimPackageName(f.goType, f.proto.ModuleName())
 		if module, n, ok := f.handleOtherModuleField(f.goType); ok {
@@ -462,13 +466,17 @@ func (f *Field) ConvertDomainTypeToArrayWireType(receiver string) string {
 	}
 
 	if f.proto.IsMessage() {
+		if wireInput {
+			return fmt.Sprintf("%s.IntoWireInput()", receiver)
+		}
+
 		return fmt.Sprintf("%s.IntoWire()", receiver)
 	}
 
 	return receiver
 }
 
-func (f *Field) ConvertDomainTypeToMapWireType(receiver string) string {
+func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) string {
 	_, value, valueKind := f.getMapKeyValueTypesForWire()
 
 	if valueKind.Kind() == protoreflect.EnumKind {
@@ -479,6 +487,10 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string) string {
 		if strings.Contains(value, "ts.Timestamp") {
 			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallTimeToProto)
 			return fmt.Sprintf("%s(%s)", call, receiver)
+		}
+
+		if wireInput {
+			return fmt.Sprintf("%s.IntoWireInput()", receiver)
 		}
 
 		return fmt.Sprintf("%s.IntoWire()", receiver)

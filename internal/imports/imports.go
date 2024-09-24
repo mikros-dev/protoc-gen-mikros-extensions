@@ -118,6 +118,7 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 			// Import time package?
 			if f.IsProtobufTimestamp {
 				imports["time"] = packages["time"]
+				continue
 			}
 
 			// Import proto timestamp package?

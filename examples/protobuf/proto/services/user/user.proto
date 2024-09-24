@@ -5,18 +5,18 @@ package services.user;
 option go_package = "examples/gen/go/services/user;user";
 
 import "mikros/extensions/extensions.proto";
-import "services/shared/shared.proto";
+import "services/common/common.proto";
 
 message UserWire {
   option (mikros.extensions.wire_expansion) = {
     custom_code: {
       import: {
-        alias: "shared"
-        name: "examples/gen/go/services/shared"
+        alias: "common"
+        name: "examples/gen/go/services/common"
       }
 
       signature: "IsActive() bool"
-      body: "return u.Status == shared.Status_STATUS_ACTIVE"
+      body: "return u.Status == common.Status_STATUS_ACTIVE"
     }
 
     custom_code: {
@@ -42,7 +42,7 @@ message UserWire {
   }];
 
   string name = 2;
-  shared.Status status = 3;
+  common.Status status = 3;
   string email = 4;
   int32 age = 5;
 }

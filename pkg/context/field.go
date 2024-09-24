@@ -161,7 +161,11 @@ func (f *Field) DomainType() string {
 }
 
 func (f *Field) ConvertDomainTypeToWireType() string {
-	return f.converter.ConvertToWireType()
+	return f.converter.ConvertToWireType(false)
+}
+
+func (f *Field) ConvertDomainTypeToWireInputType() string {
+	return f.converter.ConvertToWireType(true)
 }
 
 func (f *Field) WireType() string {
@@ -173,11 +177,19 @@ func (f *Field) OutboundType() string {
 }
 
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string) string {
-	return f.converter.ConvertDomainTypeToArrayWireType(receiver)
+	return f.converter.ConvertDomainTypeToArrayWireType(receiver, false)
+}
+
+func (f *Field) ConvertDomainTypeToArrayWireInputType(receiver string) string {
+	return f.converter.ConvertDomainTypeToArrayWireType(receiver, true)
 }
 
 func (f *Field) ConvertDomainTypeToMapWireType(receiver string) string {
-	return f.converter.ConvertDomainTypeToMapWireType(receiver)
+	return f.converter.ConvertDomainTypeToMapWireType(receiver, false)
+}
+
+func (f *Field) ConvertDomainTypeToMapWireInputType(receiver string) string {
+	return f.converter.ConvertDomainTypeToMapWireType(receiver, true)
 }
 
 func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
