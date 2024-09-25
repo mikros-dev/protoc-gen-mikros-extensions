@@ -107,7 +107,8 @@ func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*M
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
 			var (
-				conversionToWire = f.ConversionDomainToWire
+				call             = cfg.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr) + "("
+				conversionToWire = strings.TrimPrefix(f.ConversionDomainToWire, call)
 				wireType         = strings.TrimPrefix(f.WireType, "[]*")
 			)
 

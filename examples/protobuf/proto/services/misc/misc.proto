@@ -62,6 +62,8 @@ message MiscAnotherWire {
   double scalar_double_hidden = 14 [(mikros.extensions.field_options) = {
     outbound: {hide: true}
   }];
+
+  bool scalar_bool = 15;
 }
 
 message MiscMapWire {
@@ -107,6 +109,40 @@ message MiscArrayWire {
   string scalar_string_hidden = 19 [(mikros.extensions.field_options) = {
     outbound: {hide: true}
   }];
+
+  repeated bool scalar_bool = 20;
+}
+
+message MiscOptionalWire {
+  option (mikros.extensions.message_options) = {
+    outbound: {
+      export: true,
+    }
+  };
+
+  optional string scalar_string = 1;
+  optional int32 scalar_int32 = 2;
+  optional int64 scalar_int64 = 3;
+  optional uint32 scalar_uint32 = 4;
+  optional uint64 scalar_uint64 = 5;
+  optional sint32 scalar_sint32 = 6;
+  optional sint64 scalar_sint64 = 7;
+  optional sfixed32 scalar_sfixed32 = 8;
+  optional sfixed64 scalar_sfixed64 = 9;
+  optional fixed32 scalar_fixed32 = 10;
+  optional fixed64 scalar_fixed64 = 11;
+  optional float scalar_float = 12;
+  optional double scalar_double = 13;
+  optional LocalMisc local_enums = 14;
+  optional google.protobuf.Timestamp dates = 15;
+  optional MiscAnotherWire local_messages = 16;
+  optional common.Status outside_enums = 17;
+  optional common.PaginationRequestWire outside_message = 18;
+  string scalar_string_hidden = 19 [(mikros.extensions.field_options) = {
+    outbound: {hide: true}
+  }];
+
+  optional bool scalar_bool = 20;
 }
 
 enum LocalMisc {
