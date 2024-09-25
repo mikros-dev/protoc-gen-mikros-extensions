@@ -464,7 +464,19 @@ func (f *Field) enumWireType() string {
 		name = fmt.Sprintf("%s%s", prefix, n)
 	}
 
-	return fmt.Sprintf("%[1]s.FromString(%[1]s(0), %s.%s)", name, f.receiver, f.goName)
+	arg := fmt.Sprintf("%s.%s", f.receiver, f.goName)
+	if f.proto.IsOptional() {
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToValue)
+		arg = fmt.Sprintf("%s(%s)", call, arg)
+	}
+
+	conversionCall := fmt.Sprintf("%[1]s.FromString(%[1]s(0), %s)", name, arg)
+	if f.proto.IsOptional() {
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		conversionCall = fmt.Sprintf("%s(%s)", call, conversionCall)
+	}
+
+	return conversionCall
 }
 
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool) string {
@@ -534,7 +546,14 @@ func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 	}
 
 	if f.proto.IsEnum() {
-		return fmt.Sprintf("%s.%s.ValueWithoutPrefix()", receiver, f.goName)
+		conversionCall := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", receiver, f.goName)
+
+		if f.proto.IsOptional() {
+			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+			conversionCall = fmt.Sprintf("%s(%s)", call, conversionCall)
+		}
+
+		return conversionCall
 	}
 
 	if f.proto.IsProtoValue() {

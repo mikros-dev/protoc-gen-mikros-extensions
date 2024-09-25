@@ -18,7 +18,8 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 		for _, f := range message.Fields {
 			var (
 				binding = f.TestingBinding
-				call    = f.TestingCall
+				cfgCall = cfg.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr) + "("
+				call    = strings.TrimPrefix(f.TestingCall, cfgCall)
 			)
 
 			if module, ok := needsImportAnotherProtoModule(binding, "", ctx.ModuleName, message.Receiver); ok {
@@ -66,7 +67,7 @@ func stripNonAlpha(s string) string {
 
 	for i := 0; i < len(s); i++ {
 		b := s[i]
-		if ('a' <= b && b <= 'z') || ('A' <= b && b <= 'Z') || ('0' <= b && b <= '9') || b == ' ' {
+		if ('a' <= b && b <= 'z') || ('A' <= b && b <= 'Z') || ('0' <= b && b <= '9') || b == ' ' || b == '_' {
 			result.WriteByte(b)
 		}
 	}

@@ -81,18 +81,36 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 	}
 
 	if f.proto.Type == descriptor.FieldDescriptorProto_TYPE_STRING {
-		return `""`
+		value := `""`
+		if f.proto.IsOptional() {
+			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+			value = fmt.Sprintf("%s(%s)", call, value)
+		}
+
+		return value
 	}
 
 	if f.proto.Type == descriptor.FieldDescriptorProto_TYPE_BOOL {
-		return "false"
+		value := "false"
+		if f.proto.IsOptional() {
+			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+			value = fmt.Sprintf("%s(%s)", call, value)
+		}
+
+		return value
 	}
 
 	if f.proto.IsEnum() {
 		return f.getEnumTestCallValue()
 	}
 
-	return "0"
+	value := "0"
+	if f.proto.IsOptional() {
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		value = fmt.Sprintf("%s(%s(%s))", call, f.fieldConverter.DomainTypeForTest(false), value)
+	}
+
+	return value
 }
 
 func (f *Field) getEnumTestCallValue() string {
@@ -104,13 +122,18 @@ func (f *Field) getEnumTestCallValue() string {
 
 	path := strings.Split(string(f.proto.Schema.Enum.GoIdent.GoImportPath), "/")
 	module = fmt.Sprintf("%v.", path[len(path)-1])
-	call := fmt.Sprintf(`%[1]v%[2]v.FromString(0, %[1]v%[2]v_name[randomIndex(%d, %d, []int{%s})]).ValueWithoutPrefix()`, module, name, minN, maxN, values)
+	conversionCall := fmt.Sprintf(`%[1]v%[2]v.FromString(0, %[1]v%[2]v_name[randomIndex(%d, %d, []int{%s})]).ValueWithoutPrefix()`, module, name, minN, maxN, values)
 
 	if f.isArray {
-		call = fmt.Sprintf("%v%v{%v}", module, name, call)
+		conversionCall = fmt.Sprintf("%v%v{%v}", module, name, conversionCall)
 	}
 
-	return call
+	if f.proto.IsOptional() {
+		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		conversionCall = fmt.Sprintf("%s(%s)", call, conversionCall)
+	}
+
+	return conversionCall
 }
 
 func retrieveEnumValue(protoField *protogen.Field) (int, int, string) {

@@ -205,6 +205,7 @@ type CommonCall struct {
 // Supported common APIs.
 var (
 	CommonCallToPtr          = CommonCall{CommonApiConverters, "toPtr", "to_ptr"}
+	CommonCallToValue        = CommonCall{CommonApiConverters, "toValue", "to_value"}
 	CommonCallProtoToTimePtr = CommonCall{CommonApiConverters, "protoTimestampToTimePtr", "proto_timestamp_to_go_time_ptr"}
 	CommonCallTimeToProto    = CommonCall{CommonApiConverters, "timeToProtoTimestamp", "go_time_to_proto_timestamp"}
 	CommonCallMapToStruct    = CommonCall{CommonApiConverters, "mapToGrpcStruct", "go_map_to_proto_struct"}
