@@ -16,7 +16,7 @@ type CallOptions struct {
 	IsArray   bool
 	ProtoName string
 	Receiver  string
-	Options   *extensions.FieldValidateOptions
+	Options   *extensions.MikrosFieldExtensions
 	Settings  *settings.Settings
 	Message   *protobuf.Message
 }
@@ -41,7 +41,7 @@ func NewCall(options *CallOptions) (*Call, error) {
 }
 
 func buildApiCall(options *CallOptions) (string, error) {
-	if options.Options == nil {
+	if options.Options == nil || options.Options.GetValidate() == nil {
 		// No validation
 		return "", nil
 	}
@@ -55,21 +55,24 @@ func buildCall(options *CallOptions) (string, error) {
 		return "", err
 	}
 
-	call := handleBeginCall(options, requiredCondition)
+	var (
+		call              = handleBeginCall(options, requiredCondition)
+		validationOptions = options.Options.GetValidate()
+	)
 
 	// Required is always enabled if a required_ condition is being used.
-	if options.Options.GetRequired() || requiredCondition != nil {
+	if validationOptions.GetRequired() || requiredCondition != nil {
 		if call != "" {
 			call += ", "
 		}
 
 		call += "validation.Required"
-		if msg := options.Options.GetErrorMessage(); msg != "" {
+		if msg := validationOptions.GetErrorMessage(); msg != "" {
 			call += fmt.Sprintf(`.Error("%s")`, msg)
 		}
 	}
 
-	if options.Options.GetDive() {
+	if validationOptions.GetDive() {
 		if !options.IsArray {
 			return "", fmt.Errorf("field '%s' is not of array type to have dive rule option enabled", options.ProtoName)
 		}
@@ -81,28 +84,28 @@ func buildCall(options *CallOptions) (string, error) {
 		call += "validation.Each("
 	}
 
-	if options.Options.GetMaxLength() > 0 {
+	if validationOptions.GetMaxLength() > 0 {
 		if needsComma(call) {
 			call += ", "
 		}
 
-		call += fmt.Sprintf("validation.Length(1, %d)", options.Options.GetMaxLength())
+		call += fmt.Sprintf("validation.Length(1, %d)", validationOptions.GetMaxLength())
 	}
 
-	if options.Options.GetMin() > 0 {
+	if validationOptions.GetMin() > 0 {
 		if needsComma(call) {
 			call += ", "
 		}
 
-		call += fmt.Sprintf("validation.Min(%d)", options.Options.GetMin())
+		call += fmt.Sprintf("validation.Min(%d)", validationOptions.GetMin())
 	}
 
-	if options.Options.GetMax() > 0 {
+	if validationOptions.GetMax() > 0 {
 		if needsComma(call) {
 			call += ", "
 		}
 
-		call += fmt.Sprintf("validation.Max(%d)", options.Options.GetMax())
+		call += fmt.Sprintf("validation.Max(%d)", validationOptions.GetMax())
 	}
 
 	c, err := handleRule(options, call)
@@ -153,7 +156,8 @@ func buildConditionalValidationCall(options *CallOptions, condition *RequiredCon
 
 func handleRule(options *CallOptions, call string) (string, error) {
 	var (
-		rule = options.Options.GetRule()
+		validationOptions = options.Options.GetValidate()
+		rule              = validationOptions.GetRule()
 	)
 
 	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED {
@@ -165,7 +169,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 	}
 
 	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
-		args := options.Options.GetRuleArgs()
+		args := validationOptions.GetRuleArgs()
 		if len(args) == 0 {
 			return "", errors.New("no arguments specified for regex rule")
 		}
@@ -176,7 +180,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 
 	ruleSettings, err := options.Settings.GetValidationRule(rule)
 	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_CUSTOM {
-		ruleSettings, err = options.Settings.GetValidationCustomRule(options.Options.GetCustomRule())
+		ruleSettings, err = options.Settings.GetValidationCustomRule(validationOptions.GetCustomRule())
 	}
 	if err != nil {
 		return "", err
@@ -184,11 +188,11 @@ func handleRule(options *CallOptions, call string) (string, error) {
 
 	call += fmt.Sprintf("%s(opt.CustomRuleOptions", ruleSettings.Name)
 	if ruleSettings.ArgsRequired {
-		if len(options.Options.GetRuleArgs()) == 0 {
+		if len(validationOptions.GetRuleArgs()) == 0 {
 			return "", fmt.Errorf("no arguments specified for validation rule '%s'", rule)
 		}
 
-		for _, arg := range options.Options.GetRuleArgs() {
+		for _, arg := range validationOptions.GetRuleArgs() {
 			call += fmt.Sprintf(`, "%s"`, arg)
 		}
 	}
@@ -198,7 +202,8 @@ func handleRule(options *CallOptions, call string) (string, error) {
 }
 
 func handleEndCall(options *CallOptions, requiredCondition *RequiredCondition, call string) string {
-	if options.Options.GetDive() || requiredCondition != nil {
+	validationOptions := options.Options.GetValidate()
+	if validationOptions.GetDive() || requiredCondition != nil {
 		call += ")"
 	}
 

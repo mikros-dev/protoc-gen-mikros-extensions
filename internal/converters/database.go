@@ -10,7 +10,7 @@ import (
 
 type Database struct {
 	Kind DatabaseKind
-	defs *extensions.FieldDatabaseOptions
+	defs *extensions.MikrosFieldExtensions
 }
 
 type DatabaseKind int
@@ -19,7 +19,7 @@ const (
 	MongoDB DatabaseKind = iota
 )
 
-func databaseFromString(kind string, defs *extensions.FieldDatabaseOptions) *Database {
+func databaseFromString(kind string, defs *extensions.MikrosFieldExtensions) *Database {
 	db := &Database{
 		defs: defs,
 	}
@@ -40,8 +40,10 @@ func (d *Database) FieldName(name string) string {
 	}
 
 	if d.defs != nil {
-		if n := d.defs.GetName(); n != "" {
-			fieldName = n
+		if db := d.defs.GetDatabase(); db != nil {
+			if n := db.GetName(); n != "" {
+				fieldName = n
+			}
 		}
 	}
 
@@ -52,8 +54,10 @@ func (d *Database) Tag(name string) string {
 	if d.Kind == MongoDB {
 		omitempty := ",omitempty"
 		if d.defs != nil {
-			if d.defs.GetAllowEmpty() {
-				omitempty = ""
+			if db := d.defs.GetDatabase(); db != nil {
+				if db.GetAllowEmpty() {
+					omitempty = ""
+				}
 			}
 		}
 

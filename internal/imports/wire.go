@@ -8,7 +8,12 @@ func loadWireTemplateImports(ctx *Context) []*Import {
 	imports := make(map[string]*Import)
 
 	for _, m := range ctx.WireExtensions {
-		options := extensions.LoadMessageWireExtensionOptions(m.ProtoMessage.Proto)
+		ext := extensions.LoadMessageExtensions(m.ProtoMessage.Proto)
+		if ext == nil {
+			continue
+		}
+
+		options := ext.GetWire()
 		if options == nil {
 			continue
 		}

@@ -10,16 +10,20 @@ import "mikros/extensions/extensions.proto";
 import "services/common/common.proto";
 
 message MiscCompletedWire {
-  option (mikros.extensions.outbound_options) = {
-    export: true,
-    naming_mode: NAMING_MODE_SNAKE_CASE
+  option (mikros.extensions.message_options) = {
+    outbound: {
+      export: true,
+      naming_mode: NAMING_MODE_SNAKE_CASE
+    }
   };
 
-  uint64 bitflag = 1 [(mikros.extensions.outbound) = {
-    name: "some_string_features"
-    bitflag {
-      values: "common.EntityFeatures_name"
-      prefix: "ENTITY_FEATURES_"
+  uint64 bitflag = 1 [(mikros.extensions.field_options) ={
+    outbound :{
+      name: "some_string_features"
+      bitflag {
+        values: "common.EntityFeatures_name"
+        prefix: "ENTITY_FEATURES_"
+      }
     }
   }];
 
@@ -33,11 +37,16 @@ message MiscCompletedWire {
 }
 
 message MiscAnotherWire {
-  option (mikros.extensions.outbound_options) = {
-    export: true
+  option (mikros.extensions.message_options) = {
+    outbound: {
+      export: true
+    }
   };
 
-  string scalar_string = 1 [(mikros.extensions.outbound) = {allow_empty: true}];
+  string scalar_string = 1 [(mikros.extensions.field_options) = {
+    outbound: {allow_empty: true}
+  }];
+
   int32 scalar_int32 = 2;
   int64 scalar_int64 = 3;
   uint32 scalar_uint32 = 4;
@@ -50,12 +59,16 @@ message MiscAnotherWire {
   fixed64 scalar_fixed64 = 11;
   float scalar_float = 12;
   double scalar_double = 13;
-  double scalar_double_hidden = 14 [(mikros.extensions.outbound) = {hide: true}];
+  double scalar_double_hidden = 14 [(mikros.extensions.field_options) = {
+    outbound: {hide: true}
+  }];
 }
 
 message MiscMapWire {
-  option (mikros.extensions.outbound_options) = {
-    export: true,
+  option (mikros.extensions.message_options) = {
+    outbound: {
+      export: true,
+    }
   };
 
   map<string, string> map_string_to_string = 1;
@@ -67,8 +80,10 @@ message MiscMapWire {
 }
 
 message MiscArrayWire {
-  option (mikros.extensions.outbound_options) = {
-    export: true,
+  option (mikros.extensions.message_options) = {
+    outbound: {
+      export: true,
+    }
   };
 
   repeated string scalar_string = 1;
@@ -89,7 +104,9 @@ message MiscArrayWire {
   repeated MiscAnotherWire local_messages = 16;
   repeated common.Status outside_enums = 17;
   repeated common.PaginationRequestWire outside_message = 18;
-  string scalar_string_hidden = 19 [(mikros.extensions.outbound) = {hide: true}];
+  string scalar_string_hidden = 19 [(mikros.extensions.field_options) = {
+    outbound: {hide: true}
+  }];
 }
 
 enum LocalMisc {

@@ -34,8 +34,11 @@ func getEndpoint(method *protobuf.Method) *Endpoint {
 		e.Parameters = append(e.Parameters, extensions.RetrieveParametersFromAdditionalBindings(googleHttp)...)
 	}
 
-	if op := extensions.LoadMethodDefinitions(method.Proto); op != nil {
-		e.HttpExtensions = op
+	m := extensions.LoadMethodExtensions(method.Proto)
+	if m != nil {
+		if op := m.GetHttp(); op != nil {
+			e.HttpExtensions = op
+		}
 	}
 
 	return e

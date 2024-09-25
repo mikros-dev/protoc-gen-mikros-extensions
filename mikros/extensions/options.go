@@ -71,10 +71,10 @@ func RetrieveParametersFromAdditionalBindings(rule *annotations.HttpRule) []stri
 	return parameters
 }
 
-func LoadMethodDefinitions(method *descriptor.MethodDescriptorProto) *HttpMethodExtensions {
+func LoadMethodExtensions(method *descriptor.MethodDescriptorProto) *MikrosMethodExtensions {
 	if method.Options != nil {
-		v := proto.GetExtension(method.Options, E_Http)
-		if val, ok := v.(*HttpMethodExtensions); ok {
+		v := proto.GetExtension(method.Options, E_MethodOptions)
+		if val, ok := v.(*MikrosMethodExtensions); ok {
 			return val
 		}
 	}
@@ -82,10 +82,10 @@ func LoadMethodDefinitions(method *descriptor.MethodDescriptorProto) *HttpMethod
 	return nil
 }
 
-func LoadEnumDecodingOptions(enum *descriptor.EnumDescriptorProto) *EnumApiExtensions {
+func LoadEnumExtensions(enum *descriptor.EnumDescriptorProto) *MikrosEnumExtensions {
 	if enum.Options != nil {
-		v := proto.GetExtension(enum.Options, E_Api)
-		if d, ok := v.(*EnumApiExtensions); ok {
+		v := proto.GetExtension(enum.Options, E_EnumOptions)
+		if d, ok := v.(*MikrosEnumExtensions); ok {
 			return d
 		}
 	}
@@ -93,10 +93,10 @@ func LoadEnumDecodingOptions(enum *descriptor.EnumDescriptorProto) *EnumApiExten
 	return nil
 }
 
-func LoadEnumEntry(enumValue *descriptor.EnumValueDescriptorProto) *EnumEntry {
+func LoadEnumValueExtensions(enumValue *descriptor.EnumValueDescriptorProto) *MikrosEnumValueExtensions {
 	if enumValue.Options != nil {
-		v := proto.GetExtension(enumValue.Options, E_Entry)
-		if e, ok := v.(*EnumEntry); ok {
+		v := proto.GetExtension(enumValue.Options, E_EnumValueOptions)
+		if e, ok := v.(*MikrosEnumValueExtensions); ok {
 			return e
 		}
 	}
@@ -104,58 +104,10 @@ func LoadEnumEntry(enumValue *descriptor.EnumValueDescriptorProto) *EnumEntry {
 	return nil
 }
 
-func LoadFieldDomain(field *descriptor.FieldDescriptorProto) *FieldDomainOptions {
+func LoadFieldExtensions(field *descriptor.FieldDescriptorProto) *MikrosFieldExtensions {
 	if field.Options != nil {
-		v := proto.GetExtension(field.Options, E_Domain)
-		if val, ok := v.(*FieldDomainOptions); ok {
-			return val
-		}
-	}
-
-	// The field does not have extensions annotations.
-	return nil
-}
-
-func LoadFieldDatabase(field *descriptor.FieldDescriptorProto) *FieldDatabaseOptions {
-	if field.Options != nil {
-		v := proto.GetExtension(field.Options, E_Database)
-		if val, ok := v.(*FieldDatabaseOptions); ok {
-			return val
-		}
-	}
-
-	// The field does not have extensions annotations.
-	return nil
-}
-
-func LoadFieldInbound(field *descriptor.FieldDescriptorProto) *FieldInboundOptions {
-	if field.Options != nil {
-		v := proto.GetExtension(field.Options, E_Inbound)
-		if val, ok := v.(*FieldInboundOptions); ok {
-			return val
-		}
-	}
-
-	// The field does not have extensions annotations.
-	return nil
-}
-
-func LoadFieldOutbound(field *descriptor.FieldDescriptorProto) *FieldOutboundOptions {
-	if field.Options != nil {
-		v := proto.GetExtension(field.Options, E_Outbound)
-		if val, ok := v.(*FieldOutboundOptions); ok {
-			return val
-		}
-	}
-
-	// The field does not have extensions annotations.
-	return nil
-}
-
-func LoadFieldValidate(field *descriptor.FieldDescriptorProto) *FieldValidateOptions {
-	if field.Options != nil {
-		v := proto.GetExtension(field.Options, E_Validate)
-		if val, ok := v.(*FieldValidateOptions); ok {
+		v := proto.GetExtension(field.Options, E_FieldOptions)
+		if val, ok := v.(*MikrosFieldExtensions); ok {
 			return val
 		}
 	}
@@ -163,10 +115,10 @@ func LoadFieldValidate(field *descriptor.FieldDescriptorProto) *FieldValidateOpt
 	return nil
 }
 
-func LoadMessageDomainOptions(message *descriptor.DescriptorProto) *MessageDomainExpansionOptions {
+func LoadMessageExtensions(message *descriptor.DescriptorProto) *MikrosMessageExtensions {
 	if message.Options != nil {
-		v := proto.GetExtension(message.Options, E_DomainExpansion)
-		if val, ok := v.(*MessageDomainExpansionOptions); ok {
+		v := proto.GetExtension(message.Options, E_MessageOptions)
+		if val, ok := v.(*MikrosMessageExtensions); ok {
 			return val
 		}
 	}
@@ -174,65 +126,10 @@ func LoadMessageDomainOptions(message *descriptor.DescriptorProto) *MessageDomai
 	return nil
 }
 
-func LoadMessageWireExtensionOptions(message *descriptor.DescriptorProto) *MessageWireExpansionOptions {
-	if message.Options != nil {
-		v := proto.GetExtension(message.Options, E_WireExpansion)
-		if val, ok := v.(*MessageWireExpansionOptions); ok {
-			return val
-		}
-	}
-
-	return nil
-}
-
-func LoadMessageInboundOptions(message *descriptor.DescriptorProto) *MessageInboundOptions {
-	if message.Options != nil {
-		v := proto.GetExtension(message.Options, E_InboundOptions)
-		if val, ok := v.(*MessageInboundOptions); ok {
-			return val
-		}
-	}
-
-	return nil
-}
-
-func LoadMessageOutboundOptions(message *descriptor.DescriptorProto) *MessageOutboundOptions {
-	if message.Options != nil {
-		v := proto.GetExtension(message.Options, E_OutboundOptions)
-		if val, ok := v.(*MessageOutboundOptions); ok {
-			return val
-		}
-	}
-
-	return nil
-}
-
-func LoadMessageWireInputOptions(message *descriptor.DescriptorProto) *MessageWireInputOptions {
-	if message.Options != nil {
-		v := proto.GetExtension(message.Options, E_WireInputOptions)
-		if val, ok := v.(*MessageWireInputOptions); ok {
-			return val
-		}
-	}
-
-	return nil
-}
-
-func LoadMethodHttpExtensionOptions(method *descriptor.MethodDescriptorProto) *HttpMethodExtensions {
-	if method.Options != nil {
-		v := proto.GetExtension(method.Options, E_Http)
-		if val, ok := v.(*HttpMethodExtensions); ok {
-			return val
-		}
-	}
-
-	return nil
-}
-
-func LoadServiceAuthorizationExtensions(service *descriptor.ServiceDescriptorProto) *HttpAuthorizationExtensions {
+func LoadServiceExtensions(service *descriptor.ServiceDescriptorProto) *MikrosServiceExtensions {
 	if service.Options != nil {
-		v := proto.GetExtension(service.Options, E_Authorization)
-		if val, ok := v.(*HttpAuthorizationExtensions); ok {
+		v := proto.GetExtension(service.Options, E_ServiceOptions)
+		if val, ok := v.(*MikrosServiceExtensions); ok {
 			return val
 		}
 	}

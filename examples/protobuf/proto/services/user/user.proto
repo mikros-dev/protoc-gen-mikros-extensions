@@ -8,36 +8,40 @@ import "mikros/extensions/extensions.proto";
 import "services/common/common.proto";
 
 message UserWire {
-  option (mikros.extensions.wire_expansion) = {
-    custom_code: {
-      import: {
-        alias: "common"
-        name: "examples/gen/go/services/common"
+  option (mikros.extensions.message_options) = {
+    wire: {
+      custom_code: {
+        import: {
+          alias: "common"
+          name: "examples/gen/go/services/common"
+        }
+
+        signature: "IsActive() bool"
+        body: "return u.Status == common.Status_STATUS_ACTIVE"
       }
 
-      signature: "IsActive() bool"
-      body: "return u.Status == common.Status_STATUS_ACTIVE"
+      custom_code: {
+        signature: "HasEmail() bool"
+        body: "return u.Email != \"\""
+      }
     }
 
-    custom_code: {
-      signature: "HasEmail() bool"
-      body: "return u.Email != \"\""
+    outbound: {
+      export: true
+      naming_mode: NAMING_MODE_SNAKE_CASE
     }
   };
 
-  option (mikros.extensions.outbound_options) = {
-    export: true
-    naming_mode: NAMING_MODE_SNAKE_CASE
-  };
-
-  string id = 1 [(mikros.extensions.domain) = {
-    struct_tag: {
-      name: "validate",
-      value: "omitempty,min=10,max=42"
-    }
-    struct_tag: {
-      name: "gorm",
-      value: "primaryKey"
+  string id = 1 [(mikros.extensions.field_options) = {
+    domain: {
+      struct_tag: {
+        name: "validate",
+        value: "omitempty,min=10,max=42"
+      }
+      struct_tag: {
+        name: "gorm",
+        value: "primaryKey"
+      }
     }
   }];
 

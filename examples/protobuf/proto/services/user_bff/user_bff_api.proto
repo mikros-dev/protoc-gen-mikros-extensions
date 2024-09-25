@@ -9,8 +9,10 @@ import "mikros/extensions/extensions.proto";
 import "services/user/user.proto";
 
 service UserBffService {
-  option (mikros.extensions.authorization) = {
-    mode: AUTHORIZATION_MODE_SCOPED
+  option (mikros.extensions.service_options) = {
+    authorization: {
+      mode: AUTHORIZATION_MODE_SCOPED
+    }
   };
 
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
@@ -19,27 +21,36 @@ service UserBffService {
       body: "email"
     };
 
-    option (mikros.extensions.http) = {
-      scope: "WRITE"
-      header: "debug"
+    option (mikros.extensions.method_options) = {
+      http: {
+        scope: "WRITE"
+        header: "debug"
+      }
     };
   }
 }
 
 message CreateUserRequest {
-  option (mikros.extensions.inbound_options) = {
-    naming_mode: NAMING_MODE_SNAKE_CASE
+  option (mikros.extensions.message_options) = {
+    inbound: {
+      naming_mode: NAMING_MODE_SNAKE_CASE
+    }
   };
 
-  string name = 1 [(mikros.extensions.inbound) = {name:"NAME"}];
+  string name = 1 [(mikros.extensions.field_options) = {
+    inbound: {name:"NAME"}
+  }];
+
   string email = 2;
   int32 age = 3;
   bool debug = 4;
 }
 
 message CreateUserResponse {
-  option (mikros.extensions.outbound_options) = {
-    naming_mode: NAMING_MODE_SNAKE_CASE
+  option (mikros.extensions.message_options) = {
+    outbound: {
+      naming_mode: NAMING_MODE_SNAKE_CASE
+    }
   };
 
   user.UserWire user = 1;

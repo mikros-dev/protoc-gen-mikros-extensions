@@ -21,7 +21,14 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 		}
 
 		for _, f := range m.Fields {
-			validation := extensions.LoadFieldValidate(f.ProtoField.Proto)
+			var (
+				fieldExtensions = extensions.LoadFieldExtensions(f.ProtoField.Proto)
+				validation      *extensions.FieldValidateOptions
+			)
+
+			if fieldExtensions != nil {
+				validation = fieldExtensions.GetValidate()
+			}
 			if validation == nil {
 				continue
 			}
