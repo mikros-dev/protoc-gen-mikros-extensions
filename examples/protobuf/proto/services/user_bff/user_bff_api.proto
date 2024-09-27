@@ -11,7 +11,8 @@ import "services/user/user.proto";
 service UserBffService {
   option (mikros.extensions.service_options) = {
     authorization: {
-      mode: AUTHORIZATION_MODE_SCOPED
+      mode: AUTHORIZATION_MODE_CUSTOM
+      custom_auth_name: "auth-scopes"
     }
   };
 
@@ -23,7 +24,7 @@ service UserBffService {
 
     option (mikros.extensions.method_options) = {
       http: {
-        scope: "WRITE"
+        auth_arg: "WRITE"
         header: "debug"
       }
     };

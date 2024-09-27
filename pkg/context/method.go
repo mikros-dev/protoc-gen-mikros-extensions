@@ -72,7 +72,7 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 			return nil, err
 		}
 
-		methods[i] = &Method{
+		m := &Method{
 			Name:                  method.Name,
 			AdditionalHTTPMethods: getAdditionalHttpRules(method),
 			Request:               msg,
@@ -83,6 +83,10 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 			service:               service,
 			method:                methodExtensions,
 		}
+		if err := m.Validate(); err != nil {
+			return nil, err
+		}
+		methods[i] = m
 	}
 
 	return methods, nil
@@ -242,6 +246,18 @@ func getAdditionalHttpRules(method *protobuf.Method) []HttpRule {
 	return rules
 }
 
+func (m *Method) Validate() error {
+	if m.service != nil {
+		if authorization := m.service.GetAuthorization(); authorization != nil {
+			if authorization.GetMode() == extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM && authorization.GetCustomAuthName() == "" {
+				return fmt.Errorf("custom auth name is required when mode is AUTHORIZATION_MODE_CUSTOM")
+			}
+		}
+	}
+
+	return nil
+}
+
 func (m *Method) HTTPMethod() string {
 	if m.endpoint != nil {
 		return m.endpoint.Method
@@ -270,8 +286,8 @@ func (m *Method) AuthModeKey() string {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
 			mode := authorization.GetMode()
-			if mode == extensions.AuthorizationMode_AUTHORIZATION_MODE_SCOPED {
-				return "auth-scopes"
+			if mode == extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM {
+				return authorization.GetCustomAuthName()
 			}
 		}
 	}
@@ -282,7 +298,17 @@ func (m *Method) AuthModeKey() string {
 func (m *Method) AuthModeValue() string {
 	if m.method != nil {
 		if http := m.method.GetHttp(); http != nil {
-			return `[]string{"` + strings.Join(http.GetScope(), `","`) + `"}`
+			var args []string
+			for _, arg := range http.GetAuthArg() {
+				if strings.HasSuffix(arg, "@header") {
+					args = append(args, fmt.Sprintf(`string(ctx.Request.Header.Peek("%s"))`, strings.TrimSuffix(arg, "@header")))
+					continue
+				}
+
+				args = append(args, fmt.Sprintf(`"%s"`, arg))
+			}
+
+			return `[]string{` + strings.Join(args, `,`) + `}`
 		}
 	}
 

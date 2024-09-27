@@ -10,7 +10,7 @@ An RPC method has the following options available to be used:
 
 Available options:
 
-| Name   | Type   | Modifier | Description                                   |
-|--------|--------|----------|-----------------------------------------------|
-| scope  | string | array    | Sets authorization scopes for the RPC.        |
-| header | string | array    | Sets header variables that the RPC will have. |
+| Name     | Type   | Modifier | Description                                   |
+|----------|--------|----------|-----------------------------------------------|
+| auth_arg | string | array    | Sets authorization values for the RPC.        |
+| header   | string | array    | Sets header variables that the RPC will have. |
