@@ -16,11 +16,12 @@ message MikrosServiceExtensions {
 
 message HttpAuthorizationExtensions {
   required AuthorizationMode mode = 1;
+  optional string custom_auth_name = 2;
 }
 
 enum AuthorizationMode {
   AUTHORIZATION_MODE_NO_AUTH = 0;
-  AUTHORIZATION_MODE_SCOPED = 1;
+  AUTHORIZATION_MODE_CUSTOM = 1;
 }
 
 extend google.protobuf.MethodOptions {
@@ -33,7 +34,7 @@ message MikrosMethodExtensions {
 
 message HttpMethodExtensions {
   repeated string header = 1;
-  repeated string scope = 2;
+  repeated string auth_arg = 2;
 }
 
 extend google.protobuf.EnumOptions {
