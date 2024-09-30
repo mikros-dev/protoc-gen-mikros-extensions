@@ -1,11 +1,11 @@
 package context
 
 import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
@@ -277,4 +277,25 @@ func (c *Context) UseCommonConverters() bool {
 	}
 
 	return false
+}
+
+func (c *Context) HasAddonIntoOutboundExtension() bool {
+	for _, a := range c.addons {
+		if _, ok := a.(addon.OutboundExtension); ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *Context) AddonIntoOutboundExtension(msg *Message, receiver string) string {
+	var output string
+	for _, a := range c.addons {
+		if ext, ok := a.(addon.OutboundExtension); ok {
+			output += ext.IntoOutbound(msg, receiver)
+		}
+	}
+
+	return output
 }

@@ -9,7 +9,7 @@ import (
 )
 {{end}}
 
-{{range .OutboundMessages}}{{$receiver := .GetReceiverName}}
+{{range $msg := .OutboundMessages}}{{$receiver := .GetReceiverName}}
 type {{.OutboundName}} struct {
     {{- range .GetFields templateName}}
     {{.OutboundName}} {{.OutboundType}} {{.OutboundTag}}
@@ -50,6 +50,10 @@ func ({{$receiver}} *{{.Name}}) IntoOutbound() interface{} {
     }
     out.{{.GoName}} = {{$name}}
     {{end}}
+
+    {{- if .HasAddonIntoOutboundExtension}}
+    {{.AddonIntoOutboundExtension $msg $receiver}}
+    {{- end}}
 
     return out
     {{- else}}
