@@ -286,3 +286,14 @@ func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 func (m *Message) IsWireInputKind() bool {
 	return m.Type == converters.WireInputMessage
 }
+
+func (m *Message) ValidatableFields() []*Field {
+	var fields []*Field
+	for _, f := range m.Fields {
+		if f.IsValidatable() {
+			fields = append(fields, f)
+		}
+	}
+
+	return fields
+}

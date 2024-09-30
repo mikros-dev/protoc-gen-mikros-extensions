@@ -4,9 +4,9 @@ A mikros framework protoc/buf plugin to extend features for services and applica
 
 ## Features
 
-The plugin can add the following features for generated source code:
+The plugin adds the following features for generated source code:
 
-* New entities for domain, inbound and outbound.
+* New entities for domain, inbound and outbound messages.
 * Validation for wire input messages.
 * HTTP server routes for HTTP services.
 * Unit test helpers API for creating entities.

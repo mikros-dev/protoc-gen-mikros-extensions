@@ -122,6 +122,7 @@ Available options:
 | required_all     | string | optional | Field is required if all fields exist.                             |
 | required_any     | string | optional | Field is required if any field exists.                             |
 | error_message    | string | optional | Custom error validation message.                                   |
+| skip             | bool   | optional | Sets the field to not be validated.                                |
 
 ### rules
 

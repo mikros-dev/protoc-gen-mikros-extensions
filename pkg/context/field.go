@@ -219,7 +219,7 @@ func (f *Field) IsProtobufValue() bool {
 }
 
 func (f *Field) IsValidatable() bool {
-	return f.extensions != nil && f.extensions.GetValidate() != nil
+	return f.extensions != nil && f.extensions.GetValidate() != nil && !f.extensions.GetValidate().GetSkip()
 }
 
 func (f *Field) ValidationName(receiver string) string {

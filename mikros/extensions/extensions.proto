@@ -129,6 +129,7 @@ message FieldValidateOptions {
   optional string required_all = 13;
   optional string required_any = 14;
   optional string error_message = 15;
+  optional bool skip = 16;
 }
 
 enum FieldValidatorRule {

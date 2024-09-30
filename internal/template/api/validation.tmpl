@@ -29,13 +29,13 @@ func ({{$receiver}} *{{$wireName}}) Validate(options ...*ValidateOptions) error 
 {{end}}
 {{- if $httpService}}
     return validation.Errors{
-    {{- range .Fields}}
+    {{- range .ValidatableFields}}
         "{{.OutboundJsonTagFieldName}}@{{.Location}}": validation.Validate({{.ValidationName $receiver}}, {{.ValidationCall}}),
     {{- end}}
     }.Filter()
 {{- else}}
     return validation.ValidateStruct({{$receiver}},
-    {{- range .Fields}}
+    {{- range .ValidatableFields}}
         validation.Field({{.ValidationName $receiver}}, {{.ValidationCall}}),
     {{- end}}
     )
