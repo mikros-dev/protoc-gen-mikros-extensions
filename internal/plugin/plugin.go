@@ -19,7 +19,6 @@ import (
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template"
 	api_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template/api"
 	test_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template/testing"
-	maddon "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
 	mcontext "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/output"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
@@ -75,7 +74,7 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	output.Enable(cfg.Debug)
 
 	// Load all addons
-	var addons []maddon.Addon
+	var addons []*addon.Addon
 	if cfg.Addons != nil {
 		a, err := addon.LoadAddons(cfg.Addons.Path)
 		if err != nil {

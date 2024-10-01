@@ -10,16 +10,16 @@ import (
 )
 
 type Addon struct {
-	addon.Addon
+	Symbol interface{}
 }
 
-func LoadAddons(path string) ([]addon.Addon, error) {
+func LoadAddons(path string) ([]*Addon, error) {
 	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var addons []addon.Addon
+	var addons []*Addon
 	for _, f := range files {
 		if !f.IsDir() && filepath.Ext(f.Name()) == ".so" {
 			a, err := loadAddon(filepath.Join(path, f.Name()))
@@ -45,12 +45,28 @@ func loadAddon(path string) (*Addon, error) {
 		return nil, err
 	}
 
-	a, ok := obj.(addon.Addon)
-	if !ok {
+	if _, ok := obj.(addon.Addon); !ok {
 		return nil, fmt.Errorf("could not find a proper Addon object inside addon '%s'", path)
 	}
 
 	return &Addon{
-		Addon: a,
+		Symbol: obj,
 	}, nil
+}
+
+func (a *Addon) Addon() addon.Addon {
+	if ad, ok := a.Symbol.(addon.Addon); ok {
+		return ad
+	}
+
+	// Should not fall here because we always load proper Addons symbols.
+	return nil
+}
+
+func (a *Addon) OutboundExtension() addon.OutboundExtension {
+	if ad, ok := a.Symbol.(addon.OutboundExtension); ok {
+		return ad
+	}
+
+	return nil
 }

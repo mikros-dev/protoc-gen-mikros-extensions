@@ -29,3 +29,6 @@ mikros/extensions/*.pb.go
 examples/protobuf/plugins
 examples/protobuf/gen
 examples/protobuf/addons
+
+# Misc
+.DS_Store

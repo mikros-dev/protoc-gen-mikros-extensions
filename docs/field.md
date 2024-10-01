@@ -84,13 +84,16 @@ Available options:
 
 Available options:
 
-| Name                      | Type    | Modifier | Description                                                                   |
-|---------------------------|---------|----------|-------------------------------------------------------------------------------|
-| name                      | string  | optional | Defines the field name inside the outbound structure.                         |
-| hide                      | bool    | optional | Hide the field in the outbound structure.                                     |
-| [bitflag](#bitflag)       | message | optional | Sets bitflag details about the field.                                         |
-| allow_empty               | bool    | optional | Sets that the field will exist in the outbound structure even if it is empty. |
-| [struct_tag](#struct_tag) | message | repeated | Sets optional struct tags for the Domain structure.                           |
+| Name                                 | Type    | Modifier | Description                                                                   |
+|--------------------------------------|---------|----------|-------------------------------------------------------------------------------|
+| name                                 | string  | optional | Defines the field name inside the outbound structure.                         |
+| hide                                 | bool    | optional | Hide the field in the outbound structure.                                     |
+| [bitflag](#bitflag)                  | message | optional | Sets bitflag details about the field.                                         |
+| allow_empty                          | bool    | optional | Sets that the field will exist in the outbound structure even if it is empty. |
+| [struct_tag](#struct_tag)            | message | repeated | Sets optional struct tags for the Domain structure.                           |
+| custom_bind                          | bool    | optional | Sets that the field will have a custom bind API call.                         |
+| custom_type                          | string  | optional | Lets the user set the outbound type of field.                                 |
+| [custom_import](./message.md#import) | message | optional | An import package required for the custom type.                               |
 
 ### bitflag
 

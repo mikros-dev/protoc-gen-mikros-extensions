@@ -101,6 +101,9 @@ message FieldOutboundOptions {
   optional OutboundBitflagField bitflag = 3;
   optional bool allow_empty = 4;
   repeated FieldDomainStructTag struct_tag = 5;
+  optional bool custom_bind = 6;
+  optional string custom_type = 7;
+  optional MikrosCustomImport custom_import = 8;
 }
 
 message OutboundBitflagField {
@@ -143,43 +146,43 @@ extend google.protobuf.MessageOptions {
 }
 
 message MikrosMessageExtensions {
-  optional MessageDomainExpansionOptions domain = 1;
-  optional MessageWireExpansionOptions wire = 2;
-  optional MessageInboundOptions inbound = 3;
-  optional MessageOutboundOptions outbound = 4;
-  optional MessageWireInputOptions wire_input = 5;
+  optional MessageDomainExtensions domain = 1;
+  optional MessageWireExtensions wire = 2;
+  optional MessageInboundExtensions inbound = 3;
+  optional MessageOutboundExtensions outbound = 4;
+  optional MessageWireInputExtensions wire_input = 5;
 }
 
-message MessageDomainExpansionOptions {
+message MessageDomainExtensions {
   optional bool dont_export = 1;
   optional NamingMode naming_mode = 2;
 }
 
-message MessageWireExpansionOptions {
-  repeated WireCodeExpansion custom_code = 1;
+message MessageWireExtensions {
+  repeated CustomCodeExtensions custom_code = 1;
 }
 
-message WireCodeExpansion {
+message CustomCodeExtensions {
   required string signature = 1;
   required string body  = 2;
-  repeated WireCodeExpansionImport import = 3;
+  repeated MikrosCustomImport import = 3;
 }
 
-message WireCodeExpansionImport {
+message MikrosCustomImport {
   optional string alias = 1;
   required string name = 2;
 }
 
-message MessageInboundOptions {
+message MessageInboundExtensions {
   optional NamingMode naming_mode = 1;
 }
 
-message MessageOutboundOptions {
+message MessageOutboundExtensions {
   optional bool export = 1;
   optional NamingMode naming_mode = 2;
 }
 
-message MessageWireInputOptions {
+message MessageWireInputExtensions {
   optional bool export = 1;
 }
 

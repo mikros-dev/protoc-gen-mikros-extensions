@@ -2,12 +2,12 @@
 
 A message can have the following options available:
 
-| Name                                  | Modifier | Description                                              |
-|---------------------------------------|----------|----------------------------------------------------------|
-| [domain_expansion](#domain-expansion) | optional | Options that modify the domain version of the message.   | 
-| [wire_expansion](#wire-expansion)     | optional | Options that modify the wire version of the message.     |
-| [inbound_options](#inbound-options)   | optional | Options that modify the inbound version of the message.  |
-| [outbound_options](#outbound-options) | optional | Options that modify the outbound version of the message. |
+| Name                          | Modifier | Description                                              |
+|-------------------------------|----------|----------------------------------------------------------|
+| [domain](#domain-expansion)   | optional | Options that modify the domain version of the message.   |
+| [wire](#wire-expansion)       | optional | Options that modify the wire version of the message.     |
+| [inbound](#inbound-options)   | optional | Options that modify the inbound version of the message.  |
+| [outbound](#outbound-options) | optional | Options that modify the outbound version of the message. |
 
 ## Domain expansion
 

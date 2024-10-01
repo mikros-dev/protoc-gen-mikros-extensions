@@ -13,8 +13,8 @@ import (
 	"github.com/iancoleman/strcase"
 	"google.golang.org/protobuf/compiler/protogen"
 
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
 	mtemplate "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
 
@@ -34,7 +34,7 @@ type Info struct {
 	name  string
 	data  []byte
 	api   map[string]interface{}
-	addon addon.Addon
+	addon *addon.Addon
 }
 
 type Options struct {
@@ -49,7 +49,7 @@ type Options struct {
 	Files            embed.FS `validate:"required"`
 	Context          Context  `validate:"required"`
 	HelperFunctions  map[string]interface{}
-	Addons           []addon.Addon
+	Addons           []*addon.Addon
 }
 
 // Context is an interface that a template file context, i.e., the
@@ -93,11 +93,11 @@ func LoadTemplates(options Options) (*Templates, error) {
 	}
 
 	for _, a := range options.Addons {
-		if !canUseAddon(options.Kind, a.Kind()) {
+		if !canUseAddon(options.Kind, a.Addon().Kind()) {
 			continue
 		}
 
-		addonsInfo, err := loadTemplates(a.Templates(), a.Name(), options.HelperFunctions, a)
+		addonsInfo, err := loadTemplates(a.Addon().Templates(), a.Addon().Name(), options.HelperFunctions, a)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +115,7 @@ func LoadTemplates(options Options) (*Templates, error) {
 	}, nil
 }
 
-func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, addon addon.Addon) ([]*Info, error) {
+func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, addon *addon.Addon) ([]*Info, error) {
 	templates, err := files.ReadDir(".")
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		// Specific addons APIs
 		if addon != nil {
 			helperApi["addonName"] = func() string {
-				return addon.Name()
+				return addon.Addon().Name()
 			}
 		}
 
@@ -176,12 +176,12 @@ func (t *Templates) Execute() ([]*Generated, error) {
 	execute := func(tpl *Info) (*Generated, error) {
 		prefix := t.filesPrefix
 		if tpl.addon != nil {
-			prefix = tpl.addon.Name()
+			prefix = tpl.addon.Addon().Name()
 		}
 
 		tplValidator := t.context.GetTemplateValidator
 		if tpl.addon != nil {
-			tplValidator = tpl.addon.GetTemplateValidator
+			tplValidator = tpl.addon.Addon().GetTemplateValidator
 		}
 
 		templateValidator, ok := tplValidator(mtemplate.NewName(prefix, tpl.name), t.context)
@@ -214,7 +214,7 @@ func (t *Templates) Execute() ([]*Generated, error) {
 		// Filename: Path + Package Name + Module Name + Template Name + Extension
 		templateName := fmt.Sprintf("%s.%s", t.moduleName, tpl.name)
 		if tpl.addon != nil {
-			templateName = fmt.Sprintf("%s.%s.%s", t.moduleName, strcase.ToSnake(tpl.addon.Name()), tpl.name)
+			templateName = fmt.Sprintf("%s.%s.%s", t.moduleName, strcase.ToSnake(tpl.addon.Addon().Name()), tpl.name)
 		}
 
 		filename := filepath.Join(
