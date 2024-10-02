@@ -1,12 +1,12 @@
 package context
 
 import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
 	"google.golang.org/protobuf/compiler/protogen"
 
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
 )
@@ -20,7 +20,7 @@ type Context struct {
 
 	messages []*Message
 	imports  map[template.Name][]*templateImport
-	addons   map[string]addon.Addon
+	addons   map[string]*addon.Addon
 	settings *settings.Settings
 }
 
@@ -28,7 +28,7 @@ type BuildContextOptions struct {
 	PluginName string
 	Settings   *settings.Settings
 	Plugin     *protogen.Plugin
-	Addons     []addon.Addon
+	Addons     []*addon.Addon
 }
 
 func BuildContext(opt BuildContextOptions) (*Context, error) {
@@ -63,9 +63,9 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 		settings:   opt.Settings,
 	}
 
-	addons := make(map[string]addon.Addon)
+	addons := make(map[string]*addon.Addon)
 	for _, a := range opt.Addons {
-		addons[a.Name()] = a
+		addons[a.Addon().Name()] = a
 	}
 
 	ctx.addons = addons
@@ -81,7 +81,7 @@ func (c *Context) GetTemplateImports(name string) []*templateImport {
 func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*templateImport {
 	if a, ok := c.addons[addonName]; ok {
 		var (
-			ipt          = a.GetTemplateImports(template.Name(tplName), c, c.settings)
+			ipt          = a.Addon().GetTemplateImports(template.Name(tplName), c, c.settings)
 			addonImports = make([]*templateImport, len(ipt))
 		)
 
@@ -105,7 +105,7 @@ func (c *Context) HasImportFor(name string) bool {
 
 func (c *Context) HasAddonImportFor(addonName, tplName string) bool {
 	if a, ok := c.addons[addonName]; ok {
-		return len(a.GetTemplateImports(template.Name(tplName), c, c.settings)) > 0
+		return len(a.Addon().GetTemplateImports(template.Name(tplName), c, c.settings)) > 0
 	}
 
 	return false
@@ -265,7 +265,7 @@ func (c *Context) ValidatableMessages() []*Message {
 
 func (c *Context) AddonContext(addonName string) interface{} {
 	if a, ok := c.addons[addonName]; ok {
-		return a.GetContext(c)
+		return a.Addon().GetContext(c)
 	}
 
 	return nil
@@ -277,4 +277,25 @@ func (c *Context) UseCommonConverters() bool {
 	}
 
 	return false
+}
+
+func (c *Context) HasAddonIntoOutboundExtension() bool {
+	for _, a := range c.addons {
+		if a.OutboundExtension() != nil {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (c *Context) AddonIntoOutboundExtension(msg *Message, receiver string) string {
+	var output string
+	for _, a := range c.addons {
+		if ext := a.OutboundExtension(); ext != nil {
+			output += ext.IntoOutbound(msg, receiver)
+		}
+	}
+
+	return output
 }

@@ -151,6 +151,12 @@ func (f *Field) OutboundType(isPointer bool) string {
 }
 
 func (f *Field) convertFromWireType(isPointer, testMode bool, mode conversionMode) string {
+	if mode == wireToOutbound && f.fieldExtensions != nil && f.fieldExtensions.GetOutbound() != nil {
+		if t := f.fieldExtensions.GetOutbound().GetCustomType(); t != "" {
+			return t
+		}
+	}
+
 	if f.proto.IsEnum() {
 		return optional("string", f.isArray, isPointer)
 	}
@@ -541,7 +547,7 @@ func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 				prefix    = outbound.GetBitflag().GetPrefix()
 			)
 
-			return fmt.Sprintf("currentEnumValues(%s.%s, %s, \"%s\")", receiver, f.goName, valuesVar, prefix)
+			return fmt.Sprintf("currentEnumValues(%s.%s, %s_name, \"%s\")", receiver, f.goName, valuesVar, prefix)
 		}
 	}
 

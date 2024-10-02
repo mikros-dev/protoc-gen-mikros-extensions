@@ -3,6 +3,8 @@ package imports
 import (
 	"strings"
 
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
+	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
 )
 
@@ -21,6 +23,11 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
+			if ipt := fieldHasCustomImport(f.ProtoField); ipt != nil {
+				imports[ipt.Name] = ipt
+				continue
+			}
+
 			var (
 				outboundType   = strings.TrimPrefix(f.OutboundType, "[]*")
 				conversionCall = f.ConversionWireOutputToOutbound
@@ -66,4 +73,19 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 	}
 
 	return imports
+}
+
+func fieldHasCustomImport(field *protobuf.Field) *Import {
+	if ext := extensions.LoadFieldExtensions(field.Proto); ext != nil {
+		if outbound := ext.GetOutbound(); outbound != nil {
+			if ipt := outbound.GetCustomImport(); ipt != nil {
+				return &Import{
+					Alias: ipt.GetAlias(),
+					Name:  ipt.GetName(),
+				}
+			}
+		}
+	}
+
+	return nil
 }

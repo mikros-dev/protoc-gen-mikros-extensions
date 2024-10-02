@@ -155,6 +155,14 @@ func (f *Field) IsScalar() bool {
 }
 
 func (f *Field) IsBindable() bool {
+	if f.extensions != nil {
+		if outbound := f.extensions.GetOutbound(); outbound != nil {
+			if outbound.GetCustomBind() {
+				return false
+			}
+		}
+	}
+
 	return f.IsScalar() || (f.ProtoField.IsTimestamp() && !f.IsArray) || f.ProtoField.IsProtoStruct()
 }
 
