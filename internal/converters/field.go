@@ -547,7 +547,7 @@ func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 				prefix    = outbound.GetBitflag().GetPrefix()
 			)
 
-			return fmt.Sprintf("currentEnumValues(%s.%s, %s, \"%s\")", receiver, f.goName, valuesVar, prefix)
+			return fmt.Sprintf("currentEnumValues(%s.%s, %s_name, \"%s\")", receiver, f.goName, valuesVar, prefix)
 		}
 	}
 
