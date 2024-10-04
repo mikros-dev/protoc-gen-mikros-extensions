@@ -12,6 +12,7 @@ type Enum struct {
 	Name          string
 	Prefix        string
 	Entries       []*EnumEntry
+	ProtoEnum     *protobuf.Enum
 }
 
 type EnumEntry struct {
@@ -24,9 +25,10 @@ func loadEnums(pkg *protobuf.Protobuf) []*Enum {
 	enums := make([]*Enum, len(pkg.Enums))
 	for i, e := range pkg.Enums {
 		enum := &Enum{
-			Name:    e.Name,
-			Prefix:  e.Prefix,
-			Entries: loadEnumEntries(e.Proto),
+			Name:      e.Name,
+			Prefix:    e.Prefix,
+			Entries:   loadEnumEntries(e.Proto),
+			ProtoEnum: e,
 		}
 
 		if enumExtensions := extensions.LoadEnumExtensions(e.Proto); enumExtensions != nil {
