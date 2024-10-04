@@ -75,7 +75,7 @@ func (w *routesWrapper) parse{{$request.Name}}FromRequest(ctx *fasthttp.RequestC
     {{- end}}
 
     {{range .PathArguments}}
-    w.Field.Clear(request.{{.GoName}})
+    w.Field.Clear(&request.{{.GoName}})
     if v, ok := ctx.UserValue("{{.ProtoName}}").({{.CastType}}); ok {
         request.{{.GoName}} = v
     }
@@ -83,7 +83,7 @@ func (w *routesWrapper) parse{{$request.Name}}FromRequest(ctx *fasthttp.RequestC
     {{if .HasQueryArguments}}
     queryArgs := ctx.QueryArgs()
     {{- range .QueryArguments}}
-    w.Field.Clear(request.{{.GoName}})
+    w.Field.Clear(&request.{{.GoName}})
     if v := queryArgs.Peek("{{.ProtoName}}"); v != nil {
         if err := w.Field.Decode(v, &request.{{.GoName}}); err != nil {
             return nil, fmt.Errorf("{{.ProtoName}}@query: %w", err)
@@ -92,7 +92,7 @@ func (w *routesWrapper) parse{{$request.Name}}FromRequest(ctx *fasthttp.RequestC
     {{end}}
     {{end}}
     {{- range .HeaderArguments}}
-    w.Field.Clear(request.{{.GoName}})
+    w.Field.Clear(&request.{{.GoName}})
     if v := ctx.Request.Header.Peek("{{.ProtoName}}"); v != nil {
         if err := w.Field.Decode(v, &request.{{.GoName}}); err != nil {
             return nil, fmt.Errorf("{{.ProtoName}}@header: %w", err)
