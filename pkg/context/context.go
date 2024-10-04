@@ -255,7 +255,7 @@ func (c *Context) HasValidatableMessage() bool {
 func (c *Context) ValidatableMessages() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
-		if m.HasValidatableField() {
+		if m.HasValidatableField() || m.Type == converters.WireInputMessage {
 			messages = append(messages, m)
 		}
 	}
@@ -279,9 +279,9 @@ func (c *Context) UseCommonConverters() bool {
 	return false
 }
 
-func (c *Context) HasAddonIntoOutboundExtension() bool {
+func (c *Context) HasAddonIntoOutboundExtensionContent(msg *Message) bool {
 	for _, a := range c.addons {
-		if a.OutboundExtension() != nil {
+		if ext := a.OutboundExtension(); ext != nil && ext.IntoOutbound(msg, "r") != "" {
 			return true
 		}
 	}
@@ -289,7 +289,7 @@ func (c *Context) HasAddonIntoOutboundExtension() bool {
 	return false
 }
 
-func (c *Context) AddonIntoOutboundExtension(msg *Message, receiver string) string {
+func (c *Context) AddonIntoOutboundExtensionContent(msg *Message, receiver string) string {
 	var output string
 	for _, a := range c.addons {
 		if ext := a.OutboundExtension(); ext != nil {
