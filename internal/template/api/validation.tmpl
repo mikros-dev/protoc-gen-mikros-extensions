@@ -17,6 +17,10 @@ type ValidateOptions struct {
 
 {{$httpService := .IsHTTPService}}
 {{range .ValidatableMessages}}{{$receiver := .GetReceiverName}}{{$wireName := .WireName}}
+func ({{$receiver}} *{{$wireName}}) ValidateWithDefaultOptions() error {
+    return {{$receiver}}.Validate(&ValidateOptions{})
+}
+
 func ({{$receiver}} *{{$wireName}}) Validate(options ...*ValidateOptions) error {
 {{- if .ValidationNeedsCustomRuleOptions}}
     if len(options) == 0 {
