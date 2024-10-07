@@ -29,9 +29,11 @@ func (e {{.Name}}) ValueWithoutPrefix() string {
     return strings.TrimPrefix(e.String(), "{{.Prefix}}")
 }
 
-func (e {{.Name}}) Int32Value() int32 {
+{{if .IsErrorCode}}
+func (e {{.Name}}) ErrorCode() int32 {
     return {{.Name}}_value[e.String()]
 }
+{{end}}
 
 {{- if .HasEntryDefinition}}
 var ({{$enumName := .Name}}

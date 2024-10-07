@@ -9,6 +9,7 @@ import (
 
 type Enum struct {
 	IsBitflagKind bool
+	IsErrorCode   bool
 	Name          string
 	Prefix        string
 	Entries       []*EnumEntry
@@ -34,6 +35,7 @@ func loadEnums(pkg *protobuf.Protobuf) []*Enum {
 		if enumExtensions := extensions.LoadEnumExtensions(e.Proto); enumExtensions != nil {
 			if decodingOptions := enumExtensions.GetApi(); decodingOptions != nil {
 				enum.IsBitflagKind = decodingOptions.GetBitflag()
+				enum.IsErrorCode = decodingOptions.GetErrorCode()
 			}
 		}
 

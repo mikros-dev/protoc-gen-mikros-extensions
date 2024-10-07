@@ -46,9 +46,8 @@ message MikrosEnumExtensions {
 }
 
 message EnumApiExtensions {
-  // Sets that the enum is of bit flag kind, which will provide an API to use
-  // its value as bits for uin64 variables.
   optional bool bitflag = 1;
+  optional bool error_code = 2;
 }
 
 extend google.protobuf.EnumValueOptions {
