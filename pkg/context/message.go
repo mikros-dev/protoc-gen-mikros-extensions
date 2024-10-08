@@ -4,10 +4,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type Message struct {

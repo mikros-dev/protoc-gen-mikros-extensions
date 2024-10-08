@@ -5,7 +5,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 )
 
 type Database struct {

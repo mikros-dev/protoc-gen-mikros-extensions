@@ -1,7 +1,7 @@
 package imports
 
 import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 func loadDomainTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {

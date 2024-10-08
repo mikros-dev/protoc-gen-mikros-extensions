@@ -13,9 +13,9 @@ import (
 	"github.com/iancoleman/strcase"
 	"google.golang.org/protobuf/compiler/protogen"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/addon"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	mtemplate "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/protobuf"
+	mtemplate "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
 // Templates is an object that holds information related to a group of

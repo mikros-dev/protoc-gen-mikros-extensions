@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {

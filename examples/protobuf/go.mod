@@ -1,6 +1,6 @@
 module examples
 
-replace github.com/rsfreitas/protoc-gen-mikros-extensions => ./../..
+replace github.com/mikros-dev/protoc-gen-mikros-extensions => ./../..
 
 go 1.22.4
 
@@ -9,7 +9,7 @@ toolchain go1.22.6
 require (
 	github.com/fasthttp/router v1.5.2
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
-	github.com/rsfreitas/protoc-gen-mikros-extensions v0.0.0-00010101000000-000000000000
+	github.com/mikros-dev/protoc-gen-mikros-extensions v0.0.0-00010101000000-000000000000
 	github.com/valyala/fasthttp v1.55.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1
 	google.golang.org/grpc v1.66.2

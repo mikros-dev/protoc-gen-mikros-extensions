@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"plugin"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
 )
 
 type Addon struct {

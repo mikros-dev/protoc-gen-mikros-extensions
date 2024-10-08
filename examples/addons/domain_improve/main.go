@@ -6,11 +6,11 @@ import (
 	"google.golang.org/protobuf/proto"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/context"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
 func loadDomainImprove(msg *descriptor.DescriptorProto) *extensions.DomainImprove {
