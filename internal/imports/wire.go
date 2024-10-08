@@ -1,7 +1,7 @@
 package imports
 
 import (
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 )
 
 func loadWireTemplateImports(ctx *Context) []*Import {

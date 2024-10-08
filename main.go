@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/bufbuild/protoplugin"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/plugin"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/plugin"
 )
 
 func main() {

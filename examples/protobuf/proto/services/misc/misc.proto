@@ -21,7 +21,7 @@ message MiscCompletedWire {
     outbound :{
       name: "some_string_features"
       bitflag {
-        values: "common.EntityFeatures_name"
+        values: "common.EntityFeatures"
         prefix: "ENTITY_FEATURES_"
       }
     }

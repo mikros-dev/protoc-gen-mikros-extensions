@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
 type Context struct {

@@ -3,10 +3,10 @@ package main
 import (
 	"embed"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/addon"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/context"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
 //go:embed *.tmpl

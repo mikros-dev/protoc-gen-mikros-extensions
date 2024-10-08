@@ -1,4 +1,4 @@
-module github.com/rsfreitas/protoc-gen-mikros-extensions
+module github.com/mikros-dev/protoc-gen-mikros-extensions
 
 go 1.22.3
 

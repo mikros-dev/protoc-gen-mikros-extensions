@@ -7,9 +7,9 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/converters"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/protobuf"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type NewFieldOptions struct {

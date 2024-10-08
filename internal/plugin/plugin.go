@@ -14,15 +14,15 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/addon"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/args"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template"
-	api_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template/api"
-	test_tpl_files "github.com/rsfreitas/protoc-gen-mikros-extensions/internal/template/testing"
-	mcontext "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/context"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/output"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
-	mtemplate "github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/args"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template"
+	api_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/api"
+	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
+	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	mtemplate "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
 type execution struct {

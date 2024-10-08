@@ -3,8 +3,8 @@ package addon
 import (
 	"embed"
 
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/rsfreitas/protoc-gen-mikros-extensions/pkg/template"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
 // Addon is an interface that a supported plugin addon must implement.
