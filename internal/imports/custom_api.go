@@ -4,7 +4,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 )
 
-func loadWireTemplateImports(ctx *Context) []*Import {
+func loadCustomApiTemplateImports(ctx *Context) []*Import {
 	imports := make(map[string]*Import)
 
 	for _, m := range ctx.WireExtensions {
@@ -13,12 +13,12 @@ func loadWireTemplateImports(ctx *Context) []*Import {
 			continue
 		}
 
-		options := ext.GetWire()
+		options := ext.GetCustomApi()
 		if options == nil {
 			continue
 		}
 
-		for _, c := range options.GetCustomCode() {
+		for _, c := range options.GetCode() {
 			for _, i := range c.GetImport() {
 				key := i.GetName()
 				if key == "" {

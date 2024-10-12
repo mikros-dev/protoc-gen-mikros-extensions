@@ -146,7 +146,7 @@ extend google.protobuf.MessageOptions {
 
 message MikrosMessageExtensions {
   optional MessageDomainExtensions domain = 1;
-  optional MessageWireExtensions wire = 2;
+  optional MessageCustomApiExtensions custom_api = 2;
   optional MessageInboundExtensions inbound = 3;
   optional MessageOutboundExtensions outbound = 4;
   optional MessageWireInputExtensions wire_input = 5;
@@ -157,8 +157,8 @@ message MessageDomainExtensions {
   optional NamingMode naming_mode = 2;
 }
 
-message MessageWireExtensions {
-  repeated CustomCodeExtensions custom_code = 1;
+message MessageCustomApiExtensions {
+  repeated CustomCodeExtensions code = 1;
 }
 
 message CustomCodeExtensions {

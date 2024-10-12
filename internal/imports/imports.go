@@ -61,7 +61,7 @@ func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name
 	return map[template.Name][]*Import{
 		template.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
 		template.NewName("api", "enum"):            loadEnumTemplateImports(),
-		template.NewName("api", "wire"):            loadWireTemplateImports(ctx),
+		template.NewName("api", "custom_api"):      loadCustomApiTemplateImports(ctx),
 		template.NewName("api", "http_server"):     loadHttpServerTemplateImports(),
 		template.NewName("api", "routes"):          loadRoutesTemplateImports(ctx),
 		template.NewName("api", "wire_input"):      loadWireInputTemplateImports(ctx, cfg),

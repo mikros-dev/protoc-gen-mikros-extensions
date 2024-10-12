@@ -9,9 +9,9 @@ import (
 )
 {{end}}
 
-{{range .WireExtensions}}{{$receiver := .GetReceiverName}}{{$wireName := .WireName}}
-{{- range .WireCustomCode}}
-func ({{$receiver}} *{{$wireName}}) {{.Signature}} {
+{{range .CustomApiExtensions}}
+{{- range .CustomApiCode}}
+func {{.Signature}} {
     {{.Body}}
 }
 {{end}}
