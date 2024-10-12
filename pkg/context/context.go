@@ -160,10 +160,10 @@ func (c *Context) OutboundMessages() []*Message {
 	return messages
 }
 
-func (c *Context) WireExtensions() []*Message {
+func (c *Context) CustomApiExtensions() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
-		if m.HasWireCustomCodeExtension() {
+		if m.HasCustomApiCodeExtension() {
 			messages = append(messages, m)
 		}
 	}
@@ -179,8 +179,8 @@ func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (templ
 		template.NewName("api", "enum"): func() bool {
 			return len(c.Enums) > 0
 		},
-		template.NewName("api", "wire"): func() bool {
-			return len(c.WireExtensions()) > 0
+		template.NewName("api", "custom_api"): func() bool {
+			return len(c.CustomApiExtensions()) > 0
 		},
 		template.NewName("api", "http_server"): func() bool {
 			return c.IsHTTPService()

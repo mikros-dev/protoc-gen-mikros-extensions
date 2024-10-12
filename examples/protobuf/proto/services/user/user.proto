@@ -9,19 +9,19 @@ import "services/common/common.proto";
 
 message UserWire {
   option (mikros.extensions.message_options) = {
-    wire: {
-      custom_code: {
+    custom_api: {
+      code: {
         import: {
           alias: "common"
           name: "examples/gen/go/services/common"
         }
 
-        signature: "IsActive() bool"
+        signature: "(u *UserWire) IsActive() bool"
         body: "return u.Status == common.Status_STATUS_ACTIVE"
       }
 
-      custom_code: {
-        signature: "HasEmail() bool"
+      code: {
+        signature: "(u *UserWire) HasEmail() bool"
         body: "return u.Email != \"\""
       }
     }

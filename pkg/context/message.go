@@ -189,10 +189,10 @@ func (m *Message) MapFields() []*Field {
 	return fields
 }
 
-func (m *Message) HasWireCustomCodeExtension() bool {
+func (m *Message) HasCustomApiCodeExtension() bool {
 	if m.extensions != nil {
-		if options := m.extensions.GetWire(); options != nil {
-			return len(options.GetCustomCode()) > 0
+		if options := m.extensions.GetCustomApi(); options != nil {
+			return len(options.GetCode()) > 0
 		}
 	}
 
@@ -204,12 +204,12 @@ type CustomCode struct {
 	Body      string
 }
 
-func (m *Message) WireCustomCode() []*CustomCode {
+func (m *Message) CustomApiCode() []*CustomCode {
 	var customCodes []*CustomCode
 
 	if m.extensions != nil {
-		if options := m.extensions.GetWire(); options != nil {
-			for _, c := range options.GetCustomCode() {
+		if options := m.extensions.GetCustomApi(); options != nil {
+			for _, c := range options.GetCode() {
 				customCodes = append(customCodes, &CustomCode{
 					Signature: c.GetSignature(),
 					Body:      c.GetBody(),

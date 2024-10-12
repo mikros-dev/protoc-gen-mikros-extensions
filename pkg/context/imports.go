@@ -91,7 +91,7 @@ func toImportsContext(ctx *Context) *imports.Context {
 		wireInput = append(wireInput, messageToImportMessage(m))
 	}
 
-	for _, m := range ctx.WireExtensions() {
+	for _, m := range ctx.CustomApiExtensions() {
 		wireExtensions = append(wireExtensions, messageToImportMessage(m))
 	}
 

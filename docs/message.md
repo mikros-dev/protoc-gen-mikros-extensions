@@ -5,7 +5,7 @@ A message can have the following options available:
 | Name                          | Modifier | Description                                              |
 |-------------------------------|----------|----------------------------------------------------------|
 | [domain](#domain-expansion)   | optional | Options that modify the domain version of the message.   |
-| [wire](#wire-expansion)       | optional | Options that modify the wire version of the message.     |
+| [custom_api](#custom-api)     | optional | Options that adds user custom APIs to messages.          |
 | [inbound](#inbound-options)   | optional | Options that modify the inbound version of the message.  |
 | [outbound](#outbound-options) | optional | Options that modify the outbound version of the message. |
 
@@ -18,15 +18,15 @@ Available options:
 | dont_export                 | bool | optional | Sets that the message won't have a domain equivalent message. |
 | [naming_mode](#Naming-Mode) | enum | optional | Sets the naming output format.                                |
 
-## Wire expansion
+## Custom Api
 
 Available options:
 
-| Name                        | Type    | Modifier | Description                                       |
-|-----------------------------|---------|----------|---------------------------------------------------|
-| [custom_code](#custom-code) | message | array    | Adds new API for the wire version of the message. |
+| Name          | Type    | Modifier | Description                                       |
+|---------------|---------|----------|---------------------------------------------------|
+| [code](#code) | message | array    | Adds new API for the wire version of the message. |
 
-### Custom code
+### Code
 
 | Name              | Type               | Modifier | Description                                                       |
 |-------------------|--------------------|----------|-------------------------------------------------------------------|
@@ -47,12 +47,12 @@ Available options:
 message Person {
   option (mikros.extensions.wire_expansion) = {
     custom_code: {
-      signature: "IsAlive() bool"
+      signature: "(p *Person) IsAlive() bool"
       body: "return p.alive"
     }
     
     custom_code: {
-      signature: "SayHello()"
+      signature: "(p *Person) SayHello()"
       body: "fmt.Println(\"Hello\")"
       import: {
         name: "fmt"
