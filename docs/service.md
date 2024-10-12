@@ -18,4 +18,4 @@ A service has the following options available:
 | Name                       | Description                                   |
 |----------------------------|-----------------------------------------------|
 | AUTHORIZATION_MODE_NO_AUTH | Service without authorization checking.       |
-| AUTHORIZATION_MODE_CUSTOM  | Service with scopes authorization validation. |
+| AUTHORIZATION_MODE_CUSTOM  | Service with custom authorization validation. |

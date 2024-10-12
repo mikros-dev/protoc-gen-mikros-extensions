@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
-
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 )
 
 type RequiredCondition struct {
@@ -37,7 +35,7 @@ type requiredRuleParseOptions struct {
 func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 	var (
 		found             = 0
-		validationOptions *extensions.FieldValidateOptions
+		validationOptions = options.Options.GetValidate()
 	)
 
 	requiredIf, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{

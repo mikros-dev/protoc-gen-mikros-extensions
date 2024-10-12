@@ -4,6 +4,7 @@ package services.product;
 
 option go_package = "examples/gen/go/services/product;product";
 
+import "mikros/extensions/extensions.proto";
 import "domain_improve.proto";
 
 message ProductWire {
@@ -42,9 +43,20 @@ message GetProductsResponse {
 }
 
 message CreateProductRequest {
-  string name = 1;
-  double price = 2;
-  bool in_stock = 3;
+  string name = 1 [(mikros.extensions.field_options) = {
+    validate: {
+      required_if: "alternative_name $empty"
+    }
+  }];
+
+  string alternative_name = 2 [(mikros.extensions.field_options) = {
+    validate: {
+      required_if: "name $empty"
+    }
+  }];
+
+  double price = 3;
+  bool in_stock = 4;
 }
 
 message CreateProductResponse {
