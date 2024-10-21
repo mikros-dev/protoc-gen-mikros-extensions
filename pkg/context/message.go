@@ -2,6 +2,7 @@ package context
 
 import (
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/converters"
@@ -78,6 +79,12 @@ func loadMessages(pkg *protobuf.Protobuf, opt LoadMessagesOptions) ([]*Message, 
 			extensions:    extensions.LoadMessageExtensions(m.Proto),
 		}
 	}
+
+	// Sort messages by name so it does not affect generated code every
+	// time the plugin is executed.
+	sort.Slice(messages, func(i, j int) bool {
+		return messages[i].Name < messages[j].Name
+	})
 
 	return messages, nil
 }
