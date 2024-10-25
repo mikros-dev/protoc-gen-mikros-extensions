@@ -5,17 +5,17 @@ import (
 	"strings"
 
 	"google.golang.org/protobuf/compiler/protogen"
-	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
 
 type Protobuf struct {
-	ModuleName  string
-	PackageName string
-	FullPath    string
-	Service     *Service
-	Messages    []*Message
-	Enums       []*Enum
-	Files       map[string]*descriptor.FileDescriptorProto
+	ModuleName   string
+	PackageName  string
+	FullPath     string
+	Service      *Service
+	Messages     []*Message
+	Enums        []*Enum
+	PackageFiles map[string]*protogen.File
+	Files        map[string]*protogen.File
 }
 
 type ParseOptions struct {
@@ -28,40 +28,40 @@ func Parse(options ParseOptions) (*Protobuf, error) {
 		return nil, err
 	}
 
-	protoFiles, err := getProtoFiles(options.Plugin)
+	packageProtoFiles, err := getPackageProtoFiles(options.Plugin)
 	if err != nil {
 		return nil, err
 	}
 
-	files := make(map[string]*descriptor.FileDescriptorProto)
-	for k, v := range protoFiles {
-		files[k] = getFileDescriptor(v)
+	packageFiles := make(map[string]*protogen.File)
+	for k, v := range packageProtoFiles {
+		packageFiles[k] = v
+	}
+
+	files := make(map[string]*protogen.File)
+	for name, f := range options.Plugin.FilesByPath {
+		if string(f.GoPackageName) != moduleName {
+			files[name] = f
+		}
 	}
 
 	return &Protobuf{
 		ModuleName:  moduleName,
 		PackageName: packageName,
 		FullPath:    path,
-		Files:       files,
-		Enums: parseEnums(&parseEnumsOptions{
-			Files: protoFiles,
-		}),
 		Service: parseService(&parseServiceOptions{
-			Files: protoFiles,
+			Files: packageProtoFiles,
 		}),
 		Messages: parseMessages(&parseMessagesOptions{
 			ModuleName: moduleName,
-			Files:      protoFiles,
+			Files:      packageProtoFiles,
 		}),
+		Enums: parseEnums(&parseEnumsOptions{
+			Files: packageProtoFiles,
+		}),
+		PackageFiles: packageFiles,
+		Files:        files,
 	}, nil
-}
-
-func getFileDescriptor(file *protogen.File) *descriptor.FileDescriptorProto {
-	if file != nil {
-		return file.Proto
-	}
-
-	return nil
 }
 
 func (p *Protobuf) String() string {

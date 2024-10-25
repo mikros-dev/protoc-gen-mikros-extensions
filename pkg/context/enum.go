@@ -3,8 +3,8 @@ package context
 import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 )
 
 type Enum struct {

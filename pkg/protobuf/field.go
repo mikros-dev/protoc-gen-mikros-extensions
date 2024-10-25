@@ -182,3 +182,28 @@ func (f *Field) MapValueType() string {
 func (f *Field) ModuleName() string {
 	return f.moduleName
 }
+
+func (f *Field) MapValueTypeKind() protoreflect.Kind {
+	if f.IsMap() {
+		t := f.Schema.Desc.MapValue()
+		return t.Kind()
+	}
+
+	return 0
+}
+
+func (f *Field) MapValueTypeName() string {
+	if f.IsMap() {
+		t := f.Schema.Desc.MapValue()
+
+		if t.Kind() == protoreflect.MessageKind {
+			return string(t.Message().FullName())
+		}
+
+		if t.Kind() == protoreflect.EnumKind {
+			return string(t.Enum().FullName())
+		}
+	}
+
+	return ""
+}

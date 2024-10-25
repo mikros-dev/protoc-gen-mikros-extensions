@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
-func getProtoFiles(plugin *protogen.Plugin) (map[string]*protogen.File, error) {
+func getPackageProtoFiles(plugin *protogen.Plugin) (map[string]*protogen.File, error) {
 	var (
 		files = make(map[string]*protogen.File)
 	)

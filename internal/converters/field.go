@@ -7,9 +7,9 @@ import (
 	"github.com/iancoleman/strcase"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/validation"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 

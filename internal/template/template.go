@@ -14,7 +14,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	mtemplate "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
