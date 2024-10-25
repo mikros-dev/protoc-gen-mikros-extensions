@@ -45,13 +45,13 @@ func parseEnums(options *parseEnumsOptions) []*Enum {
 	var enums []*Enum
 
 	for _, file := range options.Files {
-		enums = append(enums, parseEnumsFromProtogenFile(file)...)
+		enums = append(enums, ParseEnumsFromFile(file)...)
 	}
 
 	return enums
 }
 
-func parseEnumsFromProtogenFile(file *protogen.File) []*Enum {
+func ParseEnumsFromFile(file *protogen.File) []*Enum {
 	var enums []*Enum
 
 	// Parse all enums declared inside messages

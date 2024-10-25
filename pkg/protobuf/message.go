@@ -9,10 +9,11 @@ import (
 )
 
 type Message struct {
-	Name   string
-	Fields []*Field
-	Schema *protogen.Message
-	Proto  *descriptor.DescriptorProto
+	Name       string
+	Fields     []*Field
+	Schema     *protogen.Message
+	Proto      *descriptor.DescriptorProto
+	ModuleName string
 }
 
 func (m *Message) String() string {
@@ -35,13 +36,13 @@ func parseMessages(options *parseMessagesOptions) []*Message {
 	var messages []*Message
 
 	for _, file := range options.Files {
-		messages = append(messages, parseMessagesFromFile(file, options.ModuleName)...)
+		messages = append(messages, ParseMessagesFromFile(file, options.ModuleName)...)
 	}
 
 	return messages
 }
 
-func parseMessagesFromFile(file *protogen.File, moduleName string) []*Message {
+func ParseMessagesFromFile(file *protogen.File, moduleName string) []*Message {
 	messages := make([]*Message, len(file.Proto.MessageType))
 	for i, msg := range file.Proto.MessageType {
 		messages[i] = parseMessage(msg, file.Messages[i], moduleName)
@@ -57,9 +58,10 @@ func parseMessage(proto *descriptor.DescriptorProto, schema *protogen.Message, m
 	}
 
 	return &Message{
-		Name:   proto.GetName(),
-		Fields: fields,
-		Schema: schema,
-		Proto:  proto,
+		Name:       proto.GetName(),
+		Fields:     fields,
+		Schema:     schema,
+		Proto:      proto,
+		ModuleName: moduleName,
 	}
 }
