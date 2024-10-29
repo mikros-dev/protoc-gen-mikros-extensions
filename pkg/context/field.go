@@ -7,9 +7,9 @@ import (
 	"github.com/iancoleman/strcase"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/testing"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
@@ -54,15 +54,11 @@ type LoadFieldOptions struct {
 func loadField(opt LoadFieldOptions) (*Field, error) {
 	var (
 		isArray = opt.Field.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		goName  = opt.Field.Schema.GoName
 		goType  = converters.ProtoTypeToGoType(opt.Field.Schema.Desc.Kind(), opt.Field.Proto.GetTypeName(), opt.ModuleName)
 	)
 
 	converter, err := converters.NewField(converters.FieldOptions{
-		IsArray:       isArray,
 		IsHTTPService: opt.IsHTTPService,
-		GoType:        goType,
-		GoName:        goName,
 		Receiver:      opt.Receiver,
 		ProtoField:    opt.Field,
 		Message:       opt.MessageConverter,
@@ -80,7 +76,7 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 		IsProtoOptional:          opt.Field.Proto.GetProto3Optional(),
 		Type:                     opt.Field.Proto.GetType(),
 		GoType:                   goType,
-		GoName:                   goName,
+		GoName:                   opt.Field.Schema.GoName,
 		JsonName:                 strings.ToLower(strcase.ToSnake(opt.Field.Proto.GetJsonName())),
 		ProtoName:                opt.Field.Proto.GetName(),
 		DomainName:               converter.DomainName(),

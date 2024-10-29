@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
@@ -21,7 +21,6 @@ type Message struct {
 	ProtoMessage *protobuf.Message
 
 	isHTTPService bool
-	receiver      string
 	converter     *converters.Message
 	extensions    *extensions.MikrosMessageExtensions
 }
@@ -31,27 +30,29 @@ type LoadMessagesOptions struct {
 }
 
 func loadMessages(pkg *protobuf.Protobuf, opt LoadMessagesOptions) ([]*Message, error) {
-	messages := make([]*Message, len(pkg.Messages))
+	var (
+		messages      = make([]*Message, len(pkg.Messages))
+		isHTTPService bool
+	)
+
+	if pkg.Service != nil {
+		isHTTPService = pkg.Service.IsHTTP()
+	}
+
 	for i, m := range pkg.Messages {
 		var (
-			isHTTPService bool
-			fields        = make([]*Field, len(m.Fields))
-			receiver      = getReceiver(m.Name)
-			endpoint      = getEndpointFromMessage(m.Name, pkg)
-			converter     = converters.NewMessage(converters.MessageOptions{
+			fields    = make([]*Field, len(m.Fields))
+			endpoint  = getEndpointFromMessage(m.Name, pkg)
+			converter = converters.NewMessage(converters.MessageOptions{
 				Settings: opt.Settings,
 			})
 		)
-
-		if pkg.Service != nil {
-			isHTTPService = pkg.Service.IsHTTP()
-		}
 
 		for i, f := range m.Fields {
 			field, err := loadField(LoadFieldOptions{
 				IsHTTPService:    isHTTPService,
 				ModuleName:       pkg.ModuleName,
-				Receiver:         receiver,
+				Receiver:         getReceiver(m.Name),
 				Field:            f,
 				Message:          m,
 				Endpoint:         endpoint,
@@ -74,7 +75,6 @@ func loadMessages(pkg *protobuf.Protobuf, opt LoadMessagesOptions) ([]*Message, 
 			Fields:        fields,
 			ProtoMessage:  m,
 			isHTTPService: pkg.Service != nil && pkg.Service.IsHTTP(),
-			receiver:      receiver,
 			converter:     converter,
 			extensions:    extensions.LoadMessageExtensions(m.Proto),
 		}
@@ -107,7 +107,7 @@ func getEndpointFromMessage(msgName string, pkg *protobuf.Protobuf) *Endpoint {
 }
 
 func (m *Message) GetReceiverName() string {
-	return m.receiver
+	return getReceiver(m.Name)
 }
 
 func (m *Message) HasArrayField() bool {
