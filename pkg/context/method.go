@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 )
 
@@ -17,6 +17,7 @@ type Method struct {
 	PathArguments         []*MethodField
 	QueryArguments        []*MethodField
 	HeaderArguments       []*MethodField
+	ProtoMethod           *protobuf.Method
 
 	endpoint *Endpoint
 	service  *extensions.MikrosServiceExtensions
@@ -79,6 +80,7 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 			PathArguments:         path,
 			QueryArguments:        getQueryArguments(msg, endpoint, methodExtensions),
 			HeaderArguments:       header,
+			ProtoMethod:           method,
 			endpoint:              endpoint,
 			service:               service,
 			method:                methodExtensions,

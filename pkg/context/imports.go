@@ -65,7 +65,7 @@ func toImportsContext(ctx *Context) *imports.Context {
 
 		return &imports.Message{
 			ValidationNeedsCustomRuleOptions: m.ValidationNeedsCustomRuleOptions(),
-			Receiver:                         m.receiver,
+			Receiver:                         m.GetReceiverName(),
 			Fields:                           fields,
 			ProtoMessage:                     m.ProtoMessage,
 		}

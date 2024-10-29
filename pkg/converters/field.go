@@ -6,6 +6,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/validation"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
@@ -36,10 +37,7 @@ type Field struct {
 }
 
 type FieldOptions struct {
-	IsArray       bool
 	IsHTTPService bool
-	GoType        string
-	GoName        string
 	Receiver      string
 	ProtoField    *protobuf.Field
 	Message       *Message
@@ -50,10 +48,11 @@ type FieldOptions struct {
 func NewField(options FieldOptions) (*Field, error) {
 	var (
 		fieldExtensions = extensions.LoadFieldExtensions(options.ProtoField.Proto)
+		isArray         = options.ProtoField.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 	)
 
 	call, err := validation.NewCall(&validation.CallOptions{
-		IsArray:   options.IsArray,
+		IsArray:   isArray,
 		ProtoName: options.ProtoField.Name,
 		Receiver:  options.Receiver,
 		Options:   fieldExtensions,
@@ -64,20 +63,24 @@ func NewField(options FieldOptions) (*Field, error) {
 		return nil, err
 	}
 
-	return &Field{
-		isArray:           options.IsArray,
+	field := &Field{
+		isArray:           isArray,
 		isHTTPService:     options.IsHTTPService,
-		goType:            options.GoType,
-		goName:            options.GoName,
+		goName:            options.ProtoField.Schema.GoName,
+		goType:            ProtoTypeToGoType(options.ProtoField.Schema.Desc.Kind(), options.ProtoField.Proto.GetTypeName(), options.ProtoMessage.ModuleName),
 		receiver:          options.Receiver,
 		msg:               options.Message,
-		db:                databaseFromString(options.Settings.Database.Kind, fieldExtensions),
 		fieldExtensions:   fieldExtensions,
 		messageExtensions: extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
 		proto:             options.ProtoField,
 		settings:          options.Settings,
 		validation:        call,
-	}, nil
+	}
+	if options.Settings != nil {
+		field.db = databaseFromString(options.Settings.Database.Kind, fieldExtensions)
+	}
+
+	return field, nil
 }
 
 // WireType returns the current field type corresponding to the wire type.
@@ -291,10 +294,6 @@ func (f *Field) DomainName() string {
 	return f.goName
 }
 
-func (f *Field) OutboundName() string {
-	return f.goName
-}
-
 func (f *Field) DomainTag() string {
 	var (
 		domain    *extensions.FieldDomainOptions
@@ -332,6 +331,10 @@ func (f *Field) DomainTag() string {
 }
 
 func (f *Field) InboundTag() string {
+	return fmt.Sprintf("`json:\"%s\"`", f.InboundName())
+}
+
+func (f *Field) InboundName() string {
 	name := f.DomainName()
 	if f.fieldExtensions != nil {
 		if inbound := f.fieldExtensions.GetInbound(); inbound != nil {
@@ -351,7 +354,7 @@ func (f *Field) InboundTag() string {
 		}
 	}
 
-	return fmt.Sprintf("`json:\"%s\"`", fieldName)
+	return fieldName
 }
 
 func (f *Field) OutboundTag() string {
@@ -393,6 +396,10 @@ func (f *Field) OutboundTag() string {
 	tag += "`"
 
 	return tag
+}
+
+func (f *Field) OutboundName() string {
+	return f.goName
 }
 
 func (f *Field) OutboundJsonTagFieldName() string {
