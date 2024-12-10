@@ -17,7 +17,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/args"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template"
-	api_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/api"
+	go_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/golang"
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
 	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
@@ -131,12 +131,12 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	}
 
 	var executions []execution
-	if cfg.Templates.Api {
+	if cfg.Templates.Go {
 		executions = append(executions, execution{
 			Kind:   mtemplate.KindApi,
-			Path:   cfg.Templates.ApiPath,
+			Path:   cfg.Templates.GoPath,
 			Prefix: "api",
-			Files:  api_tpl_files.Files,
+			Files:  go_tpl_files.Files,
 		})
 	}
 	if cfg.Templates.Test {

@@ -1,4 +1,4 @@
-package api
+package golang
 
 import (
 	"embed"

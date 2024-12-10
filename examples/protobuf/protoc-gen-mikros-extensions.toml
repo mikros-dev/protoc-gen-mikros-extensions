@@ -17,8 +17,8 @@ kind = "mongo"
 framework = "fasthttp"
 
 [templates]
-api = true
-api_path = "go"
+go = true
+go_path = "go"
 test = true
 test_path = "test"
 
