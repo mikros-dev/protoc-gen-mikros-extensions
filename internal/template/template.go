@@ -25,7 +25,7 @@ type Templates struct {
 	path             string
 	packageName      string
 	moduleName       string
-	context          Context
+	context          mtemplate.Validator
 	templateInfos    []*Info
 }
 
@@ -45,16 +45,10 @@ type Options struct {
 	Kind             mtemplate.Kind
 	Path             string
 	Plugin           *protogen.Plugin
-	Files            embed.FS `validate:"required"`
-	Context          Context  `validate:"required"`
+	Files            embed.FS            `validate:"required"`
+	Context          mtemplate.Validator `validate:"required"`
 	HelperFunctions  map[string]interface{}
 	Addons           []*addon.Addon
-}
-
-// Context is an interface that a template file context, i.e., the
-// object manipulated inside the template file, must implement.
-type Context interface {
-	mtemplate.Validator
 }
 
 func LoadTemplates(options Options) (*Templates, error) {
@@ -208,10 +202,17 @@ func (t *Templates) Execute() ([]*Generated, error) {
 			return nil, err
 		}
 
+		prefix := t.moduleName + "."
+		if tpl.kind == mtemplate.KindRust {
+			// Rust generated files should not have the module name as prefix,
+			// because it will change the rust module name if used.
+			prefix = ""
+		}
+
 		// Filename: Path + Package Name + Module Name + Template Name + Extension
-		templateName := fmt.Sprintf("%s.%s", t.moduleName, tpl.name)
+		templateName := fmt.Sprintf("%s%s", prefix, tpl.name)
 		if tpl.addon != nil {
-			templateName = fmt.Sprintf("%s.%s.%s", t.moduleName, strcase.ToSnake(tpl.addon.Addon().Name()), tpl.name)
+			templateName = fmt.Sprintf("%s%s.%s", prefix, strcase.ToSnake(tpl.addon.Addon().Name()), tpl.name)
 		}
 
 		filename := filepath.Join(
@@ -219,8 +220,8 @@ func (t *Templates) Execute() ([]*Generated, error) {
 			strings.ReplaceAll(t.packageName, ".", "/"),
 			templateName,
 		)
-		if kind.Extension() != "" {
-			filename += fmt.Sprintf(".%s", kind.Extension())
+		if ext := templateExtension(tpl.name, kind); ext != "" {
+			filename += fmt.Sprintf(".%s", ext)
 		}
 
 		return &Generated{
@@ -251,4 +252,13 @@ func parse(key string, data []byte, helperApi template.FuncMap) (*template.Templ
 	}
 
 	return t, nil
+}
+
+func templateExtension(name string, kind mtemplate.Kind) string {
+	// Use the template extension, if it has one.
+	if ext := filepath.Ext(name); ext != "" {
+		return ""
+	}
+
+	return kind.Extension()
 }
