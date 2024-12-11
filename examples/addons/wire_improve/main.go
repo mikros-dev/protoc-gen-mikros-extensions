@@ -24,7 +24,7 @@ func (w *WireImproveAddon) GetContext(_ interface{}) interface{} {
 
 func (w *WireImproveAddon) GetTemplateImports(name template.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
 	ipt := map[template.Name][]*addon.Import{
-		template.NewName(addonName, "wire_improve"): {
+		template.NewName(template.KindGo, "wire_improve"): {
 			{
 				Name: "fmt",
 			},
@@ -42,7 +42,7 @@ func (w *WireImproveAddon) GetTemplateValidator(name template.Name, ctx interfac
 	c := ctx.(*context.Context)
 
 	validators := map[template.Name]template.ValidateForExecution{
-		template.NewName(addonName, "wire_improve"): func() bool {
+		template.NewName(template.KindGo, "wire_improve"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
 	}
