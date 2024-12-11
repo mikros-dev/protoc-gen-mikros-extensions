@@ -175,6 +175,7 @@ func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (templ
 	var (
 		golang  = template.KindGo
 		testing = template.KindTest
+		rust    = template.KindRust
 	)
 
 	validators := map[template.Name]template.ValidateForExecution{
@@ -211,14 +212,13 @@ func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (templ
 		template.NewName(testing, "http_server"): func() bool {
 			return c.IsHTTPService() && c.settings.Templates.Test
 		},
+		template.NewName(rust, "router"): func() bool {
+			return c.IsHTTPService()
+		},
 	}
 
 	v, ok := validators[name]
 	return v, ok
-}
-
-func (c *Context) Extension() string {
-	return "go"
 }
 
 func (c *Context) ServiceName() string {

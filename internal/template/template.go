@@ -54,7 +54,6 @@ type Options struct {
 // Context is an interface that a template file context, i.e., the
 // object manipulated inside the template file, must implement.
 type Context interface {
-	Extension() string
 	mtemplate.Validator
 }
 
@@ -167,7 +166,6 @@ func filenameWithoutExtension(filename string) string {
 type Generated struct {
 	Filename     string
 	TemplateName string
-	Extension    string
 	Data         *bytes.Buffer
 }
 
@@ -221,15 +219,14 @@ func (t *Templates) Execute() ([]*Generated, error) {
 			strings.ReplaceAll(t.packageName, ".", "/"),
 			templateName,
 		)
-		if t.context.Extension() != "" {
-			filename += fmt.Sprintf(".%s", t.context.Extension())
+		if kind.Extension() != "" {
+			filename += fmt.Sprintf(".%s", kind.Extension())
 		}
 
 		return &Generated{
 			Data:         &buf,
 			Filename:     filename,
 			TemplateName: tpl.name,
-			Extension:    t.context.Extension(),
 		}, nil
 	}
 

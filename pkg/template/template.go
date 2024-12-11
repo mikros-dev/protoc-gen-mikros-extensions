@@ -28,6 +28,18 @@ func (k Kind) String() string {
 	return "unknown"
 }
 
+func (k Kind) Extension() string {
+	switch k {
+	case KindGo | KindTest:
+		return "go"
+	case KindRust:
+		return "rs"
+	default:
+	}
+
+	return ""
+}
+
 // Validator is a behavior that the templates context and addons must implement
 // to validate their execution.
 type Validator interface {
