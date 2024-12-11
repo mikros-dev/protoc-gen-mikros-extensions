@@ -10,9 +10,23 @@ import (
 type Kind int
 
 const (
-	KindApi Kind = iota
+	KindGo Kind = iota
 	KindTest
+	KindRust
 )
+
+func (k Kind) String() string {
+	switch k {
+	case KindGo:
+		return "golang"
+	case KindTest:
+		return "test"
+	case KindRust:
+		return "rust"
+	}
+
+	return "unknown"
+}
 
 // Validator is a behavior that the templates context and addons must implement
 // to validate their execution.

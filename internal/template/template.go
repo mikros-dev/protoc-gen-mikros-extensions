@@ -25,13 +25,13 @@ type Templates struct {
 	path             string
 	packageName      string
 	moduleName       string
-	filesPrefix      string
 	context          Context
 	templateInfos    []*Info
 }
 
 type Info struct {
 	name  string
+	kind  mtemplate.Kind
 	data  []byte
 	api   map[string]interface{}
 	addon *addon.Addon
@@ -44,7 +44,6 @@ type Options struct {
 	StrictValidators bool
 	Kind             mtemplate.Kind
 	Path             string
-	FilesPrefix      string `validate:"required"`
 	Plugin           *protogen.Plugin
 	Files            embed.FS `validate:"required"`
 	Context          Context  `validate:"required"`
@@ -87,7 +86,7 @@ func LoadTemplates(options Options) (*Templates, error) {
 		path = options.Path
 	}
 
-	infos, err := loadTemplates(options.Files, options.FilesPrefix, options.HelperFunctions, nil)
+	infos, err := loadTemplates(options.Files, options.Kind, options.HelperFunctions, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +96,7 @@ func LoadTemplates(options Options) (*Templates, error) {
 			continue
 		}
 
-		addonsInfo, err := loadTemplates(a.Addon().Templates(), a.Addon().Name(), options.HelperFunctions, a)
+		addonsInfo, err := loadTemplates(a.Addon().Templates(), a.Addon().Kind(), options.HelperFunctions, a)
 		if err != nil {
 			return nil, err
 		}
@@ -109,13 +108,12 @@ func LoadTemplates(options Options) (*Templates, error) {
 		path:             path,
 		packageName:      packageName,
 		moduleName:       module,
-		filesPrefix:      options.FilesPrefix,
 		context:          options.Context,
 		templateInfos:    infos,
 	}, nil
 }
 
-func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, addon *addon.Addon) ([]*Info, error) {
+func loadTemplates(files embed.FS, kind mtemplate.Kind, api map[string]interface{}, addon *addon.Addon) ([]*Info, error) {
 	templates, err := files.ReadDir(".")
 	if err != nil {
 		return nil, err
@@ -135,7 +133,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		}
 
 		helperApi["templateName"] = func() string {
-			return mtemplate.NewName(prefix, basename).String()
+			return mtemplate.NewName(kind, basename).String()
 		}
 
 		// Specific addons APIs
@@ -147,6 +145,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 
 		infos = append(infos, &Info{
 			name:  basename,
+			kind:  kind,
 			data:  data,
 			api:   helperApi,
 			addon: addon,
@@ -174,9 +173,9 @@ type Generated struct {
 
 func (t *Templates) Execute() ([]*Generated, error) {
 	execute := func(tpl *Info) (*Generated, error) {
-		prefix := t.filesPrefix
+		kind := tpl.kind
 		if tpl.addon != nil {
-			prefix = tpl.addon.Addon().Name()
+			kind = tpl.addon.Addon().Kind()
 		}
 
 		tplValidator := t.context.GetTemplateValidator
@@ -184,7 +183,7 @@ func (t *Templates) Execute() ([]*Generated, error) {
 			tplValidator = tpl.addon.Addon().GetTemplateValidator
 		}
 
-		templateValidator, ok := tplValidator(mtemplate.NewName(prefix, tpl.name), t.context)
+		templateValidator, ok := tplValidator(mtemplate.NewName(kind, tpl.name), t.context)
 		if !ok && t.strictValidators {
 			// The validator should not be executed in this case, since we don't
 			// have one for this template, we can skip it.

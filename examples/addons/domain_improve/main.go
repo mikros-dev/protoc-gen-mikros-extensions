@@ -76,7 +76,7 @@ func (d *DomainImproveAddon) GetTemplateValidator(name template.Name, ctx interf
 }
 
 func (d *DomainImproveAddon) Kind() template.Kind {
-	return template.KindApi
+	return template.KindGo
 }
 
 func (d *DomainImproveAddon) Templates() embed.FS {

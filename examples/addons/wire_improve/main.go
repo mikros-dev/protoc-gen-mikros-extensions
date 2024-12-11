@@ -52,7 +52,7 @@ func (w *WireImproveAddon) GetTemplateValidator(name template.Name, ctx interfac
 }
 
 func (w *WireImproveAddon) Kind() template.Kind {
-	return template.KindApi
+	return template.KindGo
 }
 
 func (w *WireImproveAddon) Templates() embed.FS {

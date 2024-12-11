@@ -172,38 +172,43 @@ func (c *Context) CustomApiExtensions() []*Message {
 }
 
 func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (template.ValidateForExecution, bool) {
+	var (
+		golang  = template.KindGo
+		testing = template.KindTest
+	)
+
 	validators := map[template.Name]template.ValidateForExecution{
-		template.NewName("api", "domain"): func() bool {
+		template.NewName(golang, "domain"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
-		template.NewName("api", "enum"): func() bool {
+		template.NewName(golang, "enum"): func() bool {
 			return len(c.Enums) > 0
 		},
-		template.NewName("api", "custom_api"): func() bool {
+		template.NewName(golang, "custom_api"): func() bool {
 			return len(c.CustomApiExtensions()) > 0
 		},
-		template.NewName("api", "http_server"): func() bool {
+		template.NewName(golang, "http_server"): func() bool {
 			return c.IsHTTPService()
 		},
-		template.NewName("api", "routes"): func() bool {
+		template.NewName(golang, "routes"): func() bool {
 			return c.IsHTTPService()
 		},
-		template.NewName("api", "outbound"): func() bool {
+		template.NewName(golang, "outbound"): func() bool {
 			return c.IsHTTPService() || len(c.OutboundMessages()) > 0
 		},
-		template.NewName("api", "wire_input"): func() bool {
+		template.NewName(golang, "wire_input"): func() bool {
 			return len(c.WireInputMessages()) > 0
 		},
-		template.NewName("api", "common"): func() bool {
+		template.NewName(golang, "common"): func() bool {
 			return c.UseCommonConverters() || c.OutboundHasBitflagField()
 		},
-		template.NewName("api", "validation"): func() bool {
+		template.NewName(golang, "validation"): func() bool {
 			return c.HasValidatableMessage()
 		},
-		template.NewName("testing", "testing"): func() bool {
+		template.NewName(testing, "testing"): func() bool {
 			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test
 		},
-		template.NewName("testing", "http_server"): func() bool {
+		template.NewName(testing, "http_server"): func() bool {
 			return c.IsHTTPService() && c.settings.Templates.Test
 		},
 	}

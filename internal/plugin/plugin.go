@@ -18,6 +18,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/args"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template"
 	go_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/golang"
+	rust_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/rust"
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
 	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
@@ -26,10 +27,9 @@ import (
 )
 
 type execution struct {
-	Kind   mtemplate.Kind
-	Path   string
-	Prefix string
-	Files  embed.FS
+	Kind  mtemplate.Kind
+	Path  string
+	Files embed.FS
 }
 
 func Handle(
@@ -100,7 +100,6 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 			StrictValidators: true,
 			Kind:             e.Kind,
 			Path:             e.Path,
-			FilesPrefix:      e.Prefix,
 			Plugin:           plugin,
 			Files:            e.Files,
 			Context:          ctx,
@@ -117,10 +116,12 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 
 		for _, tpl := range generated {
 			output.Println("generating source file: ", tpl.Filename)
-
 			content := tpl.Data.String()
-			if err := isValidGoSource(content); err != nil {
-				return err
+
+			if e.Kind != mtemplate.KindRust {
+				if err := isValidGoSource(content); err != nil {
+					return err
+				}
 			}
 
 			f := plugin.NewGeneratedFile(tpl.Filename, ".")
@@ -133,18 +134,23 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	var executions []execution
 	if cfg.Templates.Go {
 		executions = append(executions, execution{
-			Kind:   mtemplate.KindApi,
-			Path:   cfg.Templates.GoPath,
-			Prefix: "api",
-			Files:  go_tpl_files.Files,
+			Kind:  mtemplate.KindGo,
+			Path:  cfg.Templates.GoPath,
+			Files: go_tpl_files.Files,
 		})
 	}
 	if cfg.Templates.Test {
 		executions = append(executions, execution{
-			Kind:   mtemplate.KindTest,
-			Path:   cfg.Templates.TestPath,
-			Prefix: "testing",
-			Files:  test_tpl_files.Files,
+			Kind:  mtemplate.KindTest,
+			Path:  cfg.Templates.TestPath,
+			Files: test_tpl_files.Files,
+		})
+	}
+	if cfg.Templates.Rust {
+		executions = append(executions, execution{
+			Kind:  mtemplate.KindRust,
+			Path:  cfg.Templates.RustPath,
+			Files: rust_tpl_files.Files,
 		})
 	}
 

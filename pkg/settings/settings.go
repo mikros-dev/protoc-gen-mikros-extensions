@@ -44,8 +44,10 @@ type Http struct {
 type Templates struct {
 	Go       bool    `toml:"go" default:"true"`
 	Test     bool    `toml:"test" default:"false"`
+	Rust     bool    `toml:"rust" default:"false"`
 	TestPath string  `toml:"test_path" default:"test"`
 	GoPath   string  `toml:"go_path" default:"go"`
+	RustPath string  `toml:"rust_path" default:"rust"`
 	Common   *Common `toml:"common" default:"{}"`
 }
 

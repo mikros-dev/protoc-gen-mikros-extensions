@@ -58,18 +58,23 @@ type Import struct {
 }
 
 func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*Import {
+	var (
+		golang  = template.KindGo
+		testing = template.KindTest
+	)
+
 	return map[template.Name][]*Import{
-		template.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
-		template.NewName("api", "enum"):            loadEnumTemplateImports(),
-		template.NewName("api", "custom_api"):      loadCustomApiTemplateImports(ctx),
-		template.NewName("api", "http_server"):     loadHttpServerTemplateImports(),
-		template.NewName("api", "routes"):          loadRoutesTemplateImports(ctx),
-		template.NewName("api", "wire_input"):      loadWireInputTemplateImports(ctx, cfg),
-		template.NewName("api", "outbound"):        loadOutboundTemplateImports(ctx, cfg),
-		template.NewName("api", "common"):          loadCommonTemplateImports(ctx),
-		template.NewName("api", "validation"):      loadValidationTemplateImports(ctx, cfg),
-		template.NewName("testing", "testing"):     loadTestingTemplateImports(ctx, cfg),
-		template.NewName("testing", "http_server"): loadTestingHttpServerTemplateImports(ctx),
+		template.NewName(golang, "domain"):       loadDomainTemplateImports(ctx, cfg),
+		template.NewName(golang, "enum"):         loadEnumTemplateImports(),
+		template.NewName(golang, "custom_api"):   loadCustomApiTemplateImports(ctx),
+		template.NewName(golang, "http_server"):  loadHttpServerTemplateImports(),
+		template.NewName(golang, "routes"):       loadRoutesTemplateImports(ctx),
+		template.NewName(golang, "wire_input"):   loadWireInputTemplateImports(ctx, cfg),
+		template.NewName(golang, "outbound"):     loadOutboundTemplateImports(ctx, cfg),
+		template.NewName(golang, "common"):       loadCommonTemplateImports(ctx),
+		template.NewName(golang, "validation"):   loadValidationTemplateImports(ctx, cfg),
+		template.NewName(testing, "testing"):     loadTestingTemplateImports(ctx, cfg),
+		template.NewName(testing, "http_server"): loadTestingHttpServerTemplateImports(ctx),
 	}
 }
 
