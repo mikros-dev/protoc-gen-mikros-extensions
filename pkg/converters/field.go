@@ -51,18 +51,6 @@ func NewField(options FieldOptions) (*Field, error) {
 		isArray         = options.ProtoField.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 	)
 
-	call, err := validation.NewCall(&validation.CallOptions{
-		IsArray:   isArray,
-		ProtoName: options.ProtoField.Name,
-		Receiver:  options.Receiver,
-		Options:   fieldExtensions,
-		Settings:  options.Settings,
-		Message:   options.ProtoMessage,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	field := &Field{
 		isArray:           isArray,
 		isHTTPService:     options.IsHTTPService,
@@ -74,9 +62,21 @@ func NewField(options FieldOptions) (*Field, error) {
 		messageExtensions: extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
 		proto:             options.ProtoField,
 		settings:          options.Settings,
-		validation:        call,
 	}
 	if options.Settings != nil {
+		call, err := validation.NewCall(&validation.CallOptions{
+			IsArray:   isArray,
+			ProtoName: options.ProtoField.Name,
+			Receiver:  options.Receiver,
+			Options:   fieldExtensions,
+			Settings:  options.Settings,
+			Message:   options.ProtoMessage,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		field.validation = call
 		field.db = databaseFromString(options.Settings.Database.Kind, fieldExtensions)
 	}
 
@@ -639,5 +639,9 @@ func (f *Field) needsAddressNotation() bool {
 }
 
 func (f *Field) ValidationCall() string {
+	if f.validation == nil {
+		return ""
+	}
+
 	return f.validation.ApiCall()
 }
