@@ -30,11 +30,10 @@ func (k Kind) String() string {
 
 func (k Kind) Extension() string {
 	switch k {
-	case KindGo | KindTest:
+	case KindGo, KindTest:
 		return "go"
 	case KindRust:
 		return "rs"
-	default:
 	}
 
 	return ""
