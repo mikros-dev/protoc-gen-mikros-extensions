@@ -12,11 +12,12 @@ import (
 )
 
 type Context struct {
-	PluginName string
-	ModuleName string
-	Enums      []*Enum
-	Methods    []*Method
-	Package    *protobuf.Protobuf
+	PluginName   string
+	ModuleName   string
+	TemplateKind template.Kind
+	Enums        []*Enum
+	Methods      []*Method
+	Package      *protobuf.Protobuf
 
 	messages []*Message
 	imports  map[template.Name][]*templateImport
@@ -169,6 +170,10 @@ func (c *Context) CustomApiExtensions() []*Message {
 	}
 
 	return messages
+}
+
+func (c *Context) SetTemplateKind(kind template.Kind) {
+	c.TemplateKind = kind
 }
 
 func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (template.ValidateForExecution, bool) {

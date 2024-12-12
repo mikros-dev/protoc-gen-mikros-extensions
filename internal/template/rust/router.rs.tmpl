@@ -2,8 +2,10 @@
 use std::sync::Arc;
 
 use axum::extract::{Extension, State};
+use axum::routing::{{{lower .HTTPMethods}}}
 use mikros::http::ServiceState;
 use serde_derive::{Deserialize, Serialize};
+use tonic::Request;
 
 use crate::{{.ModuleName}};{{$moduleName := .ModuleName}}
 
@@ -16,6 +18,11 @@ impl From<{{.Name}}> for {{$moduleName}}::{{.Name}} {
         Self {}
     }
 }
+
+// if has path parameters declare new struct
+// if has header parameters declare new struct
+// if has query parameters declare new struct
+
 {{- end}}
 
 {{range .OutboundMessages -}}
@@ -37,8 +44,21 @@ pub struct Router {
 pub async fn {{toSnake .Name}}(
     State(state): State<Arc<mikros::Mutex<ServiceState>>>,
     Extension(router): Extension<Router>,
-) -> String {
-    "ok".to_string()
+) -> Json<{{.ResponseName}}> {
+    // FIXME: adjust the main struct creation
+
+    // Retrieve endpoint arguments (body, path, query and header).
+    let input: {{$moduleName}}::{{.Name}} = body.into();
+    let mut request = Request::new(input);
+
+    // Adds mikros context inside the request for the wrapper to also access it.
+    let context = state.lock().await.context();
+    request.extensions_mut().insert(context.clone());
+
+    // TODO: Handle errors properly
+    // Translates the wrapper response into the endpoint response.
+    let res = router.wrapper.say_hello(request).await.unwrap();
+    Json(res.into_inner().into())
 }
 {{- end}}
 
@@ -52,8 +72,8 @@ impl Router {
 
     pub fn routes(self) -> axum::Router<Arc<mikros::Mutex<ServiceState>>> {
         axum::Router::new()
-            {{- range .Methods}}
-            .route("{{.Endpoint}}", {{lower .HTTPMethod}}({{toSnake .Name}}))
+            {{- range .Methods}}{{$kind .TemplateKind}}
+            .route("{{.EndpointByTemplateKind $kind}}", {{lower .HTTPMethod}}({{toSnake .Name}}))
             {{- end}}
             .layer(Extension(self.clone()))
     }

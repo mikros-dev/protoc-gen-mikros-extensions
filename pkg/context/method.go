@@ -2,12 +2,14 @@ package context
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
 type Method struct {
@@ -274,6 +276,23 @@ func (m *Method) Endpoint() string {
 	}
 
 	return ""
+}
+
+func (m *Method) EndpointByTemplateKind(kind template.Kind) string {
+	if endpoint := m.Endpoint(); endpoint != "" {
+		if kind == template.KindRust {
+			toRustEndpoint(endpoint)
+		}
+
+		return endpoint
+	}
+
+	return ""
+}
+
+func toRustEndpoint(endpoint string) string {
+	re := regexp.MustCompile(`\{([a-zA-Z_][a-zA-Z0-9_]*)\}`)
+	return re.ReplaceAllString(endpoint, `:$1`)
 }
 
 func (m *Method) HasRequiredBody() bool {

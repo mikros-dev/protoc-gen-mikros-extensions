@@ -18,6 +18,16 @@ import (
 	mtemplate "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
+type Context interface {
+	// SetTemplateKind receives the current template kind that is being executed
+	// in order to the context handle its output properly.
+	SetTemplateKind(kind mtemplate.Kind)
+
+	// Validator is the place where each supported template is validated to be
+	// executed or not.
+	mtemplate.Validator
+}
+
 // Templates is an object that holds information related to a group of
 // template files, allowing them to be executed later.
 type Templates struct {
@@ -25,7 +35,7 @@ type Templates struct {
 	path             string
 	packageName      string
 	moduleName       string
-	context          mtemplate.Validator
+	context          Context
 	templateInfos    []*Info
 }
 
@@ -45,8 +55,8 @@ type Options struct {
 	Kind             mtemplate.Kind
 	Path             string
 	Plugin           *protogen.Plugin
-	Files            embed.FS            `validate:"required"`
-	Context          mtemplate.Validator `validate:"required"`
+	Files            embed.FS `validate:"required"`
+	Context          Context  `validate:"required"`
 	HelperFunctions  map[string]interface{}
 	Addons           []*addon.Addon
 }
@@ -194,6 +204,9 @@ func (t *Templates) Execute() ([]*Generated, error) {
 
 		var buf bytes.Buffer
 		w := bufio.NewWriter(&buf)
+
+		// Informs the current context which kind of template is being executed.
+		t.context.SetTemplateKind(kind)
 
 		if err := parsedTemplate.Execute(w, t.context); err != nil {
 			return nil, err
