@@ -1,6 +1,8 @@
 package context
 
 import (
+	"strings"
+
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
@@ -309,3 +311,49 @@ func (c *Context) AddonIntoOutboundExtensionContent(msg *Message, receiver strin
 
 	return output
 }
+
+func (c *Context) HTTPMethods() string {
+	methods := make(map[string]bool)
+	for _, m := range c.Methods {
+		methods[m.HTTPMethod()] = true
+	}
+
+	var s []string
+	for k := range methods {
+		s = append(s, k)
+	}
+
+	return strings.Join(s, ",")
+}
+
+func (c *Context) HasHeaderArguments() bool {
+	for _, m := range c.Methods {
+		if m.HasHeaderArguments() {
+			return true
+		}
+	}
+
+	return false
+}
+
+//
+//func (c *Context) HeaderArguments() []*MethodField {
+//	var (
+//		serviceArgs = make(map[string]*MethodField)
+//		args        []*MethodField
+//	)
+//
+//	// We don't support having header arguments with the same name but with
+//	// different type in the same service.
+//	for _, m := range c.Methods {
+//		for _, a := range m.HeaderArguments {
+//			serviceArgs[a.ProtoName] = a
+//		}
+//	}
+//
+//	for _, arg := range serviceArgs {
+//		args = append(args, arg)
+//	}
+//
+//	return args
+//}

@@ -8,10 +8,12 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/testing"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/translation"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
 
 type Field struct {
@@ -240,4 +242,29 @@ func (f *Field) TestingValueBinding() string {
 
 func (f *Field) TestingValueCall() string {
 	return f.testing.ValueInitCall(f.IsPointer())
+}
+
+func (f *Field) TypeByTemplateKind(kind template.Kind) string {
+	if kind == template.KindRust {
+		return translation.RustFieldType(
+			f.Type,
+			f.IsProtoOptional,
+			f.IsArray,
+			f.converter.WireType(false),
+		)
+	}
+
+	return f.GoType
+}
+
+func (f *Field) HeaderArgumentByTemplateKind(kind template.Kind) string {
+	if kind == template.KindRust {
+		if f.Type == descriptor.FieldDescriptorProto_TYPE_BOOL {
+			return fmt.Sprintf(`mikros::http::header::to_bool(&headers, "%s")`, f.ProtoName)
+		}
+
+		return fmt.Sprintf(`mikros::http::header::to_string(&headers, "%s")`, f.ProtoName)
+	}
+
+	return ""
 }
