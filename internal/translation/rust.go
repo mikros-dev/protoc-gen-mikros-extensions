@@ -1,6 +1,7 @@
 package translation
 
 import (
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"regexp"
 
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
@@ -11,13 +12,16 @@ func RustEndpoint(endpoint string) string {
 	return re.ReplaceAllString(endpoint, `:$1`)
 }
 
-func RustFieldType(fieldType descriptor.FieldDescriptorProto_Type, isOptional, isArray bool, messageType string) string {
+func RustFieldType(fieldType descriptor.FieldDescriptorProto_Type, isOptional, isArray bool, messageType string, field *protobuf.Field) string {
 	rustType := rustFieldType(fieldType)
 	if fieldType == descriptor.FieldDescriptorProto_TYPE_ENUM {
 		rustType = rustEnumFieldType()
 	}
 	if fieldType == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		rustType = rustMessageFieldType(messageType)
+		if field.IsTimestamp() {
+			rustType = "Option<prost_wkt_types::Timestamp>"
+		}
 	}
 
 	if isArray {

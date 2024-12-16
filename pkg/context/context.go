@@ -222,6 +222,9 @@ func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (templ
 		template.NewName(rust, "router.rs"): func() bool {
 			return c.IsHTTPService()
 		},
+		template.NewName(rust, "mod.rs"): func() bool {
+			return c.IsHTTPService()
+		},
 	}
 
 	v, ok := validators[name]
@@ -335,25 +338,3 @@ func (c *Context) HasHeaderArguments() bool {
 
 	return false
 }
-
-//
-//func (c *Context) HeaderArguments() []*MethodField {
-//	var (
-//		serviceArgs = make(map[string]*MethodField)
-//		args        []*MethodField
-//	)
-//
-//	// We don't support having header arguments with the same name but with
-//	// different type in the same service.
-//	for _, m := range c.Methods {
-//		for _, a := range m.HeaderArguments {
-//			serviceArgs[a.ProtoName] = a
-//		}
-//	}
-//
-//	for _, arg := range serviceArgs {
-//		args = append(args, arg)
-//	}
-//
-//	return args
-//}

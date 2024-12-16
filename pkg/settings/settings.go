@@ -42,13 +42,16 @@ type Http struct {
 }
 
 type Templates struct {
-	Go       bool    `toml:"go" default:"true"`
+	Go       bool    `toml:"go" default:"false"`
 	Test     bool    `toml:"test" default:"false"`
-	Rust     bool    `toml:"rust" default:"false"`
 	TestPath string  `toml:"test_path" default:"test"`
 	GoPath   string  `toml:"go_path" default:"go"`
-	RustPath string  `toml:"rust_path" default:"rust"`
 	Common   *Common `toml:"common" default:"{}"`
+	Rust     *Rust   `toml:"rust" default:"{}"`
+}
+
+func (t *Templates) RustEnabled() bool {
+	return t.Rust != nil && t.Rust.Enabled
 }
 
 type Common struct {
@@ -60,6 +63,13 @@ type Dependency struct {
 	Import      *Import                `toml:"import"`
 	PackageName string                 `toml:"package_name"`
 	Calls       map[string]interface{} `toml:"calls"`
+}
+
+type Rust struct {
+	Enabled      bool   `toml:"enabled" default:"false"`
+	Path         string `toml:"path" default:"rust"`
+	SingleModule bool   `toml:"single_module" default:"false"`
+	ModuleName   string `toml:"module_name" default:"rust"`
 }
 
 type Validations struct {

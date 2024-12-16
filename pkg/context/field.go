@@ -251,6 +251,7 @@ func (f *Field) TypeByTemplateKind(kind template.Kind) string {
 			f.IsProtoOptional,
 			f.IsArray,
 			f.converter.WireType(false),
+			f.ProtoField,
 		)
 	}
 
@@ -259,11 +260,24 @@ func (f *Field) TypeByTemplateKind(kind template.Kind) string {
 
 func (f *Field) HeaderArgumentByTemplateKind(kind template.Kind) string {
 	if kind == template.KindRust {
+		// TODO: move this code to translate/rust
 		if f.Type == descriptor.FieldDescriptorProto_TYPE_BOOL {
-			return fmt.Sprintf(`mikros::http::header::to_bool(&headers, "%s")`, f.ProtoName)
+			return fmt.Sprintf(`mikros::http::header::to_bool(&headers, "%s")?`, f.ProtoName)
 		}
 
-		return fmt.Sprintf(`mikros::http::header::to_string(&headers, "%s")`, f.ProtoName)
+		return fmt.Sprintf(`mikros::http::header::to_string(&headers, "%s")?`, f.ProtoName)
+	}
+
+	return ""
+}
+
+func (f *Field) ConvertWireOutputToOutboundByTemplateKind(kind template.Kind, receiver string) string {
+	if kind == template.KindRust {
+		if f.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			return fmt.Sprintf("%s.%s.unwrap().into()", receiver, f.ProtoName)
+		}
+
+		return fmt.Sprintf("%s.%s", receiver, f.ProtoName)
 	}
 
 	return ""

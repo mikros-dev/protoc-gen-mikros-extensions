@@ -32,10 +32,9 @@ type Context interface {
 // template files, allowing them to be executed later.
 type Templates struct {
 	strictValidators bool
-	path             string
+	basePath         string
 	packageName      string
 	moduleName       string
-	context          Context
 	templateInfos    []*Info
 }
 
@@ -47,21 +46,19 @@ type Info struct {
 	addon *addon.Addon
 }
 
-type Options struct {
+type LoadTemplatesOptions struct {
 	// StrictValidators if enabled forces us to use the validator function
 	// for a template only if it is declared. Otherwise, the template will be
 	// ignored.
 	StrictValidators bool
 	Kind             mtemplate.Kind
-	Path             string
 	Plugin           *protogen.Plugin
 	Files            embed.FS `validate:"required"`
-	Context          Context  `validate:"required"`
 	HelperFunctions  map[string]interface{}
 	Addons           []*addon.Addon
 }
 
-func LoadTemplates(options Options) (*Templates, error) {
+func LoadTemplates(options LoadTemplatesOptions) (*Templates, error) {
 	validate := validator.New()
 	if err := validate.Struct(options); err != nil {
 		return nil, err
@@ -85,10 +82,6 @@ func LoadTemplates(options Options) (*Templates, error) {
 		packageName = pName
 	}
 
-	if options.Path != "" {
-		path = options.Path
-	}
-
 	infos, err := loadTemplates(options.Files, options.Kind, options.HelperFunctions, nil)
 	if err != nil {
 		return nil, err
@@ -108,10 +101,9 @@ func LoadTemplates(options Options) (*Templates, error) {
 
 	return &Templates{
 		strictValidators: options.StrictValidators,
-		path:             path,
+		basePath:         path,
 		packageName:      packageName,
 		moduleName:       module,
-		context:          options.Context,
 		templateInfos:    infos,
 	}, nil
 }
@@ -166,6 +158,13 @@ func filenameWithoutExtension(filename string) string {
 	return filename[:len(filename)-len(filepath.Ext(filename))]
 }
 
+type ExecuteOptions struct {
+	Context      Context `validate:"required"`
+	Path         string
+	ModuleName   string
+	SingleModule bool
+}
+
 // Generated holds the template content already parsed, ready to be saved.
 type Generated struct {
 	Filename     string
@@ -173,19 +172,24 @@ type Generated struct {
 	Data         *bytes.Buffer
 }
 
-func (t *Templates) Execute() ([]*Generated, error) {
+func (t *Templates) Execute(options ExecuteOptions) ([]*Generated, error) {
+	validate := validator.New()
+	if err := validate.Struct(options); err != nil {
+		return nil, err
+	}
+
 	execute := func(tpl *Info) (*Generated, error) {
 		kind := tpl.kind
 		if tpl.addon != nil {
 			kind = tpl.addon.Addon().Kind()
 		}
 
-		tplValidator := t.context.GetTemplateValidator
+		tplValidator := options.Context.GetTemplateValidator
 		if tpl.addon != nil {
 			tplValidator = tpl.addon.Addon().GetTemplateValidator
 		}
 
-		templateValidator, ok := tplValidator(mtemplate.NewName(kind, tpl.name), t.context)
+		templateValidator, ok := tplValidator(mtemplate.NewName(kind, tpl.name), options.Context)
 		if !ok && t.strictValidators {
 			// The validator should not be executed in this case, since we don't
 			// have one for this template, we can skip it.
@@ -206,40 +210,18 @@ func (t *Templates) Execute() ([]*Generated, error) {
 		w := bufio.NewWriter(&buf)
 
 		// Informs the current context which kind of template is being executed.
-		t.context.SetTemplateKind(kind)
+		options.Context.SetTemplateKind(kind)
 
-		if err := parsedTemplate.Execute(w, t.context); err != nil {
+		if err := parsedTemplate.Execute(w, options.Context); err != nil {
 			return nil, err
 		}
 		if err := w.Flush(); err != nil {
 			return nil, err
 		}
 
-		prefix := t.moduleName + "."
-		if tpl.kind == mtemplate.KindRust {
-			// Rust generated files should not have the module name as prefix,
-			// because it will change the rust module name if used.
-			prefix = ""
-		}
-
-		// Filename: Path + Package Name + Module Name + Template Name + Extension
-		templateName := fmt.Sprintf("%s%s", prefix, tpl.name)
-		if tpl.addon != nil {
-			templateName = fmt.Sprintf("%s%s.%s", prefix, strcase.ToSnake(tpl.addon.Addon().Name()), tpl.name)
-		}
-
-		filename := filepath.Join(
-			t.path,
-			strings.ReplaceAll(t.packageName, ".", "/"),
-			templateName,
-		)
-		if ext := templateExtension(tpl.name, kind); ext != "" {
-			filename += fmt.Sprintf(".%s", ext)
-		}
-
 		return &Generated{
 			Data:         &buf,
-			Filename:     filename,
+			Filename:     t.generateTemplateName(tpl, options, kind),
 			TemplateName: tpl.name,
 		}, nil
 	}
@@ -265,6 +247,46 @@ func parse(key string, data []byte, helperApi template.FuncMap) (*template.Templ
 	}
 
 	return t, nil
+}
+
+func (t *Templates) generateTemplateName(tpl *Info, options ExecuteOptions, kind mtemplate.Kind) string {
+	prefix := t.moduleName + "."
+	if tpl.kind == mtemplate.KindRust {
+		// Rust generated files should not have the module name as prefix,
+		// because it will change the rust module name if used.
+		prefix = ""
+	}
+
+	// Filename: Path + Package Name + Module Name + Template Name + Extension
+	templateName := fmt.Sprintf("%s%s", prefix, tpl.name)
+	if tpl.addon != nil {
+		templateName = fmt.Sprintf("%s%s.%s", prefix, strcase.ToSnake(tpl.addon.Addon().Name()), tpl.name)
+	}
+
+	filename := templateName
+	if tpl.kind == mtemplate.KindRust {
+		if options.SingleModule {
+			filename = filepath.Join(options.ModuleName, templateName)
+		}
+	}
+	if !options.SingleModule {
+		path := t.basePath
+		if options.Path != "" {
+			path = options.Path
+		}
+
+		filename = filepath.Join(
+			path,
+			strings.ReplaceAll(t.packageName, ".", "/"),
+			templateName,
+		)
+	}
+
+	if ext := templateExtension(tpl.name, kind); ext != "" {
+		filename += fmt.Sprintf(".%s", ext)
+	}
+
+	return filename
 }
 
 func templateExtension(name string, kind mtemplate.Kind) string {

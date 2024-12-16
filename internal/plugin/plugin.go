@@ -27,9 +27,11 @@ import (
 )
 
 type execution struct {
-	Kind  mtemplate.Kind
-	Path  string
-	Files embed.FS
+	SingleModule bool
+	Kind         mtemplate.Kind
+	Path         string
+	ModuleName   string
+	Files        embed.FS
 }
 
 func Handle(
@@ -96,20 +98,23 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	output.Println("processing module:", ctx.ModuleName)
 
 	genTemplates := func(e execution) error {
-		templates, err := template.LoadTemplates(template.Options{
+		templates, err := template.LoadTemplates(template.LoadTemplatesOptions{
 			StrictValidators: true,
 			Kind:             e.Kind,
-			Path:             e.Path,
 			Plugin:           plugin,
 			Files:            e.Files,
-			Context:          ctx,
 			Addons:           addons,
 		})
 		if err != nil {
 			return err
 		}
 
-		generated, err := templates.Execute()
+		generated, err := templates.Execute(template.ExecuteOptions{
+			Context:      ctx,
+			Path:         e.Path,
+			SingleModule: e.SingleModule,
+			ModuleName:   e.ModuleName,
+		})
 		if err != nil {
 			return err
 		}
@@ -146,11 +151,13 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 			Files: test_tpl_files.Files,
 		})
 	}
-	if cfg.Templates.Rust {
+	if cfg.Templates.RustEnabled() {
 		executions = append(executions, execution{
-			Kind:  mtemplate.KindRust,
-			Path:  cfg.Templates.RustPath,
-			Files: rust_tpl_files.Files,
+			Kind:         mtemplate.KindRust,
+			Path:         cfg.Templates.Rust.Path,
+			Files:        rust_tpl_files.Files,
+			SingleModule: cfg.Templates.Rust.SingleModule,
+			ModuleName:   cfg.Templates.Rust.ModuleName,
 		})
 	}
 
