@@ -50,6 +50,8 @@ type Method struct {
 	HasRequiredBody    bool
 	HasQueryArguments  bool
 	HasHeaderArguments bool
+	HasPathArguments   bool
+	HTTPMethod         string
 }
 
 type Import struct {
@@ -64,17 +66,18 @@ func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name
 	)
 
 	return map[template.Name][]*Import{
-		template.NewName(golang, "domain"):       loadDomainTemplateImports(ctx, cfg),
-		template.NewName(golang, "enum"):         loadEnumTemplateImports(),
-		template.NewName(golang, "custom_api"):   loadCustomApiTemplateImports(ctx),
-		template.NewName(golang, "http_server"):  loadHttpServerTemplateImports(),
-		template.NewName(golang, "routes"):       loadRoutesTemplateImports(ctx),
-		template.NewName(golang, "wire_input"):   loadWireInputTemplateImports(ctx, cfg),
-		template.NewName(golang, "outbound"):     loadOutboundTemplateImports(ctx, cfg),
-		template.NewName(golang, "common"):       loadCommonTemplateImports(ctx),
-		template.NewName(golang, "validation"):   loadValidationTemplateImports(ctx, cfg),
-		template.NewName(testing, "testing"):     loadTestingTemplateImports(ctx, cfg),
-		template.NewName(testing, "http_server"): loadTestingHttpServerTemplateImports(ctx),
+		template.NewName(golang, "domain"):               loadDomainTemplateImports(ctx, cfg),
+		template.NewName(golang, "enum"):                 loadEnumTemplateImports(),
+		template.NewName(golang, "custom_api"):           loadCustomApiTemplateImports(ctx),
+		template.NewName(golang, "http_server"):          loadHttpServerTemplateImports(),
+		template.NewName(golang, "routes"):               loadRoutesTemplateImports(ctx),
+		template.NewName(golang, "wire_input"):           loadWireInputTemplateImports(ctx, cfg),
+		template.NewName(golang, "outbound"):             loadOutboundTemplateImports(ctx, cfg),
+		template.NewName(golang, "common"):               loadCommonTemplateImports(ctx),
+		template.NewName(golang, "validation"):           loadValidationTemplateImports(ctx, cfg),
+		template.NewName(testing, "testing"):             loadTestingTemplateImports(ctx, cfg),
+		template.NewName(testing, "http_server"):         loadTestingHttpServerTemplateImports(ctx),
+		template.NewName(template.KindRust, "router.rs"): loadRustRouterTemplateImports(ctx),
 	}
 }
 

@@ -1,10 +1,14 @@
 package translation
 
 import (
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"bytes"
+	"errors"
+	"os/exec"
 	"regexp"
 
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 )
 
 func RustEndpoint(endpoint string) string {
@@ -62,4 +66,26 @@ func rustFieldType(fieldType descriptor.FieldDescriptorProto_Type) string {
 
 	// Everything else as string?
 	return "String"
+}
+
+func RustFormatCode(input string, args []string) (string, error) {
+	var (
+		arguments = append([]string{"--emit", "stdout", "--edition"}, args...)
+		stdout    bytes.Buffer
+		stderr    bytes.Buffer
+	)
+
+	cmd := exec.Command("rustfmt", arguments...)
+	cmd.Stdin = bytes.NewBufferString(input)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	if stderr.Len() > 0 {
+		return "", errors.New(stderr.String())
+	}
+
+	return stdout.String(), nil
 }

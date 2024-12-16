@@ -70,6 +70,8 @@ type Rust struct {
 	Path         string `toml:"path" default:"rust"`
 	SingleModule bool   `toml:"single_module" default:"false"`
 	ModuleName   string `toml:"module_name" default:"rust"`
+	RunFmt       bool   `toml:"run_rustfmt" default:"false"`
+	FmtEdition   string `toml:"format_edition" default:"2021"`
 }
 
 type Validations struct {

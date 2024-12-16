@@ -1,8 +1,6 @@
 package context
 
 import (
-	"strings"
-
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
@@ -313,28 +311,4 @@ func (c *Context) AddonIntoOutboundExtensionContent(msg *Message, receiver strin
 	}
 
 	return output
-}
-
-func (c *Context) HTTPMethods() string {
-	methods := make(map[string]bool)
-	for _, m := range c.Methods {
-		methods[m.HTTPMethod()] = true
-	}
-
-	var s []string
-	for k := range methods {
-		s = append(s, k)
-	}
-
-	return strings.Join(s, ",")
-}
-
-func (c *Context) HasHeaderArguments() bool {
-	for _, m := range c.Methods {
-		if m.HasHeaderArguments() {
-			return true
-		}
-	}
-
-	return false
 }

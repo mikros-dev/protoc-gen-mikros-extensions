@@ -20,6 +20,7 @@ import (
 	go_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/golang"
 	rust_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/rust"
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/translation"
 	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -27,11 +28,14 @@ import (
 )
 
 type execution struct {
-	SingleModule bool
-	Kind         mtemplate.Kind
-	Path         string
-	ModuleName   string
-	Files        embed.FS
+	SingleModule        bool
+	Kind                mtemplate.Kind
+	Path                string
+	ModuleName          string
+	Files               embed.FS
+	FormatCodeArguments []string
+	ValidateCode        func(string) error
+	FormatCode          func(string, []string) (string, error)
 }
 
 func Handle(
@@ -123,10 +127,18 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 			output.Println("generating source file: ", tpl.Filename)
 			content := tpl.Data.String()
 
-			if e.Kind != mtemplate.KindRust {
-				if err := isValidGoSource(content); err != nil {
+			if e.ValidateCode != nil {
+				if err := e.ValidateCode(content); err != nil {
 					return err
 				}
+			}
+
+			if e.FormatCode != nil {
+				c, err := e.FormatCode(content, e.FormatCodeArguments)
+				if err != nil {
+					return err
+				}
+				content = c
 			}
 
 			f := plugin.NewGeneratedFile(tpl.Filename, ".")
@@ -139,25 +151,29 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	var executions []execution
 	if cfg.Templates.Go {
 		executions = append(executions, execution{
-			Kind:  mtemplate.KindGo,
-			Path:  cfg.Templates.GoPath,
-			Files: go_tpl_files.Files,
+			Kind:         mtemplate.KindGo,
+			Path:         cfg.Templates.GoPath,
+			Files:        go_tpl_files.Files,
+			ValidateCode: isValidGoSource,
 		})
 	}
 	if cfg.Templates.Test {
 		executions = append(executions, execution{
-			Kind:  mtemplate.KindTest,
-			Path:  cfg.Templates.TestPath,
-			Files: test_tpl_files.Files,
+			Kind:         mtemplate.KindTest,
+			Path:         cfg.Templates.TestPath,
+			Files:        test_tpl_files.Files,
+			ValidateCode: isValidGoSource,
 		})
 	}
 	if cfg.Templates.RustEnabled() {
 		executions = append(executions, execution{
-			Kind:         mtemplate.KindRust,
-			Path:         cfg.Templates.Rust.Path,
-			Files:        rust_tpl_files.Files,
-			SingleModule: cfg.Templates.Rust.SingleModule,
-			ModuleName:   cfg.Templates.Rust.ModuleName,
+			SingleModule:        cfg.Templates.Rust.SingleModule,
+			Kind:                mtemplate.KindRust,
+			Path:                cfg.Templates.Rust.Path,
+			ModuleName:          cfg.Templates.Rust.ModuleName,
+			Files:               rust_tpl_files.Files,
+			FormatCode:          translation.RustFormatCode,
+			FormatCodeArguments: []string{cfg.Templates.Rust.FmtEdition},
 		})
 	}
 
