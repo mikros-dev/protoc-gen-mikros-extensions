@@ -101,7 +101,7 @@ async fn {{toSnake .Name}}(
 {{- if .HasBodyArguments}}
     Json(body): Json<{{.RequestName}}Body>,
 {{- end}}
-) -> merrors::Result<Json<{{.ResponseName}}>> {
+) -> Result<Json<{{.ResponseName}}>, merrors::ServiceError> {
     // Retrieve all arguments to create the endpoint main structure.
     let args = {{.RequestName}} {
         {{- if .HasPathArguments}}
@@ -134,8 +134,13 @@ async fn {{toSnake .Name}}(
     request.extensions_mut().insert(context.clone());
 
     // Translates the wrapper response into the endpoint response.
-    let res = router.wrapper.{{toSnake .Name}}(request).await?;
-    Ok(Json(res.into_inner().into()))
+    match router.wrapper.{{toSnake .Name}}(request).await {
+        Ok(response) => Ok(Json(response.into_inner().into())),
+        Err(error) => {
+            let e: merrors::ServiceError = error.into();
+            Err(e.into())
+        }
+    }
 }
 {{end}}
 
