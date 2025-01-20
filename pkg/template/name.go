@@ -1,11 +1,13 @@
 package template
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Name string
 
-func NewName(prefix, name string) Name {
-	return Name(fmt.Sprintf("%s:%s", prefix, name))
+func NewName(kind Kind, name string) Name {
+	return Name(fmt.Sprintf("%s:%s", kind.String(), name))
 }
 
 func (n Name) String() string {

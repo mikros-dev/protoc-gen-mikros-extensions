@@ -45,6 +45,14 @@ message CreateUserRequest {
   string email = 2;
   int32 age = 3;
   bool debug = 4;
+  optional string full_name = 5;
+  repeated string address = 6;
+  CreateUserDetailsRequest details = 7;
+}
+
+message CreateUserDetailsRequest {
+  string street = 1;
+  int32 number = 2;
 }
 
 message CreateUserResponse {

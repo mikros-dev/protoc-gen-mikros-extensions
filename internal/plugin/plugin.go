@@ -17,8 +17,10 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/args"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template"
-	api_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/api"
+	go_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/golang"
+	rust_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/rust"
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/translation"
 	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -26,10 +28,14 @@ import (
 )
 
 type execution struct {
-	Kind   mtemplate.Kind
-	Path   string
-	Prefix string
-	Files  embed.FS
+	SingleModule        bool
+	Kind                mtemplate.Kind
+	Path                string
+	ModuleName          string
+	Files               embed.FS
+	FormatCodeArguments []string
+	ValidateCode        func(string) error
+	FormatCode          func(string, []string) (string, error)
 }
 
 func Handle(
@@ -96,31 +102,43 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	output.Println("processing module:", ctx.ModuleName)
 
 	genTemplates := func(e execution) error {
-		templates, err := template.LoadTemplates(template.Options{
+		templates, err := template.LoadTemplates(template.LoadTemplatesOptions{
 			StrictValidators: true,
 			Kind:             e.Kind,
-			Path:             e.Path,
-			FilesPrefix:      e.Prefix,
 			Plugin:           plugin,
 			Files:            e.Files,
-			Context:          ctx,
 			Addons:           addons,
 		})
 		if err != nil {
 			return err
 		}
 
-		generated, err := templates.Execute()
+		generated, err := templates.Execute(template.ExecuteOptions{
+			Context:      ctx,
+			Path:         e.Path,
+			SingleModule: e.SingleModule,
+			ModuleName:   e.ModuleName,
+		})
 		if err != nil {
 			return err
 		}
 
 		for _, tpl := range generated {
 			output.Println("generating source file: ", tpl.Filename)
-
 			content := tpl.Data.String()
-			if err := isValidGoSource(content); err != nil {
-				return err
+
+			if e.ValidateCode != nil {
+				if err := e.ValidateCode(content); err != nil {
+					return err
+				}
+			}
+
+			if e.FormatCode != nil {
+				c, err := e.FormatCode(content, e.FormatCodeArguments)
+				if err != nil {
+					return err
+				}
+				content = c
 			}
 
 			f := plugin.NewGeneratedFile(tpl.Filename, ".")
@@ -131,20 +149,31 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	}
 
 	var executions []execution
-	if cfg.Templates.Api {
+	if cfg.Templates.Go {
 		executions = append(executions, execution{
-			Kind:   mtemplate.KindApi,
-			Path:   cfg.Templates.ApiPath,
-			Prefix: "api",
-			Files:  api_tpl_files.Files,
+			Kind:         mtemplate.KindGo,
+			Path:         cfg.Templates.GoPath,
+			Files:        go_tpl_files.Files,
+			ValidateCode: isValidGoSource,
 		})
 	}
 	if cfg.Templates.Test {
 		executions = append(executions, execution{
-			Kind:   mtemplate.KindTest,
-			Path:   cfg.Templates.TestPath,
-			Prefix: "testing",
-			Files:  test_tpl_files.Files,
+			Kind:         mtemplate.KindTest,
+			Path:         cfg.Templates.TestPath,
+			Files:        test_tpl_files.Files,
+			ValidateCode: isValidGoSource,
+		})
+	}
+	if cfg.Templates.RustEnabled() {
+		executions = append(executions, execution{
+			SingleModule:        cfg.Templates.Rust.SingleModule,
+			Kind:                mtemplate.KindRust,
+			Path:                cfg.Templates.Rust.Path,
+			ModuleName:          cfg.Templates.Rust.ModuleName,
+			Files:               rust_tpl_files.Files,
+			FormatCode:          translation.RustFormatCode,
+			FormatCodeArguments: []string{cfg.Templates.Rust.FmtEdition},
 		})
 	}
 

@@ -74,8 +74,10 @@ func toImportsContext(ctx *Context) *imports.Context {
 	for _, m := range ctx.Methods {
 		methods = append(methods, &imports.Method{
 			HasRequiredBody:    m.HasRequiredBody(),
-			HasQueryArguments:  m.HasHeaderArguments(),
-			HasHeaderArguments: m.HasQueryArguments(),
+			HasQueryArguments:  m.HasQueryArguments(),
+			HasHeaderArguments: m.HasHeaderArguments(),
+			HasPathArguments:   m.HasPathArguments(),
+			HTTPMethod:         m.HTTPMethod(),
 		})
 	}
 

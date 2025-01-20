@@ -17,10 +17,12 @@ kind = "mongo"
 framework = "fasthttp"
 
 [templates]
-api = true
-api_path = "go"
+go = true
+go_path = "go"
 test = true
 test_path = "test"
+rust = true
+rust_path = "rust"
 
 [validations]
 rule_package_import.name = "github.com/rsfreitas/mikros-essentials/validation"

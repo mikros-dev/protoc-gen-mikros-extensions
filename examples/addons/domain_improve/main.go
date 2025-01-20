@@ -60,7 +60,7 @@ func (d *DomainImproveAddon) GetTemplateValidator(name template.Name, ctx interf
 	pc := c.AddonContext(addonName).(*Context)
 
 	validators := map[template.Name]template.ValidateForExecution{
-		template.NewName(addonName, "domain_improve"): func() bool {
+		template.NewName(template.KindGo, "domain_improve"): func() bool {
 			for _, msg := range c.DomainMessages() {
 				if pc.HasImproveDomainCall(msg) {
 					return true
@@ -76,7 +76,7 @@ func (d *DomainImproveAddon) GetTemplateValidator(name template.Name, ctx interf
 }
 
 func (d *DomainImproveAddon) Kind() template.Kind {
-	return template.KindApi
+	return template.KindGo
 }
 
 func (d *DomainImproveAddon) Templates() embed.FS {

@@ -3,7 +3,7 @@ module github.com/mikros-dev/protoc-gen-mikros-extensions
 go 1.22.3
 
 require (
-	dario.cat/mergo v1.0.0
+	dario.cat/mergo v1.0.1
 	github.com/BurntSushi/toml v1.4.0
 	github.com/bufbuild/protoplugin v0.0.0-20240323223605-e2735f6c31ee
 	github.com/creasty/defaults v1.8.0
