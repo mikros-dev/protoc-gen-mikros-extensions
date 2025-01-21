@@ -102,6 +102,8 @@ async fn {{toSnake .Name}}(
     Json(body): Json<{{.RequestName}}Body>,
 {{- end}}
 ) -> Result<Json<{{.ResponseName}}>, merrors::ServiceError> {
+    let context = state.lock().await.context();
+
     // Retrieve all arguments to create the endpoint main structure.
     let args = {{.RequestName}} {
         {{- if .HasPathArguments}}
@@ -130,7 +132,6 @@ async fn {{toSnake .Name}}(
     let mut request = Request::new(input);
 
     // Adds mikros context inside the request for the wrapper to also access it.
-    let context = state.lock().await.context();
     request.extensions_mut().insert(context.clone());
 
     // Translates the wrapper response into the endpoint response.

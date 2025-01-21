@@ -262,10 +262,10 @@ func (f *Field) HeaderArgumentByTemplateKind(kind template.Kind) string {
 	if kind == template.KindRust {
 		// TODO: move this code to translate/rust
 		if f.Type == descriptor.FieldDescriptorProto_TYPE_BOOL {
-			return fmt.Sprintf(`mikros::http::header::to_bool(&headers, "%s")?`, f.ProtoName)
+			return fmt.Sprintf(`mikros::http::header::to_bool(context.clone(), &headers, "%s")?`, f.ProtoName)
 		}
 
-		return fmt.Sprintf(`mikros::http::header::to_string(&headers, "%s")?`, f.ProtoName)
+		return fmt.Sprintf(`mikros::http::header::to_string(context.clone(), &headers, "%s")?`, f.ProtoName)
 	}
 
 	return ""
