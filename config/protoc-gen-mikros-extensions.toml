@@ -13,11 +13,13 @@ kind = "mongo"
 [http]
 framework = "fasthttp"
 
-[templates]
-go = true
-go_path = "go"
-test = true
-test_path = "test"
+[templates.go]
+enabled = true
+path = "go"
+
+[templates.test]
+enabled = true
+path = "test"
 
 [templates.common]
 converters = false

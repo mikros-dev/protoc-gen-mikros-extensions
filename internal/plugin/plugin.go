@@ -149,32 +149,36 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	}
 
 	var executions []execution
-	if cfg.Templates.Go {
+	if cfg.Templates.Go.IsEnabled() {
 		executions = append(executions, execution{
 			Kind:         mtemplate.KindGo,
-			Path:         cfg.Templates.GoPath,
+			Path:         cfg.Templates.Go.Path,
 			Files:        go_tpl_files.Files,
 			ValidateCode: isValidGoSource,
 		})
 	}
-	if cfg.Templates.Test {
+	if cfg.Templates.Test.IsEnabled() {
 		executions = append(executions, execution{
 			Kind:         mtemplate.KindTest,
-			Path:         cfg.Templates.TestPath,
+			Path:         cfg.Templates.Test.Path,
 			Files:        test_tpl_files.Files,
 			ValidateCode: isValidGoSource,
 		})
 	}
-	if cfg.Templates.RustEnabled() {
-		executions = append(executions, execution{
-			SingleModule:        cfg.Templates.Rust.SingleModule,
-			Kind:                mtemplate.KindRust,
-			Path:                cfg.Templates.Rust.Path,
-			ModuleName:          cfg.Templates.Rust.ModuleName,
-			Files:               rust_tpl_files.Files,
-			FormatCode:          translation.RustFormatCode,
-			FormatCodeArguments: []string{cfg.Templates.Rust.FmtEdition},
-		})
+	if cfg.Templates.Rust.IsEnabled() {
+		rustExecution := execution{
+			SingleModule: cfg.Templates.Rust.SingleModule,
+			Kind:         mtemplate.KindRust,
+			Path:         cfg.Templates.Rust.Path,
+			ModuleName:   cfg.Templates.Rust.ModuleName,
+			Files:        rust_tpl_files.Files,
+		}
+		if cfg.Templates.Rust.RunFmt {
+			rustExecution.FormatCode = translation.RustFormatCode
+			rustExecution.FormatCodeArguments = []string{cfg.Templates.Rust.FmtEdition}
+		}
+
+		executions = append(executions, rustExecution)
 	}
 
 	for _, execution := range executions {

@@ -212,10 +212,10 @@ func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (templ
 			return c.HasValidatableMessage()
 		},
 		template.NewName(testing, "testing"): func() bool {
-			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test
+			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test.IsEnabled()
 		},
 		template.NewName(testing, "http_server"): func() bool {
-			return c.IsHTTPService() && c.settings.Templates.Test
+			return c.IsHTTPService() && c.settings.Templates.Test.IsEnabled()
 		},
 		template.NewName(rust, "router.rs"): func() bool {
 			return c.IsHTTPService()

@@ -42,16 +42,19 @@ type Http struct {
 }
 
 type Templates struct {
-	Go       bool    `toml:"go" default:"false"`
-	Test     bool    `toml:"test" default:"false"`
-	TestPath string  `toml:"test_path" default:"test"`
-	GoPath   string  `toml:"go_path" default:"go"`
-	Common   *Common `toml:"common" default:"{}"`
-	Rust     *Rust   `toml:"rust" default:"{}"`
+	Go     *Golang `toml:"go" default:"{}"`
+	Test   *Test   `toml:"test" default:"{}"`
+	Rust   *Rust   `toml:"rust" default:"{}"`
+	Common *Common `toml:"common" default:"{}"`
 }
 
-func (t *Templates) RustEnabled() bool {
-	return t.Rust != nil && t.Rust.Enabled
+type TemplateBase struct {
+	Enabled bool   `toml:"enabled" default:"false"`
+	Path    string `toml:"path" default:"rust"`
+}
+
+func (t *TemplateBase) IsEnabled() bool {
+	return t.Enabled
 }
 
 type Common struct {
@@ -65,13 +68,20 @@ type Dependency struct {
 	Calls       map[string]interface{} `toml:"calls"`
 }
 
+type Golang struct {
+	TemplateBase
+}
+
+type Test struct {
+	TemplateBase
+}
+
 type Rust struct {
-	Enabled      bool   `toml:"enabled" default:"false"`
-	Path         string `toml:"path" default:"rust"`
 	SingleModule bool   `toml:"single_module" default:"false"`
 	ModuleName   string `toml:"module_name" default:"rust"`
-	RunFmt       bool   `toml:"run_rustfmt" default:"false"`
+	RunFmt       bool   `toml:"run_fmt" default:"false"`
 	FmtEdition   string `toml:"format_edition" default:"2021"`
+	TemplateBase
 }
 
 type Validations struct {
