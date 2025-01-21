@@ -81,7 +81,7 @@ func RustFormatCode(input string, args []string) (string, error) {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return "", err
+		return "", errors.New(stderr.String())
 	}
 	if stderr.Len() > 0 {
 		return "", errors.New(stderr.String())
