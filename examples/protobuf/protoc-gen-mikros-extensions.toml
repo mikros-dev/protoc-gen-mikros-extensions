@@ -16,13 +16,18 @@ kind = "mongo"
 [http]
 framework = "fasthttp"
 
-[templates]
-go = true
-go_path = "go"
-test = true
-test_path = "test"
-rust = true
-rust_path = "rust"
+[templates.go]
+enabled = false
+path = "go"
+
+[templates.test]
+enabled = false
+path = "test"
+
+[templates.rust]
+enabled = true
+path = "rust"
+run_fmt = true
 
 [validations]
 rule_package_import.name = "github.com/rsfreitas/mikros-essentials/validation"
