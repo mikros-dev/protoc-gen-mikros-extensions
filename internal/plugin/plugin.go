@@ -16,11 +16,11 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/args"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template"
 	api_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/api"
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
 	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
+	mparser "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/parser"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	mtemplate "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
 )
@@ -96,7 +96,7 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	output.Println("processing module:", ctx.ModuleName)
 
 	genTemplates := func(e execution) error {
-		templates, err := template.LoadTemplates(template.Options{
+		templates, err := mparser.LoadTemplates(mparser.Options{
 			StrictValidators: true,
 			Kind:             e.Kind,
 			Path:             e.Path,
