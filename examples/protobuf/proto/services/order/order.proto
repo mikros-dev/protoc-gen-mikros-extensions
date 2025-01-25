@@ -10,7 +10,13 @@ import "services/user/user.proto";
 import "services/common/common.proto";
 
 message OrderWire {
-  string id = 1;
+  string id = 1 [(mikros.extensions.field_options) = {
+    database: {
+      index: true
+      primary_key: true
+    }
+  }];
+
   user.UserWire user = 2;
   repeated product.ProductWire products = 3;
   common.Status status = 4;
