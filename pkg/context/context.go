@@ -8,7 +8,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type Context struct {
@@ -19,7 +19,7 @@ type Context struct {
 	Package    *protobuf.Protobuf
 
 	messages []*Message
-	imports  map[template.Name][]*templateImport
+	imports  map[tpl_types.Name][]*templateImport
 	addons   map[string]*addon.Addon
 	settings *settings.Settings
 }
@@ -75,13 +75,13 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 }
 
 func (c *Context) GetTemplateImports(name string) []*templateImport {
-	return c.imports[template.Name(name)]
+	return c.imports[tpl_types.Name(name)]
 }
 
 func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*templateImport {
 	if a, ok := c.addons[addonName]; ok {
 		var (
-			ipt          = a.Addon().GetTemplateImports(template.Name(tplName), c, c.settings)
+			ipt          = a.Addon().GetTemplateImports(tpl_types.Name(tplName), c, c.settings)
 			addonImports = make([]*templateImport, len(ipt))
 		)
 
@@ -99,13 +99,13 @@ func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*template
 }
 
 func (c *Context) HasImportFor(name string) bool {
-	d, ok := c.imports[template.Name(name)]
+	d, ok := c.imports[tpl_types.Name(name)]
 	return ok && len(d) > 0
 }
 
 func (c *Context) HasAddonImportFor(addonName, tplName string) bool {
 	if a, ok := c.addons[addonName]; ok {
-		return len(a.Addon().GetTemplateImports(template.Name(tplName), c, c.settings)) > 0
+		return len(a.Addon().GetTemplateImports(tpl_types.Name(tplName), c, c.settings)) > 0
 	}
 
 	return false
@@ -171,39 +171,39 @@ func (c *Context) CustomApiExtensions() []*Message {
 	return messages
 }
 
-func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (template.ValidateForExecution, bool) {
-	validators := map[template.Name]template.ValidateForExecution{
-		template.NewName("api", "domain"): func() bool {
+func (c *Context) GetTemplateValidator(name tpl_types.Name, _ interface{}) (tpl_types.ValidateForExecution, bool) {
+	validators := map[tpl_types.Name]tpl_types.ValidateForExecution{
+		tpl_types.NewName("api", "domain"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
-		template.NewName("api", "enum"): func() bool {
+		tpl_types.NewName("api", "enum"): func() bool {
 			return len(c.Enums) > 0
 		},
-		template.NewName("api", "custom_api"): func() bool {
+		tpl_types.NewName("api", "custom_api"): func() bool {
 			return len(c.CustomApiExtensions()) > 0
 		},
-		template.NewName("api", "http_server"): func() bool {
+		tpl_types.NewName("api", "http_server"): func() bool {
 			return c.IsHTTPService()
 		},
-		template.NewName("api", "routes"): func() bool {
+		tpl_types.NewName("api", "routes"): func() bool {
 			return c.IsHTTPService()
 		},
-		template.NewName("api", "outbound"): func() bool {
+		tpl_types.NewName("api", "outbound"): func() bool {
 			return c.IsHTTPService() || len(c.OutboundMessages()) > 0
 		},
-		template.NewName("api", "wire_input"): func() bool {
+		tpl_types.NewName("api", "wire_input"): func() bool {
 			return len(c.WireInputMessages()) > 0
 		},
-		template.NewName("api", "common"): func() bool {
+		tpl_types.NewName("api", "common"): func() bool {
 			return c.UseCommonConverters() || c.OutboundHasBitflagField()
 		},
-		template.NewName("api", "validation"): func() bool {
+		tpl_types.NewName("api", "validation"): func() bool {
 			return c.HasValidatableMessage()
 		},
-		template.NewName("testing", "testing"): func() bool {
+		tpl_types.NewName("testing", "testing"): func() bool {
 			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test
 		},
-		template.NewName("testing", "http_server"): func() bool {
+		tpl_types.NewName("testing", "http_server"): func() bool {
 			return c.IsHTTPService() && c.settings.Templates.Test
 		},
 	}

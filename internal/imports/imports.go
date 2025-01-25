@@ -8,7 +8,7 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type Context struct {
@@ -57,19 +57,19 @@ type Import struct {
 	Name  string
 }
 
-func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*Import {
-	return map[template.Name][]*Import{
-		template.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
-		template.NewName("api", "enum"):            loadEnumTemplateImports(),
-		template.NewName("api", "custom_api"):      loadCustomApiTemplateImports(ctx),
-		template.NewName("api", "http_server"):     loadHttpServerTemplateImports(),
-		template.NewName("api", "routes"):          loadRoutesTemplateImports(ctx),
-		template.NewName("api", "wire_input"):      loadWireInputTemplateImports(ctx, cfg),
-		template.NewName("api", "outbound"):        loadOutboundTemplateImports(ctx, cfg),
-		template.NewName("api", "common"):          loadCommonTemplateImports(ctx),
-		template.NewName("api", "validation"):      loadValidationTemplateImports(ctx, cfg),
-		template.NewName("testing", "testing"):     loadTestingTemplateImports(ctx, cfg),
-		template.NewName("testing", "http_server"): loadTestingHttpServerTemplateImports(ctx),
+func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[tpl_types.Name][]*Import {
+	return map[tpl_types.Name][]*Import{
+		tpl_types.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
+		tpl_types.NewName("api", "enum"):            loadEnumTemplateImports(),
+		tpl_types.NewName("api", "custom_api"):      loadCustomApiTemplateImports(ctx),
+		tpl_types.NewName("api", "http_server"):     loadHttpServerTemplateImports(),
+		tpl_types.NewName("api", "routes"):          loadRoutesTemplateImports(ctx),
+		tpl_types.NewName("api", "wire_input"):      loadWireInputTemplateImports(ctx, cfg),
+		tpl_types.NewName("api", "outbound"):        loadOutboundTemplateImports(ctx, cfg),
+		tpl_types.NewName("api", "common"):          loadCommonTemplateImports(ctx),
+		tpl_types.NewName("api", "validation"):      loadValidationTemplateImports(ctx, cfg),
+		tpl_types.NewName("testing", "testing"):     loadTestingTemplateImports(ctx, cfg),
+		tpl_types.NewName("testing", "http_server"): loadTestingHttpServerTemplateImports(ctx),
 	}
 }
 
