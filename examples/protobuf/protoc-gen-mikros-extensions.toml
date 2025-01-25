@@ -11,7 +11,7 @@ wire_input = "Request"
 wire_output = "Response"
 
 [database]
-kind = "mongo"
+kind = "gorm"
 
 [http]
 framework = "fasthttp"

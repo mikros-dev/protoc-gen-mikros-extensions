@@ -34,7 +34,7 @@ type Suffix struct {
 }
 
 type Database struct {
-	Kind string `toml:"kind" validate:"oneof=mongo" default:"mongo"`
+	Kind string `toml:"kind" validate:"oneof=mongo gorm" default:"mongo"`
 }
 
 type Http struct {
