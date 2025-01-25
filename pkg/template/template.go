@@ -1,4 +1,4 @@
-package parser
+package template
 
 import (
 	"bufio"
@@ -15,7 +15,7 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
-	mtemplate "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 // Templates is an object that holds information related to a group of
@@ -42,7 +42,7 @@ type Options struct {
 	// for a template only if it is declared. Otherwise, the template will be
 	// ignored.
 	StrictValidators bool
-	Kind             mtemplate.Kind
+	Kind             tpl_types.Kind
 	Path             string
 	FilesPrefix      string `validate:"required"`
 	Plugin           *protogen.Plugin
@@ -56,10 +56,10 @@ type Options struct {
 // object manipulated inside the template file, must implement.
 type Context interface {
 	Extension() string
-	mtemplate.Validator
+	tpl_types.Validator
 }
 
-func LoadTemplates(options Options) (*Templates, error) {
+func Load(options Options) (*Templates, error) {
 	validate := validator.New()
 	if err := validate.Struct(options); err != nil {
 		return nil, err
@@ -129,13 +129,13 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		}
 
 		basename := filenameWithoutExtension(t.Name())
-		helperApi := mtemplate.HelperApi()
+		helperApi := tpl_types.HelperApi()
 		for k, v := range api {
 			helperApi[k] = v
 		}
 
 		helperApi["templateName"] = func() string {
-			return mtemplate.NewName(prefix, basename).String()
+			return tpl_types.NewName(prefix, basename).String()
 		}
 
 		// Specific addons APIs
@@ -156,7 +156,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 	return infos, nil
 }
 
-func canUseAddon(tplKind, addonKind mtemplate.Kind) bool {
+func canUseAddon(tplKind, addonKind tpl_types.Kind) bool {
 	return tplKind == addonKind
 }
 
@@ -184,7 +184,7 @@ func (t *Templates) Execute() ([]*Generated, error) {
 			tplValidator = tpl.addon.Addon().GetTemplateValidator
 		}
 
-		templateValidator, ok := tplValidator(mtemplate.NewName(prefix, tpl.name), t.context)
+		templateValidator, ok := tplValidator(tpl_types.NewName(prefix, tpl.name), t.context)
 		if !ok && t.strictValidators {
 			// The validator should not be executed in this case, since we don't
 			// have one for this template, we can skip it.

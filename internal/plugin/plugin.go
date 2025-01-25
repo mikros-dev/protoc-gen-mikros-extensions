@@ -20,13 +20,13 @@ import (
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
 	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
-	mparser "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/parser"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	mtemplate "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type execution struct {
-	Kind   mtemplate.Kind
+	Kind   tpl_types.Kind
 	Path   string
 	Prefix string
 	Files  embed.FS
@@ -96,7 +96,7 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	output.Println("processing module:", ctx.ModuleName)
 
 	genTemplates := func(e execution) error {
-		templates, err := mparser.LoadTemplates(mparser.Options{
+		templates, err := template.Load(template.Options{
 			StrictValidators: true,
 			Kind:             e.Kind,
 			Path:             e.Path,
@@ -133,7 +133,7 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	var executions []execution
 	if cfg.Templates.Api {
 		executions = append(executions, execution{
-			Kind:   mtemplate.KindApi,
+			Kind:   tpl_types.KindApi,
 			Path:   cfg.Templates.ApiPath,
 			Prefix: "api",
 			Files:  api_tpl_files.Files,
@@ -141,7 +141,7 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	}
 	if cfg.Templates.Test {
 		executions = append(executions, execution{
-			Kind:   mtemplate.KindTest,
+			Kind:   tpl_types.KindTest,
 			Path:   cfg.Templates.TestPath,
 			Prefix: "testing",
 			Files:  test_tpl_files.Files,
