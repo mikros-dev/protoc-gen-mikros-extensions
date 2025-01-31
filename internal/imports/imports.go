@@ -36,8 +36,10 @@ type Field struct {
 	IsArray                        bool
 	IsProtobufTimestamp            bool
 	IsOutboundBitflag              bool
+	OutboundHide                   bool
 	ConversionDomainToWire         string
 	ConversionWireOutputToOutbound string
+	DomainType                     string
 	WireType                       string
 	OutboundType                   string
 	TestingBinding                 string

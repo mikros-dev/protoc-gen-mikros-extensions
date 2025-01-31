@@ -185,9 +185,9 @@ func (m *Message) OutboundExport() bool {
 	return false
 }
 
-func (m *Message) MapFields() []*Field {
+func (m *Message) MapFields(templateName string) []*Field {
 	var fields []*Field
-	for _, field := range m.Fields {
+	for _, field := range m.GetFields(templateName) {
 		if field.IsMap {
 			fields = append(fields, field)
 		}
@@ -232,7 +232,7 @@ func (m *Message) GetFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return true
 	}
-	if templateName == "outbound" {
+	if templateName == "api:outbound" {
 		filter = func(field *Field) bool {
 			return !field.OutboundHide()
 		}
