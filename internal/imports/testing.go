@@ -17,12 +17,13 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 	for _, message := range ctx.DomainMessages {
 		for _, f := range message.Fields {
 			var (
-				binding = f.TestingBinding
-				cfgCall = cfg.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr) + "("
-				call    = strings.TrimPrefix(f.TestingCall, cfgCall)
+				binding   = f.TestingBinding
+				cfgCall   = cfg.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr) + "("
+				call      = strings.TrimPrefix(f.TestingCall, cfgCall)
+				fieldType = f.DomainType
 			)
 
-			if module, ok := needsImportAnotherProtoModule(binding, "", ctx.ModuleName, message.Receiver); ok {
+			if module, ok := needsImportAnotherProtoModule(binding, fieldType, ctx.ModuleName, message.Receiver); ok {
 				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 

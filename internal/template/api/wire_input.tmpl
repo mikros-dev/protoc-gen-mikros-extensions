@@ -35,7 +35,7 @@ func ({{$receiver}} *{{.DomainName}}) IntoWireInput() *{{.WireName}} {
     }
     wire.{{.GoName}} = {{$name}}Elements
     {{end -}}
-    {{range .MapFields}}{{$name := toLowerCamelCase .GoName}}
+    {{range .MapFields templateName}}{{$name := toLowerCamelCase .GoName}}
     {{$name}}Elements := make({{.WireType}})
     for k, v := range {{$receiver}}.{{.GoName}} {
         {{$name}}Elements[k] = {{.ConvertDomainTypeToMapWireInputType "v"}}

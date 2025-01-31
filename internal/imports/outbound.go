@@ -23,6 +23,10 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
+			if f.OutboundHide {
+				continue
+			}
+
 			if ipt := fieldHasCustomImport(f.ProtoField); ipt != nil {
 				imports[ipt.Name] = ipt
 				continue

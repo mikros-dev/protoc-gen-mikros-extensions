@@ -43,7 +43,7 @@ func ({{$receiver}} *{{.Name}}) IntoOutbound() interface{} {
     }
     out.{{.GoName}} = {{$name}}
     {{end -}}
-    {{range .MapFields}}{{$name := toLowerCamelCase .GoName}}
+    {{range .MapFields templateName}}{{$name := toLowerCamelCase .GoName}}
     {{$name}} := make({{.OutboundType}})
     for k, v := range {{$receiver}}.{{.GoName}} {
         {{$name}}[k] = {{.ConvertWireOutputToMapOutbound "v"}}
