@@ -207,3 +207,19 @@ func (f *Field) MapValueTypeName() string {
 
 	return ""
 }
+
+func (f *Field) MapValuePackage() (string, string, bool) {
+	if f.IsMap() {
+		parts := strings.Split(f.MapValueTypeName(), ".")
+
+		// Map types don't come with the leading dot '.', that's why we're
+		// subtracting one here.
+		if len(parts) == internalMessageTypeParts-1 {
+			module := parts[len(parts)-2]
+			typeName := parts[len(parts)-1]
+			return module, typeName, f.moduleName == module
+		}
+	}
+
+	return "", "", false
+}
