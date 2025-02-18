@@ -18,7 +18,7 @@ func loadCustomApiTemplateImports(ctx *Context) []*Import {
 			continue
 		}
 
-		for _, c := range options.GetCode() {
+		for _, c := range options.GetFunction() {
 			for _, i := range c.GetImport() {
 				key := i.GetName()
 				if key == "" {

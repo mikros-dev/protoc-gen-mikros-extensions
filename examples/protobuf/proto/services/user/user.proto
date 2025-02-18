@@ -10,7 +10,7 @@ import "services/common/common.proto";
 message UserWire {
   option (mikros.extensions.message_options) = {
     custom_api: {
-      code: {
+      function: {
         import: {
           alias: "common"
           name: "examples/gen/go/services/common"
@@ -20,7 +20,7 @@ message UserWire {
         body: "return u.Status == common.Status_STATUS_ACTIVE"
       }
 
-      code: {
+      function: {
         signature: "(u *UserWire) HasEmail() bool"
         body: "return u.Email != \"\""
       }
