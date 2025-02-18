@@ -207,6 +207,9 @@ func checkImportNeededFromFieldType(fieldType string) (string, bool) {
 	if strings.HasPrefix(fieldType, "map[") {
 		fieldType = mapTypeRe.ReplaceAllString(fieldType, "")
 	}
+	if strings.HasPrefix(fieldType, "[]") {
+		fieldType = strings.TrimPrefix(fieldType, "[]")
+	}
 
 	fieldType = strings.TrimPrefix(fieldType, "*")
 	parts := strings.Split(fieldType, ".")
