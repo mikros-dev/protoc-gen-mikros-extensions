@@ -163,10 +163,11 @@ message MessageDomainExtensions {
 }
 
 message MessageCustomApiExtensions {
-  repeated CustomCodeExtensions code = 1;
+  repeated CustomFunctionExtensions function = 1;
+  repeated string block = 2;
 }
 
-message CustomCodeExtensions {
+message CustomFunctionExtensions {
   required string signature = 1;
   required string body  = 2;
   repeated MikrosCustomImport import = 3;

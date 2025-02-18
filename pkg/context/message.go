@@ -199,25 +199,25 @@ func (m *Message) MapFields(templateName string) []*Field {
 func (m *Message) HasCustomApiCodeExtension() bool {
 	if m.extensions != nil {
 		if options := m.extensions.GetCustomApi(); options != nil {
-			return len(options.GetCode()) > 0
+			return len(options.GetFunction()) > 0 || len(options.GetBlock()) > 0
 		}
 	}
 
 	return false
 }
 
-type CustomCode struct {
+type CustomFunction struct {
 	Signature string
 	Body      string
 }
 
-func (m *Message) CustomApiCode() []*CustomCode {
-	var customCodes []*CustomCode
+func (m *Message) CustomFunctions() []*CustomFunction {
+	var customCodes []*CustomFunction
 
 	if m.extensions != nil {
 		if options := m.extensions.GetCustomApi(); options != nil {
-			for _, c := range options.GetCode() {
-				customCodes = append(customCodes, &CustomCode{
+			for _, c := range options.GetFunction() {
+				customCodes = append(customCodes, &CustomFunction{
 					Signature: c.GetSignature(),
 					Body:      c.GetBody(),
 				})
@@ -226,6 +226,26 @@ func (m *Message) CustomApiCode() []*CustomCode {
 	}
 
 	return customCodes
+}
+
+type CustomBlock struct {
+	Block string
+}
+
+func (m *Message) CustomBlocks() []*CustomBlock {
+	var customBlocks []*CustomBlock
+
+	if m.extensions != nil {
+		if options := m.extensions.GetCustomApi(); options != nil {
+			for _, c := range options.GetBlock() {
+				customBlocks = append(customBlocks, &CustomBlock{
+					Block: c,
+				})
+			}
+		}
+	}
+
+	return customBlocks
 }
 
 func (m *Message) GetFields(templateName string) []*Field {
