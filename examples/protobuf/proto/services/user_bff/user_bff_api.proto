@@ -5,6 +5,7 @@ package services.user_bff;
 option go_package = "examples/gen/go/services/user_bff;user_bff";
 
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 import "mikros/extensions/extensions.proto";
 import "services/user/user.proto";
 
@@ -55,4 +56,6 @@ message CreateUserResponse {
   };
 
   user.UserWire user = 1;
+  google.protobuf.Struct single_response = 2;
+  repeated google.protobuf.Struct responses = 3;
 }

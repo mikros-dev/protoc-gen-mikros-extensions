@@ -165,7 +165,7 @@ func (f *Field) convertFromWireType(isPointer, testMode bool, mode conversionMod
 	}
 
 	if f.proto.IsProtoStruct() {
-		return "map[string]interface{}"
+		return optional("map[string]interface{}", f.isArray, false)
 	}
 
 	if f.proto.IsTimestamp() {
@@ -611,6 +611,10 @@ func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
 	if f.proto.IsTimestamp() {
 		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTimePtr)
 		return fmt.Sprintf("%s(%s)", call, receiver)
+	}
+
+	if f.proto.IsProtoStruct() {
+		return fmt.Sprintf("%s.AsMap()", receiver)
 	}
 
 	if f.proto.IsMessage() {
