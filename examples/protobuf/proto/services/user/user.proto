@@ -43,6 +43,11 @@ message UserWire {
         value: "primaryKey"
       }
     }
+
+    testing: {
+      name: "id"
+      argument: "usr"
+    }
   }];
 
   string name = 2;

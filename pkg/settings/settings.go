@@ -23,6 +23,7 @@ type Settings struct {
 	Templates   *Templates   `toml:"templates" default:"{}"`
 	Validations *Validations `toml:"validations"`
 	Addons      *Addons      `toml:"addons"`
+	Testing     *Testing     `toml:"testing" default:"{}"`
 }
 
 type Suffix struct {
@@ -61,12 +62,12 @@ type Dependency struct {
 }
 
 type Validations struct {
-	RulePackageImport *Import                    `toml:"rule_package_import"`
-	Rule              map[string]*ValidationRule `toml:"rule"`
-	Custom            map[string]*ValidationRule `toml:"custom"`
+	RulePackageImport *Import                `toml:"rule_package_import"`
+	Rule              map[string]*CustomCall `toml:"rule"`
+	Custom            map[string]*CustomCall `toml:"custom"`
 }
 
-type ValidationRule struct {
+type CustomCall struct {
 	ArgsRequired bool   `toml:"args_required"`
 	Name         string `toml:"name"`
 }
@@ -74,6 +75,11 @@ type ValidationRule struct {
 type Import struct {
 	Name  string `toml:"name"`
 	Alias string `toml:"alias"`
+}
+
+type Testing struct {
+	PackageImport *Import                `toml:"package_import"`
+	Custom        map[string]*CustomCall `toml:"custom"`
 }
 
 func (i *Import) ModuleName() string {
@@ -161,7 +167,7 @@ func (s *Settings) IsSupportedCustomValidationRule(ruleName string) error {
 	return nil
 }
 
-func (s *Settings) GetValidationRule(rule extensions.FieldValidatorRule) (*ValidationRule, error) {
+func (s *Settings) GetValidationRule(rule extensions.FieldValidatorRule) (*CustomCall, error) {
 	if s.Validations != nil && s.Validations.Rule != nil {
 		name := strings.ToLower(strings.TrimPrefix(rule.String(), "FIELD_VALIDATOR_RULE_"))
 		if r, ok := s.Validations.Rule[name]; ok {
@@ -174,9 +180,21 @@ func (s *Settings) GetValidationRule(rule extensions.FieldValidatorRule) (*Valid
 	return nil, nil
 }
 
-func (s *Settings) GetValidationCustomRule(name string) (*ValidationRule, error) {
+func (s *Settings) GetValidationCustomRule(name string) (*CustomCall, error) {
 	if s.Validations != nil && s.Validations.Custom != nil {
 		if r, ok := s.Validations.Custom[name]; ok {
+			return r, nil
+		}
+
+		return nil, fmt.Errorf("could not find settings for custom rule '%s'", name)
+	}
+
+	return nil, nil
+}
+
+func (s *Settings) GetTestingCustomRule(name string) (*CustomCall, error) {
+	if s.Testing != nil && s.Testing.Custom != nil {
+		if r, ok := s.Testing.Custom[name]; ok {
 			return r, nil
 		}
 

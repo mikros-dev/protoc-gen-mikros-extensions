@@ -14,6 +14,13 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 		ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),
 	}
 
+	if cfg.Testing != nil && cfg.Testing.PackageImport != nil {
+		imports[cfg.Testing.PackageImport.Name] = &Import{
+			Name:  cfg.Testing.PackageImport.Name,
+			Alias: cfg.Testing.PackageImport.Alias,
+		}
+	}
+
 	for _, message := range ctx.DomainMessages {
 		for _, f := range message.Fields {
 			var (

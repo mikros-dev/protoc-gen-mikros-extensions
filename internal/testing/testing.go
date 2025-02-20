@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -72,6 +73,10 @@ func (f *Field) BindingValue(isPointer bool) string {
 }
 
 func (f *Field) ValueInitCall(isPointer bool) string {
+	if c, ok := f.customValueInitCall(); ok {
+		return c
+	}
+
 	if f.proto.IsProtoValue() {
 		return "nil"
 	}
@@ -111,6 +116,29 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 	}
 
 	return value
+}
+
+func (f *Field) customValueInitCall() (string, bool) {
+	options := extensions.LoadFieldExtensions(f.proto.Proto)
+	if options == nil || options.GetTesting() == nil {
+		return "", false
+	}
+
+	testing := options.GetTesting()
+	call, err := f.settings.GetTestingCustomRule(testing.GetCustomRule())
+	if err != nil {
+		return "", false
+	}
+
+	c := call.Name + "("
+	if call.ArgsRequired {
+		for _, arg := range testing.GetRuleArgs() {
+			c += fmt.Sprintf(`"%s",`, arg)
+		}
+	}
+	c += ")"
+
+	return c, true
 }
 
 func (f *Field) getEnumTestCallValue() string {
