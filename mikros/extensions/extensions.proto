@@ -72,6 +72,7 @@ message MikrosFieldExtensions {
   optional FieldInboundOptions inbound = 3;
   optional FieldOutboundOptions outbound = 4;
   optional FieldValidateOptions validate = 5;
+  optional FieldTestingOptions testing = 6;
 }
 
 message FieldDomainOptions {
@@ -143,6 +144,11 @@ enum FieldValidatorRule {
   FIELD_VALIDATOR_RULE_UNSPECIFIED = 0;
   FIELD_VALIDATOR_RULE_REGEX = 1;
   FIELD_VALIDATOR_RULE_CUSTOM = 2;
+}
+
+message FieldTestingOptions {
+  required string custom_rule = 1;
+  repeated string rule_args = 2;
 }
 
 extend google.protobuf.MessageOptions {
