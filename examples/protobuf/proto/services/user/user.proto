@@ -45,8 +45,8 @@ message UserWire {
     }
 
     testing: {
-      name: "id"
-      argument: "usr"
+      custom_rule: "id"
+      rule_args: "usr"
     }
   }];
 
