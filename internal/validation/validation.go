@@ -14,8 +14,10 @@ import (
 
 type CallOptions struct {
 	IsArray   bool
+	IsMessage bool
 	ProtoName string
 	Receiver  string
+	ProtoType string
 	Options   *extensions.MikrosFieldExtensions
 	Settings  *settings.Settings
 	Message   *protobuf.Message
@@ -73,15 +75,20 @@ func buildCall(options *CallOptions) (string, error) {
 	}
 
 	if validationOptions.GetDive() {
-		if !options.IsArray {
-			return "", fmt.Errorf("field '%s' is not of array type to have dive rule option enabled", options.ProtoName)
+		if !options.IsArray && !options.IsMessage {
+			return "", fmt.Errorf("field '%s' must be an array or a another message to have dive rule option enabled", options.ProtoName)
 		}
 
 		if call != "" {
 			call += ", "
 		}
 
-		call += "validation.Each("
+		if options.IsArray {
+			call += "validation.Each("
+		}
+		if options.IsMessage {
+			call += fmt.Sprintf("validation.By(%vValidator(options...)", options.ProtoType)
+		}
 	}
 
 	if validationOptions.GetMaxLength() > 0 {

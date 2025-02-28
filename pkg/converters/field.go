@@ -66,8 +66,10 @@ func NewField(options FieldOptions) (*Field, error) {
 	if options.Settings != nil {
 		call, err := validation.NewCall(&validation.CallOptions{
 			IsArray:   isArray,
+			IsMessage: field.proto.IsMessage(),
 			ProtoName: options.ProtoField.Name,
 			Receiver:  options.Receiver,
+			ProtoType: field.WireType(false),
 			Options:   fieldExtensions,
 			Settings:  options.Settings,
 			Message:   options.ProtoMessage,
