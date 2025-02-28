@@ -159,7 +159,8 @@ func (f *Field) IsBindable() bool {
 		}
 	}
 
-	return f.IsScalar() || (f.ProtoField.IsTimestamp() && !f.IsArray) || (f.ProtoField.IsProtoStruct() && !f.IsArray)
+	isBindable := f.IsScalar() || f.ProtoField.IsTimestamp() || f.ProtoField.IsProtoStruct() || f.ProtoField.IsMessageFromPackage()
+	return !f.IsArray && !f.IsMap && isBindable
 }
 
 func (f *Field) DomainType() string {
