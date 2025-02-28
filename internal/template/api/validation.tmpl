@@ -45,4 +45,11 @@ func ({{$receiver}} *{{$wireName}}) Validate(options ...*ValidateOptions) error 
     )
 {{- end}}
 }
+
+func {{$wireName}}Validator(options ...*ValidateOptions) validation.RuleFunc {
+    return validation.RuleFunc(func(value interface{}) error {
+        v := value.(*{{$wireName}})
+        return v.Validate(options...)
+    })
+}
 {{end}}
