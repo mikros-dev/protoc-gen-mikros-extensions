@@ -12,8 +12,8 @@ plugin without changing its source code.
 
 We call these new features as `addons` here.
 
-They provide the developer an easy way to add custom templates (for generated
-code) and annotations (protobuf annotations).
+They provide the developer an (almost) easy way to add custom templates (for
+generated code) and annotations (protobuf annotations).
 
 ## Creating a new addon
 
@@ -36,10 +36,11 @@ But, in order to improve the plugin annotations and to use these new custom
 ones inside the protobuf files, the new annotations must be declared in its
 own .proto file, following the official [extension declarations](https://protobuf.dev/programming-guides/extension_declarations/).
 
-Also, this new .proto file must be put inside the `mikros/extensions`
-directory so that, when building the plugin, all .proto files, both the plugin
-and the custom ones, are compiled together. This is required for these new
-annotations to be found inside the addon code when used.
+Remember to compile new .proto files, generating a Go source, since they
+will be required when building the addon.
+
+Also, these new .proto files must be put inside a known directory when
+compiling your protos, so buf/protoc may recognize their new annotations.
 
 ## Context
 

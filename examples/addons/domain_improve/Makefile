@@ -1,5 +1,6 @@
 PLUGIN_NAME := domain_improve
-SRC := main.go
+SRC := main.go	\
+		$(PLUGIN_NAME).pb.go
 
 PROTO := $(PLUGIN_NAME).proto
 TEMPLATES := $(PLUGIN_NAME).tmpl
