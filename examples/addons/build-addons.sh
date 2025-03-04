@@ -14,8 +14,7 @@ for addon in *; do
         # compile the proto
         (cd $addon &&   \
           make clean && \
-          make proto && \
-          cp -f *.pb.go ../../../mikros/extensions)
+          make proto)
 
         # copy proto file for examples
         cp -f $addon/*.proto ../protobuf/addons

@@ -3,22 +3,21 @@ package main
 import (
 	"embed"
 
-	"google.golang.org/protobuf/proto"
-	descriptor "google.golang.org/protobuf/types/descriptorpb"
-
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
-func loadDomainImprove(msg *descriptor.DescriptorProto) *extensions.DomainImprove {
-	if msg.Options != nil {
-		v := proto.GetExtension(msg.Options, extensions.E_Improve)
-		if val, ok := v.(*extensions.DomainImprove); ok {
-			return val
+func loadDomainImprove(msg *context.Message) *DomainImprove {
+	if extensions.HasExtension(msg.ProtoMessage.Proto, E_Improve.TypeDescriptor()) {
+		var domainImprove DomainImprove
+		if err := extensions.RetrieveExtension(msg.ProtoMessage.Proto, E_Improve.TypeDescriptor(), &domainImprove); err != nil {
+			return nil
 		}
+
+		return &domainImprove
 	}
 
 	return nil
@@ -32,7 +31,7 @@ type Context struct {
 }
 
 func (c *Context) HasImproveDomainCall(msg *context.Message) bool {
-	if d := loadDomainImprove(msg.ProtoMessage.Proto); d != nil {
+	if d := loadDomainImprove(msg); d != nil {
 		return d.GetNewApi()
 	}
 
