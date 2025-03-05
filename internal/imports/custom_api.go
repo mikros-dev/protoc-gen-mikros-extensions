@@ -8,7 +8,7 @@ func loadCustomApiTemplateImports(ctx *Context) []*Import {
 	imports := make(map[string]*Import)
 
 	for _, m := range ctx.WireExtensions {
-		ext := extensions.LoadMessageExtensions(m.ProtoMessage.Proto)
+		ext := mikros_extensions.LoadMessageExtensions(m.ProtoMessage.Proto)
 		if ext == nil {
 			continue
 		}

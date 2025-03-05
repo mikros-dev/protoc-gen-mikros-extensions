@@ -4,7 +4,7 @@ package services.user;
 
 option go_package = "examples/gen/go/services/user;user";
 
-import "mikros/extensions/extensions.proto";
+import "mikros/extensions/mikros_extensions.proto";
 import "services/common/common.proto";
 
 message UserWire {

@@ -22,8 +22,8 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 
 		for _, f := range m.Fields {
 			var (
-				fieldExtensions = extensions.LoadFieldExtensions(f.ProtoField.Proto)
-				validation      *extensions.FieldValidateOptions
+				fieldExtensions = mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto)
+				validation      *mikros_extensions.FieldValidateOptions
 			)
 
 			if fieldExtensions != nil {
@@ -33,7 +33,7 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 				continue
 			}
 
-			if validation.GetRule() == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
+			if validation.GetRule() == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
 				imports["regex"] = packages["regex"]
 				continue
 			}

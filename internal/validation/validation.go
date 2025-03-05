@@ -18,7 +18,7 @@ type CallOptions struct {
 	ProtoName string
 	Receiver  string
 	ProtoType string
-	Options   *extensions.MikrosFieldExtensions
+	Options   *mikros_extensions.MikrosFieldExtensions
 	Settings  *settings.Settings
 	Message   *protobuf.Message
 }
@@ -167,7 +167,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 		rule              = validationOptions.GetRule()
 	)
 
-	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED {
+	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED {
 		return call, nil
 	}
 
@@ -175,7 +175,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 		call += ", "
 	}
 
-	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
+	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
 		args := validationOptions.GetRuleArgs()
 		if len(args) == 0 {
 			return "", errors.New("no arguments specified for regex rule")
@@ -186,7 +186,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 	}
 
 	ruleSettings, err := options.Settings.GetValidationRule(rule)
-	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_CUSTOM {
+	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_CUSTOM {
 		ruleSettings, err = options.Settings.GetValidationCustomRule(validationOptions.GetCustomRule())
 	}
 	if err != nil {

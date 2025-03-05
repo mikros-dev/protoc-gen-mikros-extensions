@@ -29,8 +29,8 @@ type Field struct {
 	receiver          string
 	msg               *Message
 	db                *Database
-	fieldExtensions   *extensions.MikrosFieldExtensions
-	messageExtensions *extensions.MikrosMessageExtensions
+	fieldExtensions   *mikros_extensions.MikrosFieldExtensions
+	messageExtensions *mikros_extensions.MikrosMessageExtensions
 	proto             *protobuf.Field
 	settings          *settings.Settings
 	validation        *validation.Call
@@ -47,7 +47,7 @@ type FieldOptions struct {
 
 func NewField(options FieldOptions) (*Field, error) {
 	var (
-		fieldExtensions = extensions.LoadFieldExtensions(options.ProtoField.Proto)
+		fieldExtensions = mikros_extensions.LoadFieldExtensions(options.ProtoField.Proto)
 		isArray         = options.ProtoField.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 	)
 
@@ -59,7 +59,7 @@ func NewField(options FieldOptions) (*Field, error) {
 		receiver:          options.Receiver,
 		msg:               options.Message,
 		fieldExtensions:   fieldExtensions,
-		messageExtensions: extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
+		messageExtensions: mikros_extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
 		proto:             options.ProtoField,
 		settings:          options.Settings,
 	}
@@ -298,14 +298,14 @@ func (f *Field) DomainName() string {
 
 func (f *Field) DomainTag() string {
 	var (
-		domain    *extensions.FieldDomainOptions
+		domain    *mikros_extensions.FieldDomainOptions
 		fieldName = strcase.ToSnake(f.DomainName())
 		jsonTag   = ",omitempty"
 	)
 
 	if f.messageExtensions != nil {
 		if messageDomain := f.messageExtensions.GetDomain(); messageDomain != nil {
-			if messageDomain.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageDomain.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = strcase.ToLowerCamel(f.DomainName())
 			}
 		}
@@ -350,7 +350,7 @@ func (f *Field) InboundName() string {
 	fieldName := strcase.ToSnake(name)
 	if f.messageExtensions != nil {
 		if messageInbound := f.messageExtensions.GetInbound(); messageInbound != nil {
-			if messageInbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageInbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}
@@ -361,7 +361,7 @@ func (f *Field) InboundName() string {
 
 func (f *Field) OutboundTag() string {
 	var (
-		outbound *extensions.FieldOutboundOptions
+		outbound *mikros_extensions.FieldOutboundOptions
 		name     = f.DomainName()
 		jsonTag  = ",omitempty"
 	)
@@ -383,7 +383,7 @@ func (f *Field) OutboundTag() string {
 	fieldName := strcase.ToSnake(name)
 	if f.messageExtensions != nil {
 		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
-			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageOutbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}
@@ -421,7 +421,7 @@ func (f *Field) OutboundJsonTagFieldName() string {
 	fieldName := strcase.ToSnake(name)
 	if f.messageExtensions != nil {
 		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
-			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageOutbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}

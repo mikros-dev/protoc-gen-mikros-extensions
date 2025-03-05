@@ -10,7 +10,7 @@ import (
 
 type Database struct {
 	Kind DatabaseKind
-	defs *extensions.MikrosFieldExtensions
+	defs *mikros_extensions.MikrosFieldExtensions
 }
 
 type DatabaseKind int
@@ -20,7 +20,7 @@ const (
 	Gorm
 )
 
-func databaseFromString(kind string, defs *extensions.MikrosFieldExtensions) *Database {
+func databaseFromString(kind string, defs *mikros_extensions.MikrosFieldExtensions) *Database {
 	db := &Database{
 		defs: defs,
 	}
@@ -79,7 +79,7 @@ func (d *Database) Tag(name string) string {
 	return ""
 }
 
-func getPostgresTag(db *extensions.FieldDatabaseOptions) string {
+func getPostgresTag(db *mikros_extensions.FieldDatabaseOptions) string {
 	var tag string
 
 	if n := db.GetName(); n != "" {

@@ -80,7 +80,7 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 }
 
 func fieldHasCustomImport(field *protobuf.Field) *Import {
-	if ext := extensions.LoadFieldExtensions(field.Proto); ext != nil {
+	if ext := mikros_extensions.LoadFieldExtensions(field.Proto); ext != nil {
 		if outbound := ext.GetOutbound(); outbound != nil {
 			if ipt := outbound.GetCustomImport(); ipt != nil {
 				return &Import{

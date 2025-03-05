@@ -140,7 +140,7 @@ func (c *Context) WireInputMessages() []*Message {
 }
 
 func manualExportToWireInput(m *Message) bool {
-	if ext := extensions.LoadMessageExtensions(m.ProtoMessage.Proto); ext != nil {
+	if ext := mikros_extensions.LoadMessageExtensions(m.ProtoMessage.Proto); ext != nil {
 		if wireInput := ext.GetWireInput(); wireInput != nil {
 			return wireInput.GetExport()
 		}
