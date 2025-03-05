@@ -21,10 +21,6 @@
 go.work
 go.work.sum
 
-# Plugin proto extensions
-mikros/extensions/*.pb.go
-!mikros/extensions/extensions.pb.go
-
 # Proto generated files
 examples/protobuf/plugins
 examples/protobuf/gen
