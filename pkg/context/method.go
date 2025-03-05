@@ -20,8 +20,8 @@ type Method struct {
 	ProtoMethod           *protobuf.Method
 
 	endpoint *Endpoint
-	service  *extensions.MikrosServiceExtensions
-	method   *extensions.MikrosMethodExtensions
+	service  *mikros_extensions.MikrosServiceExtensions
+	method   *mikros_extensions.MikrosMethodExtensions
 }
 
 type HttpRule struct {
@@ -42,14 +42,14 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 
 	var (
 		methods = make([]*Method, len(pkg.Service.Methods))
-		service = extensions.LoadServiceExtensions(pkg.Service.Proto)
+		service = mikros_extensions.LoadServiceExtensions(pkg.Service.Proto)
 	)
 
 	for i, method := range pkg.Service.Methods {
 		var (
 			msg              *Message
 			endpoint         = getEndpoint(method)
-			methodExtensions = extensions.LoadMethodExtensions(method.Proto)
+			methodExtensions = mikros_extensions.LoadMethodExtensions(method.Proto)
 		)
 
 		index := slices.IndexFunc(messages, func(m *Message) bool {
@@ -118,7 +118,7 @@ func getPathArguments(m *Message, endpoint *Endpoint) ([]*MethodField, error) {
 	return fields, nil
 }
 
-func getHeaderArguments(m *Message, methodExtensions *extensions.MikrosMethodExtensions) ([]*MethodField, error) {
+func getHeaderArguments(m *Message, methodExtensions *mikros_extensions.MikrosMethodExtensions) ([]*MethodField, error) {
 	var fields []*MethodField
 
 	if methodExtensions == nil {
@@ -146,7 +146,7 @@ func getHeaderArguments(m *Message, methodExtensions *extensions.MikrosMethodExt
 	return fields, nil
 }
 
-func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *extensions.MikrosMethodExtensions) []*MethodField {
+func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []*MethodField {
 	var fields []*MethodField
 
 	if endpoint != nil {
@@ -182,7 +182,7 @@ func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *extensi
 	return fields
 }
 
-func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *extensions.MikrosMethodExtensions) []string {
+func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []string {
 	parameters := getBodyParameters(m, endpoint)
 
 	if endpoint != nil {
@@ -235,9 +235,9 @@ func validateBodyArguments(m *Message, endpoint *Endpoint) error {
 func getAdditionalHttpRules(method *protobuf.Method) []HttpRule {
 	var rules []HttpRule
 
-	if googleHttp := extensions.LoadGoogleAnnotations(method.Proto); googleHttp != nil {
+	if googleHttp := mikros_extensions.LoadGoogleAnnotations(method.Proto); googleHttp != nil {
 		for _, r := range googleHttp.GetAdditionalBindings() {
-			method, endpoint := extensions.GetHttpEndpoint(r)
+			method, endpoint := mikros_extensions.GetHttpEndpoint(r)
 			rules = append(rules, HttpRule{
 				Method:   method,
 				Endpoint: endpoint,
@@ -251,7 +251,7 @@ func getAdditionalHttpRules(method *protobuf.Method) []HttpRule {
 func (m *Method) Validate() error {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
-			if authorization.GetMode() == extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM && authorization.GetCustomAuthName() == "" {
+			if authorization.GetMode() == mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM && authorization.GetCustomAuthName() == "" {
 				return fmt.Errorf("custom auth name is required when mode is AUTHORIZATION_MODE_CUSTOM")
 			}
 		}
@@ -288,7 +288,7 @@ func (m *Method) AuthModeKey() string {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
 			mode := authorization.GetMode()
-			if mode == extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM {
+			if mode == mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM {
 				return authorization.GetCustomAuthName()
 			}
 		}
@@ -328,7 +328,7 @@ func (m *Method) HasHeaderArguments() bool {
 func (m *Method) HasAuth() bool {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
-			return authorization.GetMode() != extensions.AuthorizationMode_AUTHORIZATION_MODE_NO_AUTH
+			return authorization.GetMode() != mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_NO_AUTH
 		}
 	}
 

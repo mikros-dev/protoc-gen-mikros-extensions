@@ -69,7 +69,7 @@ syntax = "proto3";
 
 package services.person;
 
-import "protoc-gen-mikros-extensions/mikros/extensions/extensions.proto";
+import "mikros_extensions.proto";
 
 option go_package = "github.com/example/services/gen/go/services/person;person;";
 

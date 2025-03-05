@@ -37,7 +37,7 @@ type Field struct {
 	moduleName string
 	converter  *converters.Field
 	testing    *testing.Field
-	extensions *extensions.MikrosFieldExtensions
+	extensions *mikros_extensions.MikrosFieldExtensions
 }
 
 type LoadFieldOptions struct {
@@ -97,7 +97,7 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 			Settings:       opt.Settings,
 			FieldConverter: converter,
 		}),
-		extensions: extensions.LoadFieldExtensions(opt.Field.Proto),
+		extensions: mikros_extensions.LoadFieldExtensions(opt.Field.Proto),
 	}
 	if err := field.Validate(); err != nil {
 		return nil, err

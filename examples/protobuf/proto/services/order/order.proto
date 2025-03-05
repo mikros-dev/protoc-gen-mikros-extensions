@@ -4,7 +4,7 @@ package services.order;
 
 option go_package = "examples/gen/go/services/order;order";
 
-import "mikros/extensions/extensions.proto";
+import "mikros/extensions/mikros_extensions.proto";
 import "services/product/product.proto";
 import "services/user/user.proto";
 import "services/common/common.proto";

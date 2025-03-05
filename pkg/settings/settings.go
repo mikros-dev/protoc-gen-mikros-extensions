@@ -167,7 +167,7 @@ func (s *Settings) IsSupportedCustomValidationRule(ruleName string) error {
 	return nil
 }
 
-func (s *Settings) GetValidationRule(rule extensions.FieldValidatorRule) (*CustomCall, error) {
+func (s *Settings) GetValidationRule(rule mikros_extensions.FieldValidatorRule) (*CustomCall, error) {
 	if s.Validations != nil && s.Validations.Rule != nil {
 		name := strings.ToLower(strings.TrimPrefix(rule.String(), "FIELD_VALIDATOR_RULE_"))
 		if r, ok := s.Validations.Rule[name]; ok {

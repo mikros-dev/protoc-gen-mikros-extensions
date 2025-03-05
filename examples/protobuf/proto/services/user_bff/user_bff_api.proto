@@ -6,7 +6,7 @@ option go_package = "examples/gen/go/services/user_bff;user_bff";
 
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
-import "mikros/extensions/extensions.proto";
+import "mikros/extensions/mikros_extensions.proto";
 import "services/user/user.proto";
 
 service UserBffService {

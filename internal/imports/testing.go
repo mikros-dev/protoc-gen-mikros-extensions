@@ -27,7 +27,7 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 				fieldType = f.DomainType
 			)
 
-			if options := extensions.LoadFieldExtensions(f.ProtoField.Proto); options != nil && options.GetTesting() != nil {
+			if options := mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto); options != nil && options.GetTesting() != nil {
 				importTestingRule = true
 			}
 

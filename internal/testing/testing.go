@@ -119,7 +119,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 }
 
 func (f *Field) customValueInitCall() (string, bool) {
-	options := extensions.LoadFieldExtensions(f.proto.Proto)
+	options := mikros_extensions.LoadFieldExtensions(f.proto.Proto)
 	if options == nil || options.GetTesting() == nil {
 		return "", false
 	}

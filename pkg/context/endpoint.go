@@ -14,11 +14,11 @@ type Endpoint struct {
 	Path           string
 	Method         string
 	Parameters     []string
-	HttpExtensions *extensions.HttpMethodExtensions
+	HttpExtensions *mikros_extensions.HttpMethodExtensions
 }
 
 func getEndpoint(method *protobuf.Method) *Endpoint {
-	googleHttp := extensions.LoadGoogleAnnotations(method.Proto)
+	googleHttp := mikros_extensions.LoadGoogleAnnotations(method.Proto)
 	if googleHttp == nil {
 		return nil
 	}
@@ -27,14 +27,14 @@ func getEndpoint(method *protobuf.Method) *Endpoint {
 		Body: googleHttp.GetBody(),
 	}
 
-	if endpoint, m := extensions.GetHttpEndpoint(googleHttp); endpoint != "" {
+	if endpoint, m := mikros_extensions.GetHttpEndpoint(googleHttp); endpoint != "" {
 		e.Path = endpoint
 		e.Method = m
-		e.Parameters = extensions.RetrieveParameters(endpoint)
-		e.Parameters = append(e.Parameters, extensions.RetrieveParametersFromAdditionalBindings(googleHttp)...)
+		e.Parameters = mikros_extensions.RetrieveParameters(endpoint)
+		e.Parameters = append(e.Parameters, mikros_extensions.RetrieveParametersFromAdditionalBindings(googleHttp)...)
 	}
 
-	m := extensions.LoadMethodExtensions(method.Proto)
+	m := mikros_extensions.LoadMethodExtensions(method.Proto)
 	if m != nil {
 		if op := m.GetHttp(); op != nil {
 			e.HttpExtensions = op
