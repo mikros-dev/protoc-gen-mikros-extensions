@@ -6,7 +6,7 @@ option go_package = "examples/gen/go/services/misc;misc";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
-import "mikros/extensions/mikros_extensions.proto";
+import "mikros_extensions.proto";
 import "services/common/common.proto";
 
 message MiscCompletedWire {

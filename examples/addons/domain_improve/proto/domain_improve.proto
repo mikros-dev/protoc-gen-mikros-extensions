@@ -2,7 +2,7 @@ syntax = "proto2";
 
 package mikros_addon.domain_improve;
 
-option go_package = "domain_improve/;main";
+option go_package = "github.com/mikros-dev/protoc-gen-mikros-extensions/examples/addons/domain_improve/proto;proto";
 
 import "google/protobuf/descriptor.proto";
 

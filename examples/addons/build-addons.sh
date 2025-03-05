@@ -7,9 +7,11 @@ for addon in *; do
 
     echo "Building addon $addon"
 
+    (cd $addon && make clean)
+
     # compile protos move them to the plugin mikros/extensions directory and
     # copy the protos to protobuf/addons
-    count=`ls -1 $addon/*.proto 2>/dev/null | wc -l`
+    count=`ls -1 $addon/proto/*.proto 2>/dev/null | wc -l`
     if [ $count != 0 ]; then
         # compile the proto
         (cd $addon &&   \
@@ -17,12 +19,11 @@ for addon in *; do
           make proto)
 
         # copy proto file for examples
-        cp -f $addon/*.proto ../protobuf/addons
+        cp -f $addon/proto/*.proto ../protobuf/addons
     fi
 
     # compile the addons and move them to the protobuf/addons directory
     (cd $addon &&   \
-      make clean && \
       make &&       \
       cp -f *.so ../../protobuf/addons)
 

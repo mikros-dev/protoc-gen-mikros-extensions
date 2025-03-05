@@ -35,6 +35,17 @@ plugins:
       - settings=extensions_settings.toml # The file name of your plugin settings
 ```
 
+* Edit the **buf.yaml** file, in the `deps` section, add the following excerpt:
+```yaml
+deps:
+  - buf.build/mikros-dev/protoc-gen-mikros-extensions
+```
+
+* Execute the command:
+```bash
+buf dep update
+```
+
 ## Building and installing locally
 
 In order to compile and install the plugin locally you'll need to follow the steps:
