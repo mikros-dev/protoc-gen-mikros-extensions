@@ -15,7 +15,7 @@ jobs:
         run: mkdir -p tmp
 
       - name: Copy proto files to temporary directory
-        run: cp mikros/mikros_extensions/*.proto tmp
+        run: cp mikros/extensions/*.proto tmp
 
       - name: Create buf.yaml
         run: |
