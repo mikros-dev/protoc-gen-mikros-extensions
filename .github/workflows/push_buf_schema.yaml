@@ -1,0 +1,38 @@
+name: Publish Proto Schema to BSR
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  publish-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create temporary directory for proto files
+        run: mkdir -p tmp
+
+      - name: Copy proto files to temporary directory
+        run: cp mikros/extensions/*.proto tmp
+
+      - name: Create buf.yaml
+        run: |
+          cat << EOF > tmp/buf.yaml
+          version: v1
+          name: buf.build/mikros-dev/protoc-gen-mikros-extensions
+          lint:
+            use:
+              - DEFAULT
+          breaking:
+            use:
+              - FILE
+          EOF
+
+      - name: Push schema to Buf Schema Registry
+        uses: bufbuild/buf-action@v1
+        with:
+          input: 'tmp'
+          token: ${{ secrets.BUF_TOKEN }}
+          push: true

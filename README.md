@@ -12,7 +12,30 @@ The plugin adds the following features for generated source code:
 * Unit test helpers API for creating entities.
 * The possibility of extending the plugin using [addons](docs/addons.md).
 
-## Building and installing
+## Installation and usage into projects
+
+To install the plugin latest version and use it in your projects, use the command:
+```bash
+go install github.com/mikros-dev/protoc-gen-mikros-extensions@latest
+```
+
+Assuming that a project is using [buf](https://buf.build/docs/) tool to compile
+and manage protobuf files, this plugin can be used the following way:
+
+> Note: We assume buf version 2 here, if you're using version 1, use buf docs
+> to check how to set a local plugin (or to migrate your settings to version 2).
+
+* Edit your **buf.gen.yaml** file, in the `plugins` section and add the following
+excerpt:
+```yaml
+plugins:
+  - local: protoc-gen-mikros-extensions
+    out: gen # Where your generated files will be
+    opt:
+      - settings=extensions_settings.toml # The file name of your plugin settings
+```
+
+## Building and installing locally
 
 In order to compile and install the plugin locally you'll need to follow the steps:
 

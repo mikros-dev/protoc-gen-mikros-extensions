@@ -3,34 +3,38 @@ package extensions
 import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	descriptor "google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 type DescriptorObject interface {
-	GetOptions() *descriptor.MessageOptions
+	comparable
+	ProtoReflect() protoreflect.Message
 }
 
 // HasExtension checks if a protobuf object is using a specific type of
 // extension. Usually, this function should be used by addons to check if
 // an object has an extension before trying to retrieve it.
+// Remember to pass the object returned by the GetOption() call of the
+// original object, otherwise the function will check the wrong one.
 func HasExtension[T DescriptorObject](msg T, options protoreflect.ExtensionTypeDescriptor) bool {
-	if msg.GetOptions() == nil {
+	var zero T
+	if msg == zero {
 		return false
 	}
 
-	return msg.GetOptions().ProtoReflect().Has(options)
+	return msg.ProtoReflect().Has(options)
 }
 
 // RetrieveExtension extracts an extension from a protobuf message and
 // fills target with it. It returns nil if the message does not have the
 // extension.
 func RetrieveExtension[T DescriptorObject](msg T, options protoreflect.ExtensionTypeDescriptor, target proto.Message) error {
-	if msg.GetOptions() == nil {
+	var zero T
+	if msg == zero {
 		return nil
 	}
 
-	value := msg.GetOptions().ProtoReflect().Get(options)
+	value := msg.ProtoReflect().Get(options)
 	if !value.IsValid() {
 		return nil
 	}
