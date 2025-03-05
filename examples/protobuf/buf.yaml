@@ -4,12 +4,11 @@ modules:
   - path: proto
     name: buf.build/mikros-dev/proto
 
-  - path: plugins
-
   - path: addons
 
 deps:
   - buf.build/googleapis/googleapis
+  - buf.build/mikros-dev/protoc-gen-mikros-extensions
 
 breaking:
   use:
