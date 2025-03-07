@@ -4,7 +4,7 @@ Some plugin behaviour can be customized by using different options adjusted
 using a TOML file. These custom settings can be enabled using the `settings`
 plugin option when executing it.
 
-The repository has a default [settings](../config/protoc-gen-mikros-extensions.toml)
+The repository has a default [settings](../configs/protoc-gen-mikros-extensions.toml)
 file that can be used to create a new one according your needs.
 
 ## Options available

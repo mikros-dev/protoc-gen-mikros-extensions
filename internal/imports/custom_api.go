@@ -1,7 +1,7 @@
 package imports
 
 import (
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 )
 
 func loadCustomApiTemplateImports(ctx *Context) []*Import {
