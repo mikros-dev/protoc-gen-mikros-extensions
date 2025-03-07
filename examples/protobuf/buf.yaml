@@ -2,8 +2,6 @@ version: v2
 
 modules:
   - path: proto
-    name: buf.build/mikros-dev/proto
-
   - path: addons
 
 deps:

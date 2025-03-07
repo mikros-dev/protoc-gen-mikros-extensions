@@ -12,7 +12,7 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 )
 
 type Settings struct {
