@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
@@ -288,7 +288,7 @@ func (f *Field) DomainName() string {
 	if f.fieldExtensions != nil {
 		if domain := f.fieldExtensions.GetDomain(); domain != nil {
 			if n := domain.GetName(); n != "" {
-				return strcase.ToCamel(n)
+				return strcase.UpperCamelCase(n)
 			}
 		}
 	}
@@ -299,14 +299,14 @@ func (f *Field) DomainName() string {
 func (f *Field) DomainTag() string {
 	var (
 		domain    *mikros_extensions.FieldDomainOptions
-		fieldName = strcase.ToSnake(f.DomainName())
+		fieldName = strcase.SnakeCase(f.DomainName())
 		jsonTag   = ",omitempty"
 	)
 
 	if f.messageExtensions != nil {
 		if messageDomain := f.messageExtensions.GetDomain(); messageDomain != nil {
 			if messageDomain.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-				fieldName = strcase.ToLowerCamel(f.DomainName())
+				fieldName = strcase.LowerCamelCase(f.DomainName())
 			}
 		}
 	}
@@ -347,7 +347,7 @@ func (f *Field) InboundName() string {
 	}
 
 	// Default is snake_case
-	fieldName := strcase.ToSnake(name)
+	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageInbound := f.messageExtensions.GetInbound(); messageInbound != nil {
 			if messageInbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
@@ -380,7 +380,7 @@ func (f *Field) OutboundTag() string {
 	}
 
 	// Default is snake_case
-	fieldName := strcase.ToSnake(name)
+	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
 			if messageOutbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
@@ -418,7 +418,7 @@ func (f *Field) OutboundJsonTagFieldName() string {
 	}
 
 	// Default is snake_case
-	fieldName := strcase.ToSnake(name)
+	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
 			if messageOutbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {

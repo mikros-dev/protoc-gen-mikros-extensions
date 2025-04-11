@@ -10,7 +10,7 @@ import (
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
@@ -214,7 +214,7 @@ func (t *Templates) Execute() ([]*Generated, error) {
 		// Filename: Path + Package Name + Module Name + Template Name + Extension
 		templateName := fmt.Sprintf("%s.%s", t.moduleName, tpl.name)
 		if tpl.addon != nil {
-			templateName = fmt.Sprintf("%s.%s.%s", t.moduleName, strcase.ToSnake(tpl.addon.Addon().Name()), tpl.name)
+			templateName = fmt.Sprintf("%s.%s.%s", t.moduleName, strcase.SnakeCase(tpl.addon.Addon().Name()), tpl.name)
 		}
 
 		filename := filepath.Join(

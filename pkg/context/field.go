@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/testing"
@@ -77,7 +77,7 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 		Type:                     opt.Field.Proto.GetType(),
 		GoType:                   goType,
 		GoName:                   opt.Field.Schema.GoName,
-		JsonName:                 strings.ToLower(strcase.ToSnake(opt.Field.Proto.GetJsonName())),
+		JsonName:                 strings.ToLower(strcase.SnakeCase(opt.Field.Proto.GetJsonName())),
 		ProtoName:                opt.Field.Proto.GetName(),
 		DomainName:               converter.DomainName(),
 		DomainTag:                converter.DomainTag(),

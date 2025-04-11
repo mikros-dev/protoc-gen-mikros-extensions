@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
@@ -33,7 +33,7 @@ func parseField(proto *descriptor.FieldDescriptorProto, schema *protogen.Field, 
 		optional:   proto.GetProto3Optional(),
 		array:      proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED,
 		Name:       proto.GetName(),
-		JsonName:   strings.ToLower(strcase.ToSnake(proto.GetJsonName())),
+		JsonName:   strings.ToLower(strcase.SnakeCase(proto.GetJsonName())),
 		GoName:     schema.GoName,
 		TypeName:   proto.GetTypeName(),
 		Type:       proto.GetType(),

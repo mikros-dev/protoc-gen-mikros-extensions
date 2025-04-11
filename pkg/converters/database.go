@@ -3,7 +3,7 @@ package converters
 import (
 	"fmt"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 )
@@ -51,7 +51,7 @@ func (d *Database) FieldName(name string) string {
 		}
 	}
 
-	return strcase.ToSnake(fieldName)
+	return strcase.SnakeCase(fieldName)
 }
 
 func (d *Database) Tag(name string) string {

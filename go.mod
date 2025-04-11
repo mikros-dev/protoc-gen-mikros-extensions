@@ -9,7 +9,7 @@ require (
 	github.com/creasty/defaults v1.8.0
 	github.com/fatih/camelcase v1.0.0
 	github.com/go-playground/validator/v10 v10.26.0
-	github.com/iancoleman/strcase v0.3.0
+	github.com/stoewer/go-strcase v1.3.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463
 	google.golang.org/protobuf v1.36.6
 )
