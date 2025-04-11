@@ -4,7 +4,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 )
 
 type Kind int
@@ -25,14 +25,14 @@ type ValidateForExecution func() bool
 // HelperApi gives the API available for all templates to be used.
 func HelperApi() map[string]interface{} {
 	return template.FuncMap{
-		"toLowerCamelCase": strcase.ToLowerCamel,
+		"toLowerCamelCase": strcase.LowerCamelCase,
 		"firstLower": func(s string) string {
 			c := s[0]
 			return strings.ToLower(string(c))
 		},
-		"toSnake":     strcase.ToSnake,
-		"toCamelCase": strcase.ToCamel,
-		"toKebab":     strcase.ToKebab,
+		"toSnake":     strcase.SnakeCase,
+		"toCamelCase": strcase.UpperCamelCase,
+		"toKebab":     strcase.KebabCase,
 		"trimSuffix":  strings.TrimSuffix,
 	}
 }
