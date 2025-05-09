@@ -3,6 +3,7 @@ package imports
 func loadRoutesTemplateImports(ctx *Context) []*Import {
 	imports := map[string]*Import{
 		packages["fasthttp"].Name: packages["fasthttp"],
+		packages["fmt"].Name:      packages["fmt"],
 	}
 
 	for _, m := range ctx.Methods {
