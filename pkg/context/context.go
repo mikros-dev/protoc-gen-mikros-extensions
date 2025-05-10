@@ -48,7 +48,7 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 		return nil, err
 	}
 
-	methods, err := loadMethods(pkg, messages)
+	methods, err := loadMethods(pkg, messages, opt.Settings)
 	if err != nil {
 		return nil, err
 	}

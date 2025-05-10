@@ -19,6 +19,9 @@ api_path = "go"
 test = true
 test_path = "test"
 
+[templates.routes]
+prefix_service_name_in_endpoints = true
+
 [templates.common]
 converters = false
 
