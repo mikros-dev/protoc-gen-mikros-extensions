@@ -5,9 +5,12 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/stoewer/go-strcase"
+
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type Method struct {
@@ -19,9 +22,11 @@ type Method struct {
 	HeaderArguments       []*MethodField
 	ProtoMethod           *protobuf.Method
 
-	endpoint *Endpoint
-	service  *mikros_extensions.MikrosServiceExtensions
-	method   *mikros_extensions.MikrosMethodExtensions
+	prefixServiceName bool
+	moduleName        string
+	endpoint          *Endpoint
+	service           *mikros_extensions.MikrosServiceExtensions
+	method            *mikros_extensions.MikrosMethodExtensions
 }
 
 type HttpRule struct {
@@ -35,7 +40,7 @@ type MethodField struct {
 	CastType  string
 }
 
-func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error) {
+func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Settings) ([]*Method, error) {
 	if pkg.Service == nil {
 		return nil, nil
 	}
@@ -81,6 +86,8 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 			QueryArguments:        getQueryArguments(msg, endpoint, methodExtensions),
 			HeaderArguments:       header,
 			ProtoMethod:           method,
+			prefixServiceName:     cfg.Templates.Routes.PrefixServiceName,
+			moduleName:            pkg.ModuleName,
 			endpoint:              endpoint,
 			service:               service,
 			method:                methodExtensions,
@@ -270,7 +277,12 @@ func (m *Method) HTTPMethod() string {
 
 func (m *Method) Endpoint() string {
 	if m.endpoint != nil {
-		return m.endpoint.Path
+		endpoint := m.endpoint.Path
+		if m.prefixServiceName {
+			endpoint = fmt.Sprintf("/%v%v", strcase.KebabCase(m.moduleName), endpoint)
+		}
+
+		return endpoint
 	}
 
 	return ""

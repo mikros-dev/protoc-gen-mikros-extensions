@@ -48,6 +48,7 @@ type Templates struct {
 	TestPath string  `toml:"test_path" default:"test"`
 	ApiPath  string  `toml:"api_path" default:"go"`
 	Common   *Common `toml:"common" default:"{}"`
+	Routes   *Routes `toml:"routes" default:"{}"`
 }
 
 type Common struct {
@@ -59,6 +60,10 @@ type Dependency struct {
 	Import      *Import                `toml:"import"`
 	PackageName string                 `toml:"package_name"`
 	Calls       map[string]interface{} `toml:"calls"`
+}
+
+type Routes struct {
+	PrefixServiceName bool `toml:"prefix_service_name_in_endpoints"`
 }
 
 type Validations struct {
