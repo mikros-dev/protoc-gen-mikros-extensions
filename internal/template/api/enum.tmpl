@@ -11,9 +11,9 @@ import (
 
 {{range .Enums}}
 func (e {{.Name}}) FromString(s string) {{.Name}} {
-    entry := s
+    entry := strings.ToUpper(s)
     if !strings.HasPrefix(entry, "{{.Prefix}}") {
-        entry = "{{.Prefix}}" + s
+        entry = "{{.Prefix}}" + entry
     }
 
     value, ok := {{.Name}}_value[entry]
