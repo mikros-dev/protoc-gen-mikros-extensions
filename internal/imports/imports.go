@@ -36,8 +36,10 @@ type Field struct {
 	IsArray                        bool
 	IsProtobufTimestamp            bool
 	IsOutboundBitflag              bool
+	IsMessage                      bool
 	OutboundHide                   bool
 	ConversionDomainToWire         string
+	ConversionWireToDomain         string
 	ConversionWireOutputToOutbound string
 	DomainType                     string
 	WireType                       string
@@ -66,6 +68,7 @@ func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[tpl_types.Nam
 		tpl_types.NewName("api", "custom_api"):      loadCustomApiTemplateImports(ctx),
 		tpl_types.NewName("api", "http_server"):     loadHttpServerTemplateImports(),
 		tpl_types.NewName("api", "routes"):          loadRoutesTemplateImports(ctx),
+		tpl_types.NewName("api", "wire"):            loadWireTemplateImports(ctx, cfg),
 		tpl_types.NewName("api", "wire_input"):      loadWireInputTemplateImports(ctx, cfg),
 		tpl_types.NewName("api", "outbound"):        loadOutboundTemplateImports(ctx, cfg),
 		tpl_types.NewName("api", "common"):          loadCommonTemplateImports(ctx),

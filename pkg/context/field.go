@@ -151,16 +151,32 @@ func (f *Field) IsScalar() bool {
 }
 
 func (f *Field) IsBindable() bool {
-	if f.extensions != nil {
-		if outbound := f.extensions.GetOutbound(); outbound != nil {
-			if outbound.GetCustomBind() {
-				return false
-			}
-		}
+	if f.hasCustomBind() {
+		return false
 	}
 
-	isBindable := f.IsScalar() || f.ProtoField.IsTimestamp() || f.ProtoField.IsProtoStruct() || f.ProtoField.IsMessageFromPackage()
-	return !f.IsArray && !f.IsMap && isBindable
+	return f.isBindableType() && !f.IsArray && !f.IsMap
+}
+
+func (f *Field) hasCustomBind() bool {
+	if f.extensions == nil {
+		return false
+	}
+	outbound := f.extensions.GetOutbound()
+	return outbound != nil && outbound.GetCustomBind()
+}
+
+func (f *Field) isBindableType() bool {
+	return f.IsScalar() ||
+		f.ProtoField.IsTimestamp() ||
+		f.ProtoField.IsProtoStruct() ||
+		f.ProtoField.IsMessageFromPackage() ||
+		f.IsMessageFromOtherPackage()
+}
+
+func (f *Field) IsMessageFromOtherPackage() bool {
+	otherTypes := f.ProtoField.IsTimestamp() || f.ProtoField.IsProtoStruct() || f.ProtoField.IsProtoValue()
+	return f.IsMessage && !otherTypes
 }
 
 func (f *Field) DomainType() string {
@@ -179,12 +195,20 @@ func (f *Field) WireType() string {
 	return f.converter.WireType(f.IsPointer())
 }
 
+func (f *Field) ConvertWireTypeToDomainType() string {
+	return f.converter.ConvertDomainTypeToWireType()
+}
+
 func (f *Field) OutboundType() string {
 	return f.converter.OutboundType(f.IsPointer())
 }
 
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string) string {
 	return f.converter.ConvertDomainTypeToArrayWireType(receiver, false)
+}
+
+func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
+	return f.converter.ConvertWireTypeToArrayDomainType(receiver)
 }
 
 func (f *Field) ConvertDomainTypeToArrayWireInputType(receiver string) string {
@@ -197,6 +221,10 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string) string {
 
 func (f *Field) ConvertDomainTypeToMapWireInputType(receiver string) string {
 	return f.converter.ConvertDomainTypeToMapWireType(receiver, true)
+}
+
+func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
+	return f.converter.ConvertWireTypeToMapDomainType(receiver)
 }
 
 func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
