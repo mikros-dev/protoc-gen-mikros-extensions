@@ -191,6 +191,9 @@ func (c *Context) GetTemplateValidator(name tpl_types.Name, _ interface{}) (tpl_
 		tpl_types.NewName("api", "outbound"): func() bool {
 			return c.IsHTTPService() || len(c.OutboundMessages()) > 0
 		},
+		tpl_types.NewName("api", "wire"): func() bool {
+			return len(c.DomainMessages()) > 0
+		},
 		tpl_types.NewName("api", "wire_input"): func() bool {
 			return len(c.WireInputMessages()) > 0
 		},

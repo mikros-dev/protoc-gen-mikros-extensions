@@ -494,6 +494,35 @@ func (f *Field) enumWireType() string {
 	return conversionCall
 }
 
+func (f *Field) ConvertDomainTypeToWireType() string {
+	if f.proto.IsEnum() {
+		call := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", f.receiver, f.DomainName())
+		if f.proto.IsOptional() {
+			call = fmt.Sprintf("toPtr(%s)", call)
+		}
+
+		return call
+	}
+
+	if f.proto.IsProtoValue() {
+		return fmt.Sprintf("toDomainInterface(%s.%s)", f.receiver, f.DomainName())
+	}
+
+	if f.proto.IsTimestamp() {
+		return fmt.Sprintf("toDomainTime(%s.%s)", f.receiver, f.DomainName())
+	}
+
+	if f.proto.IsProtoStruct() {
+		return fmt.Sprintf("toDomainMap(%s.%s)", f.receiver, f.DomainName())
+	}
+
+	if f.proto.IsMessage() {
+		return fmt.Sprintf("%s.%s.IntoDomain()", f.receiver, f.DomainName())
+	}
+
+	return fmt.Sprintf("%s.%s", f.receiver, f.DomainName())
+}
+
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool) string {
 	if f.proto.IsEnum() {
 		name := TrimPackageName(f.goType, f.proto.ModuleName())
@@ -525,6 +554,22 @@ func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool
 	return receiver
 }
 
+func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
+	if f.proto.IsEnum() {
+		return fmt.Sprintf("%s.ValueWithoutPrefix()", receiver)
+	}
+
+	if f.proto.IsTimestamp() {
+		return fmt.Sprintf("toDomainTime(%s)", receiver)
+	}
+
+	if f.proto.IsMessage() {
+		return fmt.Sprintf("%s.IntoDomain()", receiver)
+	}
+
+	return receiver
+}
+
 func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) string {
 	_, value, valueKind := f.getMapKeyValueTypesForWire()
 
@@ -543,6 +588,24 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) 
 		}
 
 		return fmt.Sprintf("%s.IntoWire()", receiver)
+	}
+
+	return receiver
+}
+
+func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
+	_, value, valueKind := f.getMapKeyValueTypesForWire()
+
+	if valueKind.Kind() == protoreflect.EnumKind {
+		return fmt.Sprintf("%v.ValueWithoutPrefix()", receiver)
+	}
+
+	if valueKind.Kind() == protoreflect.MessageKind {
+		if strings.Contains(value, "ts.Timestamp") {
+			return fmt.Sprintf("toDomainTime(%s)", receiver)
+		}
+
+		return fmt.Sprintf("%s.IntoDomain()", receiver)
 	}
 
 	return receiver
