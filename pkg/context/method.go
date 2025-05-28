@@ -15,6 +15,8 @@ import (
 
 type Method struct {
 	Name                  string
+	RequestType           string
+	ResponseType          string
 	AdditionalHTTPMethods []HttpRule
 	Request               *Message
 	PathArguments         []*MethodField
@@ -80,6 +82,8 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Sett
 
 		m := &Method{
 			Name:                  method.Name,
+			RequestType:           method.RequestType.Name,
+			ResponseType:          method.ResponseType.Name,
 			AdditionalHTTPMethods: getAdditionalHttpRules(method),
 			Request:               msg,
 			PathArguments:         path,
