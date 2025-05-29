@@ -289,12 +289,7 @@ func (f *Field) TypeByTemplateKind(kind tpl_types.Kind) string {
 
 func (f *Field) HeaderArgumentByTemplateKind(kind tpl_types.Kind) string {
 	if kind == tpl_types.KindRust {
-		// TODO: move this code to translate/rust
-		if f.Type == descriptor.FieldDescriptorProto_TYPE_BOOL {
-			return fmt.Sprintf(`mikros::http::header::to_bool(context.clone(), &headers, "%s")?`, f.ProtoName)
-		}
-
-		return fmt.Sprintf(`mikros::http::header::to_string(context.clone(), &headers, "%s")?`, f.ProtoName)
+		return translation.RustHeaderArgument(f.Type, f.ProtoName)
 	}
 
 	return ""
@@ -302,12 +297,7 @@ func (f *Field) HeaderArgumentByTemplateKind(kind tpl_types.Kind) string {
 
 func (f *Field) ConvertWireOutputToOutboundByTemplateKind(kind tpl_types.Kind, receiver string) string {
 	if kind == tpl_types.KindRust {
-		// TODO: move this code to translate/rust
-		if f.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			return fmt.Sprintf("%s.%s.unwrap().into()", receiver, f.ProtoName)
-		}
-
-		return fmt.Sprintf("%s.%s", receiver, f.ProtoName)
+		return translation.RustWireOutputToOutbound(f.Type, f.ProtoName, receiver)
 	}
 
 	return ""

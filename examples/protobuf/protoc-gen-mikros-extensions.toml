@@ -17,7 +17,7 @@ kind = "gorm"
 framework = "fasthttp"
 
 [templates.go]
-enabled = true
+enabled = false
 path = "go"
 
 [templates.test]
@@ -25,7 +25,7 @@ enabled = false
 path = "test"
 
 [templates.rust]
-enabled = false
+enabled = true
 path = "rust"
 run_fmt = true
 

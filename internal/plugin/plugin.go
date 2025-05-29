@@ -101,53 +101,6 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	}
 	output.Println("processing module:", ctx.ModuleName)
 
-	genTemplates := func(e execution) error {
-		templates, err := template.Load(template.Options{
-			StrictValidators: true,
-			Kind:             e.Kind,
-			Plugin:           plugin,
-			Files:            e.Files,
-			Addons:           addons,
-		})
-		if err != nil {
-			return err
-		}
-
-		generated, err := templates.Execute(template.ExecuteOptions{
-			Context:      ctx,
-			Path:         e.Path,
-			SingleModule: e.SingleModule,
-			ModuleName:   e.ModuleName,
-		})
-		if err != nil {
-			return err
-		}
-
-		for _, tpl := range generated {
-			output.Println("generating source file: ", tpl.Filename)
-			content := tpl.Data.String()
-
-			if e.ValidateCode != nil {
-				if err := e.ValidateCode(content); err != nil {
-					return err
-				}
-			}
-
-			if e.FormatCode != nil {
-				c, err := e.FormatCode(content, e.FormatCodeArguments)
-				if err != nil {
-					return err
-				}
-				content = c
-			}
-
-			f := plugin.NewGeneratedFile(tpl.Filename, ".")
-			f.P(content)
-		}
-
-		return nil
-	}
-
 	var executions []execution
 	if cfg.Templates.Go.IsEnabled() {
 		executions = append(executions, execution{
@@ -182,7 +135,7 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	}
 
 	for _, execution := range executions {
-		if err := genTemplates(execution); err != nil {
+		if err := genTemplates(execution, plugin, addons, ctx); err != nil {
 			return fmt.Errorf("could not generate template: %w", err)
 		}
 	}
@@ -208,4 +161,51 @@ func isValidGoSource(src string) error {
 	}
 
 	return errors.New(sb.String())
+}
+
+func genTemplates(e execution, plugin *protogen.Plugin, addons []*addon.Addon, ctx *mcontext.Context) error {
+	templates, err := template.Load(template.Options{
+		StrictValidators: true,
+		Kind:             e.Kind,
+		Plugin:           plugin,
+		Files:            e.Files,
+		Addons:           addons,
+	})
+	if err != nil {
+		return err
+	}
+
+	generated, err := templates.Execute(template.ExecuteOptions{
+		Context:      ctx,
+		Path:         e.Path,
+		SingleModule: e.SingleModule,
+		ModuleName:   e.ModuleName,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, tpl := range generated {
+		output.Println("generating source file: ", tpl.Filename)
+		content := tpl.Data.String()
+
+		if e.ValidateCode != nil {
+			if err := e.ValidateCode(content); err != nil {
+				return err
+			}
+		}
+
+		if e.FormatCode != nil {
+			c, err := e.FormatCode(content, e.FormatCodeArguments)
+			if err != nil {
+				return err
+			}
+			content = c
+		}
+
+		f := plugin.NewGeneratedFile(tpl.Filename, ".")
+		f.P(content)
+	}
+
+	return nil
 }

@@ -3,6 +3,7 @@ package translation
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -96,4 +97,20 @@ func RustFormatCode(input string, args []string) (string, error) {
 	}
 
 	return stdout.String(), nil
+}
+
+func RustHeaderArgument(fieldType descriptor.FieldDescriptorProto_Type, protoName string) string {
+	if fieldType == descriptor.FieldDescriptorProto_TYPE_BOOL {
+		return fmt.Sprintf(`mikros::http::header::to_bool(context.clone(), &headers, "%s")?`, protoName)
+	}
+
+	return fmt.Sprintf(`mikros::http::header::to_string(context.clone(), &headers, "%s")?`, protoName)
+}
+
+func RustWireOutputToOutbound(fieldType descriptor.FieldDescriptorProto_Type, protoName, receiver string) string {
+	if fieldType == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		return fmt.Sprintf("%s.%s.unwrap().into()", receiver, protoName)
+	}
+
+	return fmt.Sprintf("%s.%s", receiver, protoName)
 }
