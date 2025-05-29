@@ -71,7 +71,7 @@ impl From<{{$moduleName}}::{{.Name}}> for {{.Name}} {
 {{range .Methods -}}
 {{if .HasBodyArguments}}
 #[derive(Deserialize)]
-struct {{.RequestName}}Body {
+struct {{.RequestType}}Body {
     {{- range .BodyArguments}}
     pub {{.ProtoName}}: {{.Field.TypeByTemplateKind $kind}},
     {{- end}}
@@ -79,7 +79,7 @@ struct {{.RequestName}}Body {
 {{end}}
 {{if .HasQueryArguments}}
 #[derive(Deserialize)]
-struct {{.RequestName}}Query {
+struct {{.RequestType}}Query {
     {{- range .QueryArguments}}
     pub {{.ProtoName}}: {{.Field.TypeByTemplateKind $kind}},
     {{- end}}
@@ -96,16 +96,16 @@ async fn {{toSnake .Name}}(
     Path({{.GetPathParameterNames}}): Path<{{.GetPathParameterTypesByTemplateKind $kind}}>,
 {{- end}}
 {{- if .HasQueryArguments}}
-    Query(query): Query<{{.RequestName}}Query>,
+    Query(query): Query<{{.RequestType}}Query>,
 {{- end}}
 {{- if .HasBodyArguments}}
-    Json(body): Json<{{.RequestName}}Body>,
+    Json(body): Json<{{.RequestType}}Body>,
 {{- end}}
-) -> Result<Json<{{.ResponseName}}>, merrors::ServiceError> {
+) -> Result<Json<{{.ResponseType}}>, merrors::ServiceError> {
     let context = state.lock().await.context();
 
     // Retrieve all arguments to create the endpoint main structure.
-    let args = {{.RequestName}} {
+    let args = {{.RequestType}} {
         {{- if .HasPathArguments}}
         {{- range .PathArguments}}
         {{.ProtoName}}: {{.ProtoName}},
@@ -128,7 +128,7 @@ async fn {{toSnake .Name}}(
         {{- end}}
     };
 
-    let input: {{$moduleName}}::{{.RequestName}} = args.into();
+    let input: {{$moduleName}}::{{.RequestType}} = args.into();
     let mut request = Request::new(input);
 
     // Adds mikros context inside the request for the wrapper to also access it.
