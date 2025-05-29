@@ -8,10 +8,12 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/testing"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/translation"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type Field struct {
@@ -269,4 +271,34 @@ func (f *Field) TestingValueBinding() string {
 
 func (f *Field) TestingValueCall() string {
 	return f.testing.ValueInitCall(f.IsPointer())
+}
+
+func (f *Field) TypeByTemplateKind(kind tpl_types.Kind) string {
+	if kind == tpl_types.KindRust {
+		return translation.RustFieldType(
+			f.Type,
+			f.IsProtoOptional,
+			f.IsArray,
+			f.converter.WireType(false),
+			f.ProtoField,
+		)
+	}
+
+	return f.GoType
+}
+
+func (f *Field) HeaderArgumentByTemplateKind(kind tpl_types.Kind) string {
+	if kind == tpl_types.KindRust {
+		return translation.RustHeaderArgument(f.Type, f.ProtoName)
+	}
+
+	return ""
+}
+
+func (f *Field) ConvertWireOutputToOutboundByTemplateKind(kind tpl_types.Kind, receiver string) string {
+	if kind == tpl_types.KindRust {
+		return translation.RustWireOutputToOutbound(f.Type, f.ProtoName, receiver)
+	}
+
+	return ""
 }

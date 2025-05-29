@@ -54,6 +54,8 @@ type Method struct {
 	HasRequiredBody    bool
 	HasQueryArguments  bool
 	HasHeaderArguments bool
+	HasPathArguments   bool
+	HTTPMethod         string
 }
 
 type Import struct {
@@ -62,19 +64,25 @@ type Import struct {
 }
 
 func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[tpl_types.Name][]*Import {
+	var (
+		golang  = tpl_types.KindGo
+		testing = tpl_types.KindTest
+	)
+
 	return map[tpl_types.Name][]*Import{
-		tpl_types.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
-		tpl_types.NewName("api", "enum"):            loadEnumTemplateImports(),
-		tpl_types.NewName("api", "custom_api"):      loadCustomApiTemplateImports(ctx),
-		tpl_types.NewName("api", "http_server"):     loadHttpServerTemplateImports(),
-		tpl_types.NewName("api", "routes"):          loadRoutesTemplateImports(ctx),
-		tpl_types.NewName("api", "wire"):            loadWireTemplateImports(ctx, cfg),
-		tpl_types.NewName("api", "wire_input"):      loadWireInputTemplateImports(ctx, cfg),
-		tpl_types.NewName("api", "outbound"):        loadOutboundTemplateImports(ctx, cfg),
-		tpl_types.NewName("api", "common"):          loadCommonTemplateImports(ctx),
-		tpl_types.NewName("api", "validation"):      loadValidationTemplateImports(ctx, cfg),
-		tpl_types.NewName("testing", "testing"):     loadTestingTemplateImports(ctx, cfg),
-		tpl_types.NewName("testing", "http_server"): loadTestingHttpServerTemplateImports(ctx),
+		tpl_types.NewName(golang, "domain"):                loadDomainTemplateImports(ctx, cfg),
+		tpl_types.NewName(golang, "enum"):                  loadEnumTemplateImports(),
+		tpl_types.NewName(golang, "custom_api"):            loadCustomApiTemplateImports(ctx),
+		tpl_types.NewName(golang, "http_server"):           loadHttpServerTemplateImports(),
+		tpl_types.NewName(golang, "routes"):                loadRoutesTemplateImports(ctx),
+		tpl_types.NewName(golang, "wire"):                  loadWireTemplateImports(ctx, cfg),
+		tpl_types.NewName(golang, "wire_input"):            loadWireInputTemplateImports(ctx, cfg),
+		tpl_types.NewName(golang, "outbound"):              loadOutboundTemplateImports(ctx, cfg),
+		tpl_types.NewName(golang, "common"):                loadCommonTemplateImports(ctx),
+		tpl_types.NewName(golang, "validation"):            loadValidationTemplateImports(ctx, cfg),
+		tpl_types.NewName(testing, "testing"):              loadTestingTemplateImports(ctx, cfg),
+		tpl_types.NewName(testing, "http_server"):          loadTestingHttpServerTemplateImports(ctx),
+		tpl_types.NewName(tpl_types.KindRust, "router.rs"): loadRustRouterTemplateImports(ctx),
 	}
 }
 
@@ -210,10 +218,8 @@ func checkImportNeededFromFieldType(fieldType string) (string, bool) {
 	if strings.HasPrefix(fieldType, "map[") {
 		fieldType = mapTypeRe.ReplaceAllString(fieldType, "")
 	}
-	if strings.HasPrefix(fieldType, "[]") {
-		fieldType = strings.TrimPrefix(fieldType, "[]")
-	}
 
+	fieldType = strings.TrimPrefix(fieldType, "[]")
 	fieldType = strings.TrimPrefix(fieldType, "*")
 	parts := strings.Split(fieldType, ".")
 

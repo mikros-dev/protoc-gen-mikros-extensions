@@ -18,20 +18,29 @@ import (
 	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
+type Context interface {
+	// SetTemplateKind receives the current template kind that is being executed
+	// in order to the context handle its output properly.
+	SetTemplateKind(kind tpl_types.Kind)
+
+	// Validator is the place where each supported template is validated to be
+	// executed or not.
+	tpl_types.Validator
+}
+
 // Templates is an object that holds information related to a group of
 // template files, allowing them to be executed later.
 type Templates struct {
 	strictValidators bool
-	path             string
+	basePath         string
 	packageName      string
 	moduleName       string
-	filesPrefix      string
-	context          Context
 	templateInfos    []*Info
 }
 
 type Info struct {
 	name  string
+	kind  tpl_types.Kind
 	data  []byte
 	api   map[string]interface{}
 	addon *addon.Addon
@@ -43,20 +52,10 @@ type Options struct {
 	// ignored.
 	StrictValidators bool
 	Kind             tpl_types.Kind
-	Path             string
-	FilesPrefix      string `validate:"required"`
 	Plugin           *protogen.Plugin
 	Files            embed.FS `validate:"required"`
-	Context          Context  `validate:"required"`
 	HelperFunctions  map[string]interface{}
 	Addons           []*addon.Addon
-}
-
-// Context is an interface that a template file context, i.e., the
-// object manipulated inside the template file, must implement.
-type Context interface {
-	Extension() string
-	tpl_types.Validator
 }
 
 func Load(options Options) (*Templates, error) {
@@ -83,11 +82,7 @@ func Load(options Options) (*Templates, error) {
 		packageName = pName
 	}
 
-	if options.Path != "" {
-		path = options.Path
-	}
-
-	infos, err := loadTemplates(options.Files, options.FilesPrefix, options.HelperFunctions, nil)
+	infos, err := loadTemplates(options.Files, options.Kind, options.HelperFunctions, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +92,7 @@ func Load(options Options) (*Templates, error) {
 			continue
 		}
 
-		addonsInfo, err := loadTemplates(a.Addon().Templates(), a.Addon().Name(), options.HelperFunctions, a)
+		addonsInfo, err := loadTemplates(a.Addon().Templates(), a.Addon().Kind(), options.HelperFunctions, a)
 		if err != nil {
 			return nil, err
 		}
@@ -106,16 +101,14 @@ func Load(options Options) (*Templates, error) {
 
 	return &Templates{
 		strictValidators: options.StrictValidators,
-		path:             path,
+		basePath:         path,
 		packageName:      packageName,
 		moduleName:       module,
-		filesPrefix:      options.FilesPrefix,
-		context:          options.Context,
 		templateInfos:    infos,
 	}, nil
 }
 
-func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, addon *addon.Addon) ([]*Info, error) {
+func loadTemplates(files embed.FS, kind tpl_types.Kind, api map[string]interface{}, addon *addon.Addon) ([]*Info, error) {
 	templates, err := files.ReadDir(".")
 	if err != nil {
 		return nil, err
@@ -135,7 +128,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		}
 
 		helperApi["templateName"] = func() string {
-			return tpl_types.NewName(prefix, basename).String()
+			return tpl_types.NewName(kind, basename).String()
 		}
 
 		// Specific addons APIs
@@ -147,6 +140,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 
 		infos = append(infos, &Info{
 			name:  basename,
+			kind:  kind,
 			data:  data,
 			api:   helperApi,
 			addon: addon,
@@ -164,27 +158,33 @@ func filenameWithoutExtension(filename string) string {
 	return filename[:len(filename)-len(filepath.Ext(filename))]
 }
 
+type ExecuteOptions struct {
+	Context      Context `validate:"required"`
+	Path         string
+	ModuleName   string
+	SingleModule bool
+}
+
 // Generated holds the template content already parsed, ready to be saved.
 type Generated struct {
 	Filename     string
 	TemplateName string
-	Extension    string
 	Data         *bytes.Buffer
 }
 
-func (t *Templates) Execute() ([]*Generated, error) {
+func (t *Templates) Execute(options ExecuteOptions) ([]*Generated, error) {
 	execute := func(tpl *Info) (*Generated, error) {
-		prefix := t.filesPrefix
+		kind := tpl.kind
 		if tpl.addon != nil {
-			prefix = tpl.addon.Addon().Name()
+			kind = tpl.addon.Addon().Kind()
 		}
 
-		tplValidator := t.context.GetTemplateValidator
+		tplValidator := options.Context.GetTemplateValidator
 		if tpl.addon != nil {
 			tplValidator = tpl.addon.Addon().GetTemplateValidator
 		}
 
-		templateValidator, ok := tplValidator(tpl_types.NewName(prefix, tpl.name), t.context)
+		templateValidator, ok := tplValidator(tpl_types.NewName(kind, tpl.name), options.Context)
 		if !ok && t.strictValidators {
 			// The validator should not be executed in this case, since we don't
 			// have one for this template, we can skip it.
@@ -204,33 +204,20 @@ func (t *Templates) Execute() ([]*Generated, error) {
 		var buf bytes.Buffer
 		w := bufio.NewWriter(&buf)
 
-		if err := parsedTemplate.Execute(w, t.context); err != nil {
+		// Informs the current context which kind of template is being executed.
+		options.Context.SetTemplateKind(kind)
+
+		if err := parsedTemplate.Execute(w, options.Context); err != nil {
 			return nil, err
 		}
 		if err := w.Flush(); err != nil {
 			return nil, err
 		}
 
-		// Filename: Path + Package Name + Module Name + Template Name + Extension
-		templateName := fmt.Sprintf("%s.%s", t.moduleName, tpl.name)
-		if tpl.addon != nil {
-			templateName = fmt.Sprintf("%s.%s.%s", t.moduleName, strcase.SnakeCase(tpl.addon.Addon().Name()), tpl.name)
-		}
-
-		filename := filepath.Join(
-			t.path,
-			strings.ReplaceAll(t.packageName, ".", "/"),
-			templateName,
-		)
-		if t.context.Extension() != "" {
-			filename += fmt.Sprintf(".%s", t.context.Extension())
-		}
-
 		return &Generated{
 			Data:         &buf,
-			Filename:     filename,
+			Filename:     t.generateTemplateName(tpl, options, kind),
 			TemplateName: tpl.name,
-			Extension:    t.context.Extension(),
 		}, nil
 	}
 
@@ -255,4 +242,53 @@ func parse(key string, data []byte, helperApi template.FuncMap) (*template.Templ
 	}
 
 	return t, nil
+}
+
+func (t *Templates) generateTemplateName(tpl *Info, options ExecuteOptions, kind tpl_types.Kind) string {
+	prefix := t.moduleName + "."
+	if tpl.kind == tpl_types.KindRust {
+		// Rust generated files should not have the module name as prefix,
+		// because it will change the rust module name if used.
+		prefix = ""
+	}
+
+	// Filename: Path + Package Name + Module Name + Template Name + Extension
+	templateName := fmt.Sprintf("%s%s", prefix, tpl.name)
+	if tpl.addon != nil {
+		templateName = fmt.Sprintf("%s%s.%s", prefix, strcase.SnakeCase(tpl.addon.Addon().Name()), tpl.name)
+	}
+
+	filename := templateName
+	if tpl.kind == tpl_types.KindRust {
+		if options.SingleModule {
+			filename = filepath.Join(options.ModuleName, templateName)
+		}
+	}
+	if !options.SingleModule {
+		path := t.basePath
+		if options.Path != "" {
+			path = options.Path
+		}
+
+		filename = filepath.Join(
+			path,
+			strings.ReplaceAll(t.packageName, ".", "/"),
+			templateName,
+		)
+	}
+
+	if ext := templateExtension(tpl.name, kind); ext != "" {
+		filename += fmt.Sprintf(".%s", ext)
+	}
+
+	return filename
+}
+
+func templateExtension(name string, kind tpl_types.Kind) string {
+	// Use the template extension, if it has one.
+	if ext := filepath.Ext(name); ext != "" {
+		return ""
+	}
+
+	return kind.Extension()
 }

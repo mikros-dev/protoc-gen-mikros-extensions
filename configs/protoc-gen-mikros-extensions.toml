@@ -13,11 +13,13 @@ kind = "mongo"
 [http]
 framework = "fasthttp"
 
-[templates]
-api = true
-api_path = "go"
-test = true
-test_path = "test"
+[templates.go]
+enabled = true
+path = "go"
+
+[templates.test]
+enabled = true
+path = "test"
 
 [templates.routes]
 prefix_service_name_in_endpoints = true

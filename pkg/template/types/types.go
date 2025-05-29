@@ -10,9 +10,34 @@ import (
 type Kind int
 
 const (
-	KindApi Kind = iota
+	KindGo Kind = iota
 	KindTest
+	KindRust
 )
+
+func (k Kind) String() string {
+	switch k {
+	case KindGo:
+		return "golang"
+	case KindTest:
+		return "test"
+	case KindRust:
+		return "rust"
+	}
+
+	return "unknown"
+}
+
+func (k Kind) Extension() string {
+	switch k {
+	case KindGo, KindTest:
+		return "go"
+	case KindRust:
+		return "rs"
+	}
+
+	return ""
+}
 
 // Validator is a behavior that the templates context and addons must implement
 // to validate their execution.
@@ -34,5 +59,6 @@ func HelperApi() map[string]interface{} {
 		"toCamelCase": strcase.UpperCamelCase,
 		"toKebab":     strcase.KebabCase,
 		"trimSuffix":  strings.TrimSuffix,
+		"lower":       strings.ToLower,
 	}
 }

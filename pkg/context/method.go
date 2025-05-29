@@ -7,10 +7,12 @@ import (
 
 	"github.com/stoewer/go-strcase"
 
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/translation"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type Method struct {
@@ -22,6 +24,7 @@ type Method struct {
 	PathArguments         []*MethodField
 	QueryArguments        []*MethodField
 	HeaderArguments       []*MethodField
+	BodyArguments         []*MethodField
 	ProtoMethod           *protobuf.Method
 
 	prefixServiceName bool
@@ -40,6 +43,7 @@ type MethodField struct {
 	GoName    string
 	ProtoName string
 	CastType  string
+	Field     *Field
 }
 
 func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Settings) ([]*Method, error) {
@@ -76,6 +80,11 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Sett
 			return nil, err
 		}
 
+		body, err := getBodyParameters(msg, endpoint, methodExtensions)
+		if err != nil {
+			return nil, err
+		}
+
 		if err := validateBodyArguments(msg, endpoint); err != nil {
 			return nil, err
 		}
@@ -89,6 +98,7 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Sett
 			PathArguments:         path,
 			QueryArguments:        getQueryArguments(msg, endpoint, methodExtensions),
 			HeaderArguments:       header,
+			BodyArguments:         body,
 			ProtoMethod:           method,
 			prefixServiceName:     cfg.Templates.Routes.PrefixServiceName,
 			moduleName:            pkg.ModuleName,
@@ -122,6 +132,7 @@ func getPathArguments(m *Message, endpoint *Endpoint) ([]*MethodField, error) {
 				GoName:    field.GoName,
 				ProtoName: field.ProtoName,
 				CastType:  field.GoType,
+				Field:     field,
 			})
 		}
 	}
@@ -150,6 +161,7 @@ func getHeaderArguments(m *Message, methodExtensions *mikros_extensions.MikrosMe
 				GoName:    field.GoName,
 				ProtoName: field.ProtoName,
 				CastType:  field.GoType,
+				Field:     field,
 			})
 		}
 	}
@@ -185,6 +197,7 @@ func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *mikros_
 					GoName:    field.GoName,
 					ProtoName: field.ProtoName,
 					CastType:  field.GoType,
+					Field:     field,
 				})
 			}
 		}
@@ -194,7 +207,7 @@ func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *mikros_
 }
 
 func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []string {
-	parameters := getBodyParameters(m, endpoint)
+	parameters := getBodyParametersFromEndpoint(m, endpoint, methodExtensions)
 
 	if endpoint != nil {
 		parameters = append(parameters, endpoint.Parameters...)
@@ -208,18 +221,66 @@ func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *mik
 	return parameters
 }
 
-func getBodyParameters(m *Message, endpoint *Endpoint) []string {
+func getBodyParameters(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) ([]*MethodField, error) {
+	var fields []*MethodField
+
+	if endpoint != nil {
+		var (
+			parameters = getBodyParametersFromEndpoint(m, endpoint, methodExtensions)
+		)
+
+		// Remove path and header parameters if any
+
+		for _, name := range parameters {
+			index := slices.IndexFunc(m.Fields, func(f *Field) bool {
+				return f.ProtoName == name
+			})
+			if index == -1 {
+				return nil, fmt.Errorf("header field '%s' not found inside message '%s' definition", name, m.Name)
+			}
+
+			field := m.Fields[index]
+			fields = append(fields, &MethodField{
+				GoName:    field.GoName,
+				ProtoName: field.ProtoName,
+				CastType:  field.GoType,
+				Field:     field,
+			})
+		}
+	}
+
+	return fields, nil
+}
+
+func getBodyParametersFromEndpoint(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []string {
 	var parameters []string
 
 	if endpoint != nil {
-		// All fields should be loaded from the body
+		// Is the method using all fields as body arguments?
 		if endpoint.Body == "*" {
 			for _, f := range m.Fields {
 				parameters = append(parameters, f.ProtoName)
 			}
 		}
+		// Or it is using specific fields for that?
 		if endpoint.Body != "*" && len(endpoint.Body) > 0 {
 			parameters = append(parameters, strings.Split(endpoint.Body, " ")...)
+		}
+
+		// Remove path and header parameters if any
+		for _, param := range endpoint.Parameters {
+			parameters = slices.DeleteFunc(parameters, func(p string) bool {
+				return p == param
+			})
+		}
+		if methodExtensions != nil {
+			if httpExtensions := methodExtensions.GetHttp(); httpExtensions != nil {
+				for _, param := range httpExtensions.GetHeader() {
+					parameters = slices.DeleteFunc(parameters, func(p string) bool {
+						return p == param
+					})
+				}
+			}
 		}
 	}
 
@@ -292,6 +353,18 @@ func (m *Method) Endpoint() string {
 	return ""
 }
 
+func (m *Method) EndpointByTemplateKind(kind tpl_types.Kind) string {
+	if endpoint := m.Endpoint(); endpoint != "" {
+		if kind == tpl_types.KindRust {
+			return translation.RustEndpoint(endpoint)
+		}
+
+		return endpoint
+	}
+
+	return ""
+}
+
 func (m *Method) HasRequiredBody() bool {
 	if m.endpoint != nil {
 		return m.endpoint.Body != ""
@@ -349,4 +422,52 @@ func (m *Method) HasAuth() bool {
 	}
 
 	return false
+}
+
+func (m *Method) HasPathArguments() bool {
+	return len(m.PathArguments) > 0
+}
+
+func (m *Method) GetPathParameterNames() string {
+	if m.HasPathArguments() {
+		names := make([]string, len(m.PathArguments))
+		for i, arg := range m.PathArguments {
+			names[i] = arg.ProtoName
+		}
+
+		parameters := strings.Join(names, ", ")
+
+		// More than one parameter should use a tuple.
+		if len(names) > 1 {
+			parameters = "(" + parameters + ")"
+		}
+
+		return parameters
+	}
+
+	return ""
+}
+
+func (m *Method) GetPathParameterTypesByTemplateKind(kind tpl_types.Kind) string {
+	if m.HasPathArguments() {
+		types := make([]string, len(m.PathArguments))
+		for i, arg := range m.PathArguments {
+			types[i] = arg.Field.TypeByTemplateKind(kind)
+		}
+
+		parameters := strings.Join(types, ", ")
+
+		// More than one parameter should use a tuple.
+		if len(types) > 1 {
+			parameters = "(" + parameters + ")"
+		}
+
+		return parameters
+	}
+
+	return ""
+}
+
+func (m *Method) HasBodyArguments() bool {
+	return len(m.BodyArguments) > 0
 }

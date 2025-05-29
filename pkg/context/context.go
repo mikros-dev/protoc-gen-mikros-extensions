@@ -12,11 +12,12 @@ import (
 )
 
 type Context struct {
-	PluginName string
-	ModuleName string
-	Enums      []*Enum
-	Methods    []*Method
-	Package    *protobuf.Protobuf
+	PluginName   string
+	ModuleName   string
+	TemplateKind tpl_types.Kind
+	Enums        []*Enum
+	Methods      []*Method
+	Package      *protobuf.Protobuf
 
 	messages []*Message
 	imports  map[tpl_types.Name][]*templateImport
@@ -171,52 +172,64 @@ func (c *Context) CustomApiExtensions() []*Message {
 	return messages
 }
 
+func (c *Context) SetTemplateKind(kind tpl_types.Kind) {
+	c.TemplateKind = kind
+}
+
 func (c *Context) GetTemplateValidator(name tpl_types.Name, _ interface{}) (tpl_types.ValidateForExecution, bool) {
+	var (
+		golang  = tpl_types.KindGo
+		testing = tpl_types.KindTest
+		rust    = tpl_types.KindRust
+	)
+
 	validators := map[tpl_types.Name]tpl_types.ValidateForExecution{
-		tpl_types.NewName("api", "domain"): func() bool {
+		tpl_types.NewName(golang, "domain"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
-		tpl_types.NewName("api", "enum"): func() bool {
+		tpl_types.NewName(golang, "enum"): func() bool {
 			return len(c.Enums) > 0
 		},
-		tpl_types.NewName("api", "custom_api"): func() bool {
+		tpl_types.NewName(golang, "custom_api"): func() bool {
 			return len(c.CustomApiExtensions()) > 0
 		},
-		tpl_types.NewName("api", "http_server"): func() bool {
+		tpl_types.NewName(golang, "http_server"): func() bool {
 			return c.IsHTTPService()
 		},
-		tpl_types.NewName("api", "routes"): func() bool {
+		tpl_types.NewName(golang, "routes"): func() bool {
 			return c.IsHTTPService()
 		},
-		tpl_types.NewName("api", "outbound"): func() bool {
+		tpl_types.NewName(golang, "outbound"): func() bool {
 			return c.IsHTTPService() || len(c.OutboundMessages()) > 0
 		},
-		tpl_types.NewName("api", "wire"): func() bool {
+		tpl_types.NewName(golang, "wire"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
-		tpl_types.NewName("api", "wire_input"): func() bool {
+		tpl_types.NewName(golang, "wire_input"): func() bool {
 			return len(c.WireInputMessages()) > 0
 		},
-		tpl_types.NewName("api", "common"): func() bool {
+		tpl_types.NewName(golang, "common"): func() bool {
 			return c.UseCommonConverters() || c.OutboundHasBitflagField()
 		},
-		tpl_types.NewName("api", "validation"): func() bool {
+		tpl_types.NewName(golang, "validation"): func() bool {
 			return c.HasValidatableMessage()
 		},
-		tpl_types.NewName("testing", "testing"): func() bool {
-			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test
+		tpl_types.NewName(testing, "testing"): func() bool {
+			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test.IsEnabled()
 		},
-		tpl_types.NewName("testing", "http_server"): func() bool {
-			return c.IsHTTPService() && c.settings.Templates.Test
+		tpl_types.NewName(testing, "http_server"): func() bool {
+			return c.IsHTTPService() && c.settings.Templates.Test.IsEnabled()
+		},
+		tpl_types.NewName(rust, "router.rs"): func() bool {
+			return c.IsHTTPService()
+		},
+		tpl_types.NewName(rust, "mod.rs"): func() bool {
+			return c.IsHTTPService()
 		},
 	}
 
 	v, ok := validators[name]
 	return v, ok
-}
-
-func (c *Context) Extension() string {
-	return "go"
 }
 
 func (c *Context) ServiceName() string {

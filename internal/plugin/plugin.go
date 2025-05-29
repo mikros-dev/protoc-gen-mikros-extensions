@@ -16,8 +16,10 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/args"
-	api_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/api"
+	go_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/golang"
+	rust_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/rust"
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/translation"
 	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -26,10 +28,14 @@ import (
 )
 
 type execution struct {
-	Kind   tpl_types.Kind
-	Path   string
-	Prefix string
-	Files  embed.FS
+	SingleModule        bool
+	Kind                tpl_types.Kind
+	Path                string
+	ModuleName          string
+	Files               embed.FS
+	FormatCodeArguments []string
+	ValidateCode        func(string) error
+	FormatCode          func(string, []string) (string, error)
 }
 
 func Handle(
@@ -95,61 +101,41 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	}
 	output.Println("processing module:", ctx.ModuleName)
 
-	genTemplates := func(e execution) error {
-		templates, err := template.Load(template.Options{
-			StrictValidators: true,
-			Kind:             e.Kind,
-			Path:             e.Path,
-			FilesPrefix:      e.Prefix,
-			Plugin:           plugin,
-			Files:            e.Files,
-			Context:          ctx,
-			Addons:           addons,
-		})
-		if err != nil {
-			return err
-		}
-
-		generated, err := templates.Execute()
-		if err != nil {
-			return err
-		}
-
-		for _, tpl := range generated {
-			output.Println("generating source file: ", tpl.Filename)
-
-			content := tpl.Data.String()
-			if err := isValidGoSource(content); err != nil {
-				return err
-			}
-
-			f := plugin.NewGeneratedFile(tpl.Filename, ".")
-			f.P(content)
-		}
-
-		return nil
-	}
-
 	var executions []execution
-	if cfg.Templates.Api {
+	if cfg.Templates.Go.IsEnabled() {
 		executions = append(executions, execution{
-			Kind:   tpl_types.KindApi,
-			Path:   cfg.Templates.ApiPath,
-			Prefix: "api",
-			Files:  api_tpl_files.Files,
+			Kind:         tpl_types.KindGo,
+			Path:         cfg.Templates.Go.Path,
+			Files:        go_tpl_files.Files,
+			ValidateCode: isValidGoSource,
 		})
 	}
-	if cfg.Templates.Test {
+	if cfg.Templates.Test.IsEnabled() {
 		executions = append(executions, execution{
-			Kind:   tpl_types.KindTest,
-			Path:   cfg.Templates.TestPath,
-			Prefix: "testing",
-			Files:  test_tpl_files.Files,
+			Kind:         tpl_types.KindTest,
+			Path:         cfg.Templates.Test.Path,
+			Files:        test_tpl_files.Files,
+			ValidateCode: isValidGoSource,
 		})
+	}
+	if cfg.Templates.Rust.IsEnabled() {
+		rustExecution := execution{
+			SingleModule: cfg.Templates.Rust.SingleModule,
+			Kind:         tpl_types.KindRust,
+			Path:         cfg.Templates.Rust.Path,
+			ModuleName:   cfg.Templates.Rust.ModuleName,
+			Files:        rust_tpl_files.Files,
+		}
+		if cfg.Templates.Rust.RunFmt {
+			rustExecution.FormatCode = translation.RustFormatCode
+			rustExecution.FormatCodeArguments = []string{cfg.Templates.Rust.FmtEdition}
+		}
+
+		executions = append(executions, rustExecution)
 	}
 
 	for _, execution := range executions {
-		if err := genTemplates(execution); err != nil {
+		if err := genTemplates(execution, plugin, addons, ctx); err != nil {
 			return fmt.Errorf("could not generate template: %w", err)
 		}
 	}
@@ -175,4 +161,51 @@ func isValidGoSource(src string) error {
 	}
 
 	return errors.New(sb.String())
+}
+
+func genTemplates(e execution, plugin *protogen.Plugin, addons []*addon.Addon, ctx *mcontext.Context) error {
+	templates, err := template.Load(template.Options{
+		StrictValidators: true,
+		Kind:             e.Kind,
+		Plugin:           plugin,
+		Files:            e.Files,
+		Addons:           addons,
+	})
+	if err != nil {
+		return err
+	}
+
+	generated, err := templates.Execute(template.ExecuteOptions{
+		Context:      ctx,
+		Path:         e.Path,
+		SingleModule: e.SingleModule,
+		ModuleName:   e.ModuleName,
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, tpl := range generated {
+		output.Println("generating source file: ", tpl.Filename)
+		content := tpl.Data.String()
+
+		if e.ValidateCode != nil {
+			if err := e.ValidateCode(content); err != nil {
+				return err
+			}
+		}
+
+		if e.FormatCode != nil {
+			c, err := e.FormatCode(content, e.FormatCodeArguments)
+			if err != nil {
+				return err
+			}
+			content = c
+		}
+
+		f := plugin.NewGeneratedFile(tpl.Filename, ".")
+		f.P(content)
+	}
+
+	return nil
 }

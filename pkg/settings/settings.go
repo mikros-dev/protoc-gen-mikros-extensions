@@ -43,12 +43,20 @@ type Http struct {
 }
 
 type Templates struct {
-	Api      bool    `toml:"api" default:"true"`
-	Test     bool    `toml:"test" default:"false"`
-	TestPath string  `toml:"test_path" default:"test"`
-	ApiPath  string  `toml:"api_path" default:"go"`
-	Common   *Common `toml:"common" default:"{}"`
-	Routes   *Routes `toml:"routes" default:"{}"`
+	Go     *Golang `toml:"go" default:"{}"`
+	Test   *Test   `toml:"test" default:"{}"`
+	Rust   *Rust   `toml:"rust" default:"{}"`
+	Common *Common `toml:"common" default:"{}"`
+	Routes *Routes `toml:"routes" default:"{}"`
+}
+
+type TemplateBase struct {
+	Enabled bool   `toml:"enabled" default:"false"`
+	Path    string `toml:"path" default:"rust"`
+}
+
+func (t *TemplateBase) IsEnabled() bool {
+	return t.Enabled
 }
 
 type Common struct {
@@ -60,6 +68,22 @@ type Dependency struct {
 	Import      *Import                `toml:"import"`
 	PackageName string                 `toml:"package_name"`
 	Calls       map[string]interface{} `toml:"calls"`
+}
+
+type Golang struct {
+	TemplateBase
+}
+
+type Test struct {
+	TemplateBase
+}
+
+type Rust struct {
+	SingleModule bool   `toml:"single_module" default:"false"`
+	ModuleName   string `toml:"module_name" default:"rust"`
+	RunFmt       bool   `toml:"run_fmt" default:"false"`
+	FmtEdition   string `toml:"format_edition" default:"2021"`
+	TemplateBase
 }
 
 type Routes struct {
