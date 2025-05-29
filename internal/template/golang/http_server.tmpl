@@ -17,7 +17,7 @@ type HttpServer struct {
 }
 
 type routesWrapper struct {
-    Handler     {{toCamelCase .ServiceName}}Server
+    Handler     {{.ServiceName}}Server
     AuthHandler AuthHandler
     Logger      Logger
     Response    ResponseForwarder
@@ -73,7 +73,7 @@ func (h *HttpServer) SetupServer(
     apiHandlers interface{},
     authHandlers func(ctx context.Context, handlers map[string]interface{}) error,
 ) error {
-	handlers, ok := apiHandlers.({{toCamelCase .ServiceName}}Server)
+	handlers, ok := apiHandlers.({{.ServiceName}}Server)
 	if !ok {
 		return errors.New("cannot convert received handler to the service proper type")
 	}

@@ -2,9 +2,9 @@ syntax = "proto2";
 
 package mikros_addon.domain_improve;
 
-import "google/protobuf/descriptor.proto";
+option go_package = "github.com/mikros-dev/protoc-gen-mikros-extensions/examples/addons/domain_improve/proto;proto";
 
-option go_package = "github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions;extensions";
+import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.MessageOptions {
   optional DomainImprove improve = 99000;

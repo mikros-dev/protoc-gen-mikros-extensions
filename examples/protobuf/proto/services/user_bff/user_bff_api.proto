@@ -5,7 +5,8 @@ package services.user_bff;
 option go_package = "examples/gen/go/services/user_bff;user_bff";
 
 import "google/api/annotations.proto";
-import "mikros/extensions/extensions.proto";
+import "google/protobuf/struct.proto";
+import "mikros_extensions.proto";
 import "services/user/user.proto";
 
 service UserBffService {
@@ -47,12 +48,24 @@ message CreateUserRequest {
   bool debug = 4;
   optional string full_name = 5;
   repeated string address = 6;
-  CreateUserDetailsRequest details = 7;
+  CreateUserDetailsRequest details = 7 [(mikros.extensions.field_options) = {
+    validate: {
+      required: true
+      dive: true
+    }
+  }];
 }
 
 message CreateUserDetailsRequest {
-  string street = 1;
-  int32 number = 2;
+  string city = 1 [(mikros.extensions.field_options) = {
+    validate: {
+      required: true
+    }
+  }];
+
+  string country = 2;
+  string street = 3;
+  int32 number = 4;
 }
 
 message CreateUserResponse {
@@ -63,4 +76,6 @@ message CreateUserResponse {
   };
 
   user.UserWire user = 1;
+  google.protobuf.Struct single_response = 2;
+  repeated google.protobuf.Struct responses = 3;
 }

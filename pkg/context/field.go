@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/testing"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/translation"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type Field struct {
@@ -39,7 +39,7 @@ type Field struct {
 	moduleName string
 	converter  *converters.Field
 	testing    *testing.Field
-	extensions *extensions.MikrosFieldExtensions
+	extensions *mikros_extensions.MikrosFieldExtensions
 }
 
 type LoadFieldOptions struct {
@@ -79,7 +79,7 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 		Type:                     opt.Field.Proto.GetType(),
 		GoType:                   goType,
 		GoName:                   opt.Field.Schema.GoName,
-		JsonName:                 strings.ToLower(strcase.ToSnake(opt.Field.Proto.GetJsonName())),
+		JsonName:                 strings.ToLower(strcase.SnakeCase(opt.Field.Proto.GetJsonName())),
 		ProtoName:                opt.Field.Proto.GetName(),
 		DomainName:               converter.DomainName(),
 		DomainTag:                converter.DomainTag(),
@@ -99,7 +99,7 @@ func loadField(opt LoadFieldOptions) (*Field, error) {
 			Settings:       opt.Settings,
 			FieldConverter: converter,
 		}),
-		extensions: extensions.LoadFieldExtensions(opt.Field.Proto),
+		extensions: mikros_extensions.LoadFieldExtensions(opt.Field.Proto),
 	}
 	if err := field.Validate(); err != nil {
 		return nil, err
@@ -153,15 +153,32 @@ func (f *Field) IsScalar() bool {
 }
 
 func (f *Field) IsBindable() bool {
-	if f.extensions != nil {
-		if outbound := f.extensions.GetOutbound(); outbound != nil {
-			if outbound.GetCustomBind() {
-				return false
-			}
-		}
+	if f.hasCustomBind() {
+		return false
 	}
 
-	return f.IsScalar() || (f.ProtoField.IsTimestamp() && !f.IsArray) || f.ProtoField.IsProtoStruct()
+	return f.isBindableType() && !f.IsArray && !f.IsMap
+}
+
+func (f *Field) hasCustomBind() bool {
+	if f.extensions == nil {
+		return false
+	}
+	outbound := f.extensions.GetOutbound()
+	return outbound != nil && outbound.GetCustomBind()
+}
+
+func (f *Field) isBindableType() bool {
+	return f.IsScalar() ||
+		f.ProtoField.IsTimestamp() ||
+		f.ProtoField.IsProtoStruct() ||
+		f.ProtoField.IsMessageFromPackage() ||
+		f.IsMessageFromOtherPackage()
+}
+
+func (f *Field) IsMessageFromOtherPackage() bool {
+	otherTypes := f.ProtoField.IsTimestamp() || f.ProtoField.IsProtoStruct() || f.ProtoField.IsProtoValue()
+	return f.IsMessage && !otherTypes
 }
 
 func (f *Field) DomainType() string {
@@ -180,12 +197,20 @@ func (f *Field) WireType() string {
 	return f.converter.WireType(f.IsPointer())
 }
 
+func (f *Field) ConvertWireTypeToDomainType() string {
+	return f.converter.ConvertDomainTypeToWireType()
+}
+
 func (f *Field) OutboundType() string {
 	return f.converter.OutboundType(f.IsPointer())
 }
 
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string) string {
 	return f.converter.ConvertDomainTypeToArrayWireType(receiver, false)
+}
+
+func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
+	return f.converter.ConvertWireTypeToArrayDomainType(receiver)
 }
 
 func (f *Field) ConvertDomainTypeToArrayWireInputType(receiver string) string {
@@ -198,6 +223,10 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string) string {
 
 func (f *Field) ConvertDomainTypeToMapWireInputType(receiver string) string {
 	return f.converter.ConvertDomainTypeToMapWireType(receiver, true)
+}
+
+func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
+	return f.converter.ConvertWireTypeToMapDomainType(receiver)
 }
 
 func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
@@ -244,8 +273,8 @@ func (f *Field) TestingValueCall() string {
 	return f.testing.ValueInitCall(f.IsPointer())
 }
 
-func (f *Field) TypeByTemplateKind(kind template.Kind) string {
-	if kind == template.KindRust {
+func (f *Field) TypeByTemplateKind(kind tpl_types.Kind) string {
+	if kind == tpl_types.KindRust {
 		return translation.RustFieldType(
 			f.Type,
 			f.IsProtoOptional,
@@ -258,8 +287,8 @@ func (f *Field) TypeByTemplateKind(kind template.Kind) string {
 	return f.GoType
 }
 
-func (f *Field) HeaderArgumentByTemplateKind(kind template.Kind) string {
-	if kind == template.KindRust {
+func (f *Field) HeaderArgumentByTemplateKind(kind tpl_types.Kind) string {
+	if kind == tpl_types.KindRust {
 		// TODO: move this code to translate/rust
 		if f.Type == descriptor.FieldDescriptorProto_TYPE_BOOL {
 			return fmt.Sprintf(`mikros::http::header::to_bool(context.clone(), &headers, "%s")?`, f.ProtoName)
@@ -271,8 +300,8 @@ func (f *Field) HeaderArgumentByTemplateKind(kind template.Kind) string {
 	return ""
 }
 
-func (f *Field) ConvertWireOutputToOutboundByTemplateKind(kind template.Kind, receiver string) string {
-	if kind == template.KindRust {
+func (f *Field) ConvertWireOutputToOutboundByTemplateKind(kind tpl_types.Kind, receiver string) string {
+	if kind == tpl_types.KindRust {
 		if f.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 			return fmt.Sprintf("%s.%s.unwrap().into()", receiver, f.ProtoName)
 		}

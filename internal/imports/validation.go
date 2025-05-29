@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
@@ -22,8 +22,8 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 
 		for _, f := range m.Fields {
 			var (
-				fieldExtensions = extensions.LoadFieldExtensions(f.ProtoField.Proto)
-				validation      *extensions.FieldValidateOptions
+				fieldExtensions = mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto)
+				validation      *mikros_extensions.FieldValidateOptions
 			)
 
 			if fieldExtensions != nil {
@@ -33,7 +33,7 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 				continue
 			}
 
-			if validation.GetRule() == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
+			if validation.GetRule() == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
 				imports["regex"] = packages["regex"]
 				continue
 			}
@@ -47,8 +47,67 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 					}
 				}
 			}
+
+			// If a conditional validation is being made, we check if values used
+			// by it belong from an external module.
+			if isConditionalValidation(call) {
+				values := filterExternalModulesValues(call)
+				for _, value := range values {
+					moduleName := getModuleName(value)
+					imports[moduleName] = importAnotherModule(moduleName, ctx.ModuleName, ctx.FullPath)
+				}
+			}
 		}
 	}
 
 	return toSlice(imports)
+}
+
+func isConditionalValidation(call string) bool {
+	return strings.HasPrefix(call, "validation.When(") && strings.HasSuffix(call, ", validation.Required)")
+}
+
+// filterExternalModulesValues extracts values from a validation.When call
+// that reference symbols from external modules (i.e., prefixed with module name).
+func filterExternalModulesValues(call string) []string {
+	call = strings.TrimPrefix(call, "validation.When(")
+	call = strings.TrimSuffix(call, ", validation.Required)")
+
+	// By default, we handle the logical operator, treat the whole expression
+	// as a single condition.
+	pattern := ""
+	switch {
+	case strings.Contains(call, " && "):
+		pattern = " && "
+	case strings.Contains(call, " || "):
+		pattern = " || "
+	}
+
+	var (
+		values     []string
+		conditions = []string{call}
+	)
+
+	if pattern != "" {
+		conditions = strings.Split(call, pattern)
+	}
+
+	for _, cond := range conditions {
+		parts := strings.Split(cond, "==")
+		if len(parts) != 2 {
+			continue
+		}
+
+		value := strings.TrimSpace(parts[1])
+		if strings.Contains(value, ".") {
+			values = append(values, value)
+		}
+	}
+
+	return values
+}
+
+func getModuleName(s string) string {
+	parts := strings.Split(s, ".")
+	return parts[0]
 }

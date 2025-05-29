@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/validation"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
@@ -29,8 +29,8 @@ type Field struct {
 	receiver          string
 	msg               *Message
 	db                *Database
-	fieldExtensions   *extensions.MikrosFieldExtensions
-	messageExtensions *extensions.MikrosMessageExtensions
+	fieldExtensions   *mikros_extensions.MikrosFieldExtensions
+	messageExtensions *mikros_extensions.MikrosMessageExtensions
 	proto             *protobuf.Field
 	settings          *settings.Settings
 	validation        *validation.Call
@@ -47,21 +47,9 @@ type FieldOptions struct {
 
 func NewField(options FieldOptions) (*Field, error) {
 	var (
-		fieldExtensions = extensions.LoadFieldExtensions(options.ProtoField.Proto)
+		fieldExtensions = mikros_extensions.LoadFieldExtensions(options.ProtoField.Proto)
 		isArray         = options.ProtoField.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 	)
-
-	call, err := validation.NewCall(&validation.CallOptions{
-		IsArray:   isArray,
-		ProtoName: options.ProtoField.Name,
-		Receiver:  options.Receiver,
-		Options:   fieldExtensions,
-		Settings:  options.Settings,
-		Message:   options.ProtoMessage,
-	})
-	if err != nil {
-		return nil, err
-	}
 
 	field := &Field{
 		isArray:           isArray,
@@ -71,12 +59,26 @@ func NewField(options FieldOptions) (*Field, error) {
 		receiver:          options.Receiver,
 		msg:               options.Message,
 		fieldExtensions:   fieldExtensions,
-		messageExtensions: extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
+		messageExtensions: mikros_extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
 		proto:             options.ProtoField,
 		settings:          options.Settings,
-		validation:        call,
 	}
 	if options.Settings != nil {
+		call, err := validation.NewCall(&validation.CallOptions{
+			IsArray:   isArray,
+			IsMessage: field.proto.IsMessage(),
+			ProtoName: options.ProtoField.Name,
+			Receiver:  options.Receiver,
+			ProtoType: field.WireType(false),
+			Options:   fieldExtensions,
+			Settings:  options.Settings,
+			Message:   options.ProtoMessage,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		field.validation = call
 		field.db = databaseFromString(options.Settings.Database.Kind, fieldExtensions)
 	}
 
@@ -165,7 +167,7 @@ func (f *Field) convertFromWireType(isPointer, testMode bool, mode conversionMod
 	}
 
 	if f.proto.IsProtoStruct() {
-		return "map[string]interface{}"
+		return optional("map[string]interface{}", f.isArray, false)
 	}
 
 	if f.proto.IsTimestamp() {
@@ -286,7 +288,7 @@ func (f *Field) DomainName() string {
 	if f.fieldExtensions != nil {
 		if domain := f.fieldExtensions.GetDomain(); domain != nil {
 			if n := domain.GetName(); n != "" {
-				return strcase.ToCamel(n)
+				return strcase.UpperCamelCase(n)
 			}
 		}
 	}
@@ -296,15 +298,15 @@ func (f *Field) DomainName() string {
 
 func (f *Field) DomainTag() string {
 	var (
-		domain    *extensions.FieldDomainOptions
-		fieldName = strcase.ToSnake(f.DomainName())
+		domain    *mikros_extensions.FieldDomainOptions
+		fieldName = strcase.SnakeCase(f.DomainName())
 		jsonTag   = ",omitempty"
 	)
 
 	if f.messageExtensions != nil {
 		if messageDomain := f.messageExtensions.GetDomain(); messageDomain != nil {
-			if messageDomain.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-				fieldName = strcase.ToLowerCamel(f.DomainName())
+			if messageDomain.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+				fieldName = strcase.LowerCamelCase(f.DomainName())
 			}
 		}
 	}
@@ -345,10 +347,10 @@ func (f *Field) InboundName() string {
 	}
 
 	// Default is snake_case
-	fieldName := strcase.ToSnake(name)
+	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageInbound := f.messageExtensions.GetInbound(); messageInbound != nil {
-			if messageInbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageInbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}
@@ -359,7 +361,7 @@ func (f *Field) InboundName() string {
 
 func (f *Field) OutboundTag() string {
 	var (
-		outbound *extensions.FieldOutboundOptions
+		outbound *mikros_extensions.FieldOutboundOptions
 		name     = f.DomainName()
 		jsonTag  = ",omitempty"
 	)
@@ -378,10 +380,10 @@ func (f *Field) OutboundTag() string {
 	}
 
 	// Default is snake_case
-	fieldName := strcase.ToSnake(name)
+	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
-			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageOutbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}
@@ -416,10 +418,10 @@ func (f *Field) OutboundJsonTagFieldName() string {
 	}
 
 	// Default is snake_case
-	fieldName := strcase.ToSnake(name)
+	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
-			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageOutbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}
@@ -492,6 +494,35 @@ func (f *Field) enumWireType() string {
 	return conversionCall
 }
 
+func (f *Field) ConvertDomainTypeToWireType() string {
+	if f.proto.IsEnum() {
+		call := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", f.receiver, f.DomainName())
+		if f.proto.IsOptional() {
+			call = fmt.Sprintf("toPtr(%s)", call)
+		}
+
+		return call
+	}
+
+	if f.proto.IsProtoValue() {
+		return fmt.Sprintf("toDomainInterface(%s.%s)", f.receiver, f.DomainName())
+	}
+
+	if f.proto.IsTimestamp() {
+		return fmt.Sprintf("toDomainTime(%s.%s)", f.receiver, f.DomainName())
+	}
+
+	if f.proto.IsProtoStruct() {
+		return fmt.Sprintf("toDomainMap(%s.%s)", f.receiver, f.DomainName())
+	}
+
+	if f.proto.IsMessage() {
+		return fmt.Sprintf("%s.%s.IntoDomain()", f.receiver, f.DomainName())
+	}
+
+	return fmt.Sprintf("%s.%s", f.receiver, f.DomainName())
+}
+
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool) string {
 	if f.proto.IsEnum() {
 		name := TrimPackageName(f.goType, f.proto.ModuleName())
@@ -523,6 +554,22 @@ func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool
 	return receiver
 }
 
+func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
+	if f.proto.IsEnum() {
+		return fmt.Sprintf("%s.ValueWithoutPrefix()", receiver)
+	}
+
+	if f.proto.IsTimestamp() {
+		return fmt.Sprintf("toDomainTime(%s)", receiver)
+	}
+
+	if f.proto.IsMessage() {
+		return fmt.Sprintf("%s.IntoDomain()", receiver)
+	}
+
+	return receiver
+}
+
 func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) string {
 	_, value, valueKind := f.getMapKeyValueTypesForWire()
 
@@ -541,6 +588,24 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) 
 		}
 
 		return fmt.Sprintf("%s.IntoWire()", receiver)
+	}
+
+	return receiver
+}
+
+func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
+	_, value, valueKind := f.getMapKeyValueTypesForWire()
+
+	if valueKind.Kind() == protoreflect.EnumKind {
+		return fmt.Sprintf("%v.ValueWithoutPrefix()", receiver)
+	}
+
+	if valueKind.Kind() == protoreflect.MessageKind {
+		if strings.Contains(value, "ts.Timestamp") {
+			return fmt.Sprintf("toDomainTime(%s)", receiver)
+		}
+
+		return fmt.Sprintf("%s.IntoDomain()", receiver)
 	}
 
 	return receiver
@@ -613,6 +678,10 @@ func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
 		return fmt.Sprintf("%s(%s)", call, receiver)
 	}
 
+	if f.proto.IsProtoStruct() {
+		return fmt.Sprintf("%s.AsMap()", receiver)
+	}
+
 	if f.proto.IsMessage() {
 		return fmt.Sprintf("%s.IntoOutboundOrNil()", receiver)
 	}
@@ -639,5 +708,9 @@ func (f *Field) needsAddressNotation() bool {
 }
 
 func (f *Field) ValidationCall() string {
+	if f.validation == nil {
+		return ""
+	}
+
 	return f.validation.ApiCall()
 }

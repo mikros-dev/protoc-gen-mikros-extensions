@@ -4,7 +4,7 @@ package mikros.extensions;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions;extensions";
+option go_package = "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions;mikros_extensions";
 
 extend google.protobuf.ServiceOptions {
   optional MikrosServiceExtensions service_options = 85042;
@@ -72,6 +72,7 @@ message MikrosFieldExtensions {
   optional FieldInboundOptions inbound = 3;
   optional FieldOutboundOptions outbound = 4;
   optional FieldValidateOptions validate = 5;
+  optional FieldTestingOptions testing = 6;
 }
 
 message FieldDomainOptions {
@@ -88,6 +89,11 @@ message FieldDomainStructTag {
 message FieldDatabaseOptions {
   optional string name = 1;
   optional bool allow_empty = 2;
+  optional bool index = 3;
+  optional bool unique = 4;
+  optional bool unique_index = 5;
+  optional bool primary_key = 6;
+  optional bool auto_increment = 7;
 }
 
 message FieldInboundOptions {
@@ -140,6 +146,11 @@ enum FieldValidatorRule {
   FIELD_VALIDATOR_RULE_CUSTOM = 2;
 }
 
+message FieldTestingOptions {
+  required string custom_rule = 1;
+  repeated string rule_args = 2;
+}
+
 extend google.protobuf.MessageOptions {
   optional MikrosMessageExtensions message_options = 85042;
 }
@@ -158,10 +169,11 @@ message MessageDomainExtensions {
 }
 
 message MessageCustomApiExtensions {
-  repeated CustomCodeExtensions code = 1;
+  repeated CustomFunctionExtensions function = 1;
+  repeated string block = 2;
 }
 
-message CustomCodeExtensions {
+message CustomFunctionExtensions {
   required string signature = 1;
   required string body  = 2;
   repeated MikrosCustomImport import = 3;

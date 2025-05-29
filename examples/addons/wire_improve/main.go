@@ -6,7 +6,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 //go:embed *.tmpl
@@ -22,9 +22,9 @@ func (w *WireImproveAddon) GetContext(_ interface{}) interface{} {
 	}
 }
 
-func (w *WireImproveAddon) GetTemplateImports(name template.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
-	ipt := map[template.Name][]*addon.Import{
-		template.NewName(template.KindGo, "wire_improve"): {
+func (w *WireImproveAddon) GetTemplateImports(name tpl_types.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
+	ipt := map[tpl_types.Name][]*addon.Import{
+		tpl_types.NewName(tpl_types.KindGo, "wire_improve"): {
 			{
 				Name: "fmt",
 			},
@@ -38,11 +38,11 @@ func (w *WireImproveAddon) GetTemplateImports(name template.Name, _ interface{},
 	return nil
 }
 
-func (w *WireImproveAddon) GetTemplateValidator(name template.Name, ctx interface{}) (template.ValidateForExecution, bool) {
+func (w *WireImproveAddon) GetTemplateValidator(name tpl_types.Name, ctx interface{}) (tpl_types.ValidateForExecution, bool) {
 	c := ctx.(*context.Context)
 
-	validators := map[template.Name]template.ValidateForExecution{
-		template.NewName(template.KindGo, "wire_improve"): func() bool {
+	validators := map[tpl_types.Name]tpl_types.ValidateForExecution{
+		tpl_types.NewName(tpl_types.KindGo, "wire_improve"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
 	}
@@ -51,8 +51,8 @@ func (w *WireImproveAddon) GetTemplateValidator(name template.Name, ctx interfac
 	return v, ok
 }
 
-func (w *WireImproveAddon) Kind() template.Kind {
-	return template.KindGo
+func (w *WireImproveAddon) Kind() tpl_types.Kind {
+	return tpl_types.KindGo
 }
 
 func (w *WireImproveAddon) Templates() embed.FS {

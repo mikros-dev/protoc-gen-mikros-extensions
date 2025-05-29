@@ -11,7 +11,7 @@ wire_input = "Request"
 wire_output = "Response"
 
 [database]
-kind = "mongo"
+kind = "gorm"
 
 [http]
 framework = "fasthttp"
@@ -39,3 +39,8 @@ custom.id.name = "v.ID"
 
 [addons]
 path = "addons"
+
+[testing]
+package_import.name = "github.com/rsfreitas/mikros-essentials/testing"
+custom.id.name = "entity.NewID"
+custom.id.args_required = true

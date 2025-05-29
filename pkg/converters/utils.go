@@ -3,7 +3,7 @@ package converters
 import (
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
 )
 
 func TrimPackageName(name, packageName string) string {
@@ -15,5 +15,5 @@ func TrimPackageName(name, packageName string) string {
 }
 
 func inboundOutboundCamelCase(s string) string {
-	return strcase.ToLowerCamel(s)
+	return strcase.LowerCamelCase(s)
 }

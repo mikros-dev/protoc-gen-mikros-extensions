@@ -4,13 +4,19 @@ package services.order;
 
 option go_package = "examples/gen/go/services/order;order";
 
-import "mikros/extensions/extensions.proto";
+import "mikros_extensions.proto";
 import "services/product/product.proto";
 import "services/user/user.proto";
 import "services/common/common.proto";
 
 message OrderWire {
-  string id = 1;
+  string id = 1 [(mikros.extensions.field_options) = {
+    database: {
+      index: true
+      primary_key: true
+    }
+  }];
+
   user.UserWire user = 2;
   repeated product.ProductWire products = 3;
   common.Status status = 4;

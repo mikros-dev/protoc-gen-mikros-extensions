@@ -3,7 +3,7 @@ package context
 import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/imports"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type templateImport struct {
@@ -11,10 +11,10 @@ type templateImport struct {
 	Name  string
 }
 
-func loadImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*templateImport {
+func loadImports(ctx *Context, cfg *settings.Settings) map[tpl_types.Name][]*templateImport {
 	var (
 		tplImports = imports.LoadTemplateImports(toImportsContext(ctx), cfg)
-		ctxImport  = make(map[template.Name][]*templateImport)
+		ctxImport  = make(map[tpl_types.Name][]*templateImport)
 	)
 
 	for k, ipt := range tplImports {
@@ -46,8 +46,12 @@ func toImportsContext(ctx *Context) *imports.Context {
 			IsArray:                        f.IsArray,
 			IsProtobufTimestamp:            f.ProtoField.IsTimestamp(),
 			IsOutboundBitflag:              f.IsOutboundBitflag(),
+			IsMessage:                      f.IsMessageFromOtherPackage() || f.ProtoField.IsMessageFromPackage(),
+			OutboundHide:                   f.OutboundHide(),
 			ConversionDomainToWire:         f.ConvertDomainTypeToWireType(),
+			ConversionWireToDomain:         f.ConvertWireTypeToDomainType(),
 			ConversionWireOutputToOutbound: f.ConvertWireOutputToOutbound("r"),
+			DomainType:                     f.DomainType(),
 			WireType:                       f.WireType(),
 			OutboundType:                   f.OutboundType(),
 			TestingBinding:                 f.TestingValueBinding(),

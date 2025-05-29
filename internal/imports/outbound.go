@@ -3,7 +3,7 @@ package imports
 import (
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
@@ -23,6 +23,10 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
+			if f.OutboundHide {
+				continue
+			}
+
 			if ipt := fieldHasCustomImport(f.ProtoField); ipt != nil {
 				imports[ipt.Name] = ipt
 				continue
@@ -76,7 +80,7 @@ func loadOutboundImportsFromMessages(ctx *Context, cfg *settings.Settings, messa
 }
 
 func fieldHasCustomImport(field *protobuf.Field) *Import {
-	if ext := extensions.LoadFieldExtensions(field.Proto); ext != nil {
+	if ext := mikros_extensions.LoadFieldExtensions(field.Proto); ext != nil {
 		if outbound := ext.GetOutbound(); outbound != nil {
 			if ipt := outbound.GetCustomImport(); ipt != nil {
 				return &Import{

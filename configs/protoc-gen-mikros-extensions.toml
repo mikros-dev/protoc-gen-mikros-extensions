@@ -21,6 +21,9 @@ path = "go"
 enabled = true
 path = "test"
 
+[templates.routes]
+prefix_service_name_in_endpoints = true
+
 [templates.common]
 converters = false
 

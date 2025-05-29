@@ -4,7 +4,7 @@ package services.common;
 
 option go_package = "examples/gen/go/services/common;common";
 
-import "mikros/extensions/extensions.proto";
+import "mikros_extensions.proto";
 
 enum Status {
   STATUS_UNSPECIFIED = 0;

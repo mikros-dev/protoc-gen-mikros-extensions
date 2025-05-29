@@ -1,7 +1,7 @@
 PLUGIN_NAME := domain_improve
 SRC := main.go
 
-PROTO := $(PLUGIN_NAME).proto
+PROTO := proto/$(PLUGIN_NAME).proto
 TEMPLATES := $(PLUGIN_NAME).tmpl
 
 OUTPUT := $(PLUGIN_NAME).so
@@ -19,4 +19,4 @@ $(OUTPUT): $(SRC) $(TEMPLATES)
 clean:
 	rm -f $(OUTPUT) $(GEN_GO)
 
-.PHONY: all clean
+.PHONY: all clean proto

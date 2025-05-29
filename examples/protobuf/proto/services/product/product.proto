@@ -4,7 +4,7 @@ package services.product;
 
 option go_package = "examples/gen/go/services/product;product";
 
-import "mikros/extensions/extensions.proto";
+import "mikros_extensions.proto";
 import "domain_improve.proto";
 
 message ProductWire {

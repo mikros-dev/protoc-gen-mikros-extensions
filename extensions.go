@@ -1,2 +1,2 @@
-//go:generate protoc -I . --go_out=. --go_opt=paths=source_relative mikros/extensions/extensions.proto
+//go:generate protoc -I . --go_out=pkg/mikros_extensions --go_opt=module=github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions proto/mikros_extensions.proto
 package main

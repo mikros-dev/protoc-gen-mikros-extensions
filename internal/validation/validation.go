@@ -7,16 +7,18 @@ import (
 
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 type CallOptions struct {
 	IsArray   bool
+	IsMessage bool
 	ProtoName string
 	Receiver  string
-	Options   *extensions.MikrosFieldExtensions
+	ProtoType string
+	Options   *mikros_extensions.MikrosFieldExtensions
 	Settings  *settings.Settings
 	Message   *protobuf.Message
 }
@@ -73,15 +75,20 @@ func buildCall(options *CallOptions) (string, error) {
 	}
 
 	if validationOptions.GetDive() {
-		if !options.IsArray {
-			return "", fmt.Errorf("field '%s' is not of array type to have dive rule option enabled", options.ProtoName)
+		if !options.IsArray && !options.IsMessage {
+			return "", fmt.Errorf("field '%s' must be an array or a another message to have dive rule option enabled", options.ProtoName)
 		}
 
 		if call != "" {
 			call += ", "
 		}
 
-		call += "validation.Each("
+		if options.IsArray {
+			call += "validation.Each("
+		}
+		if options.IsMessage {
+			call += fmt.Sprintf("validation.By(%vValidator(options...)", options.ProtoType)
+		}
 	}
 
 	if validationOptions.GetMaxLength() > 0 {
@@ -160,7 +167,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 		rule              = validationOptions.GetRule()
 	)
 
-	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED {
+	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED {
 		return call, nil
 	}
 
@@ -168,7 +175,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 		call += ", "
 	}
 
-	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
+	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
 		args := validationOptions.GetRuleArgs()
 		if len(args) == 0 {
 			return "", errors.New("no arguments specified for regex rule")
@@ -179,7 +186,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 	}
 
 	ruleSettings, err := options.Settings.GetValidationRule(rule)
-	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_CUSTOM {
+	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_CUSTOM {
 		ruleSettings, err = options.Settings.GetValidationCustomRule(validationOptions.GetCustomRule())
 	}
 	if err != nil {

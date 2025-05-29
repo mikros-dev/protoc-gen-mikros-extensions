@@ -4,23 +4,23 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type Context struct {
 	PluginName   string
 	ModuleName   string
-	TemplateKind template.Kind
+	TemplateKind tpl_types.Kind
 	Enums        []*Enum
 	Methods      []*Method
 	Package      *protobuf.Protobuf
 
 	messages []*Message
-	imports  map[template.Name][]*templateImport
+	imports  map[tpl_types.Name][]*templateImport
 	addons   map[string]*addon.Addon
 	settings *settings.Settings
 }
@@ -49,7 +49,7 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 		return nil, err
 	}
 
-	methods, err := loadMethods(pkg, messages)
+	methods, err := loadMethods(pkg, messages, opt.Settings)
 	if err != nil {
 		return nil, err
 	}
@@ -76,13 +76,13 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 }
 
 func (c *Context) GetTemplateImports(name string) []*templateImport {
-	return c.imports[template.Name(name)]
+	return c.imports[tpl_types.Name(name)]
 }
 
 func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*templateImport {
 	if a, ok := c.addons[addonName]; ok {
 		var (
-			ipt          = a.Addon().GetTemplateImports(template.Name(tplName), c, c.settings)
+			ipt          = a.Addon().GetTemplateImports(tpl_types.Name(tplName), c, c.settings)
 			addonImports = make([]*templateImport, len(ipt))
 		)
 
@@ -100,13 +100,13 @@ func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*template
 }
 
 func (c *Context) HasImportFor(name string) bool {
-	d, ok := c.imports[template.Name(name)]
+	d, ok := c.imports[tpl_types.Name(name)]
 	return ok && len(d) > 0
 }
 
 func (c *Context) HasAddonImportFor(addonName, tplName string) bool {
 	if a, ok := c.addons[addonName]; ok {
-		return len(a.Addon().GetTemplateImports(template.Name(tplName), c, c.settings)) > 0
+		return len(a.Addon().GetTemplateImports(tpl_types.Name(tplName), c, c.settings)) > 0
 	}
 
 	return false
@@ -141,7 +141,7 @@ func (c *Context) WireInputMessages() []*Message {
 }
 
 func manualExportToWireInput(m *Message) bool {
-	if ext := extensions.LoadMessageExtensions(m.ProtoMessage.Proto); ext != nil {
+	if ext := mikros_extensions.LoadMessageExtensions(m.ProtoMessage.Proto); ext != nil {
 		if wireInput := ext.GetWireInput(); wireInput != nil {
 			return wireInput.GetExport()
 		}
@@ -172,55 +172,58 @@ func (c *Context) CustomApiExtensions() []*Message {
 	return messages
 }
 
-func (c *Context) SetTemplateKind(kind template.Kind) {
+func (c *Context) SetTemplateKind(kind tpl_types.Kind) {
 	c.TemplateKind = kind
 }
 
-func (c *Context) GetTemplateValidator(name template.Name, _ interface{}) (template.ValidateForExecution, bool) {
+func (c *Context) GetTemplateValidator(name tpl_types.Name, _ interface{}) (tpl_types.ValidateForExecution, bool) {
 	var (
-		golang  = template.KindGo
-		testing = template.KindTest
-		rust    = template.KindRust
+		golang  = tpl_types.KindGo
+		testing = tpl_types.KindTest
+		rust    = tpl_types.KindRust
 	)
 
-	validators := map[template.Name]template.ValidateForExecution{
-		template.NewName(golang, "domain"): func() bool {
+	validators := map[tpl_types.Name]tpl_types.ValidateForExecution{
+		tpl_types.NewName(golang, "domain"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
-		template.NewName(golang, "enum"): func() bool {
+		tpl_types.NewName(golang, "enum"): func() bool {
 			return len(c.Enums) > 0
 		},
-		template.NewName(golang, "custom_api"): func() bool {
+		tpl_types.NewName(golang, "custom_api"): func() bool {
 			return len(c.CustomApiExtensions()) > 0
 		},
-		template.NewName(golang, "http_server"): func() bool {
+		tpl_types.NewName(golang, "http_server"): func() bool {
 			return c.IsHTTPService()
 		},
-		template.NewName(golang, "routes"): func() bool {
+		tpl_types.NewName(golang, "routes"): func() bool {
 			return c.IsHTTPService()
 		},
-		template.NewName(golang, "outbound"): func() bool {
+		tpl_types.NewName(golang, "outbound"): func() bool {
 			return c.IsHTTPService() || len(c.OutboundMessages()) > 0
 		},
-		template.NewName(golang, "wire_input"): func() bool {
+		tpl_types.NewName(golang, "wire"): func() bool {
+			return len(c.DomainMessages()) > 0
+		},
+		tpl_types.NewName(golang, "wire_input"): func() bool {
 			return len(c.WireInputMessages()) > 0
 		},
-		template.NewName(golang, "common"): func() bool {
+		tpl_types.NewName(golang, "common"): func() bool {
 			return c.UseCommonConverters() || c.OutboundHasBitflagField()
 		},
-		template.NewName(golang, "validation"): func() bool {
+		tpl_types.NewName(golang, "validation"): func() bool {
 			return c.HasValidatableMessage()
 		},
-		template.NewName(testing, "testing"): func() bool {
+		tpl_types.NewName(testing, "testing"): func() bool {
 			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test.IsEnabled()
 		},
-		template.NewName(testing, "http_server"): func() bool {
+		tpl_types.NewName(testing, "http_server"): func() bool {
 			return c.IsHTTPService() && c.settings.Templates.Test.IsEnabled()
 		},
-		template.NewName(rust, "router.rs"): func() bool {
+		tpl_types.NewName(rust, "router.rs"): func() bool {
 			return c.IsHTTPService()
 		},
-		template.NewName(rust, "mod.rs"): func() bool {
+		tpl_types.NewName(rust, "mod.rs"): func() bool {
 			return c.IsHTTPService()
 		},
 	}

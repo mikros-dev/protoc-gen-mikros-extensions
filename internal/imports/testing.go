@@ -3,26 +3,35 @@ package imports
 import (
 	"strings"
 
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
-	imports := map[string]*Import{
-		"math/rand":    packages["math/rand"],
-		"reflect":      packages["reflect"],
-		ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),
-	}
+	var (
+		importTestingRule = false
+		imports           = map[string]*Import{
+			"math/rand":    packages["math/rand"],
+			"reflect":      packages["reflect"],
+			ctx.ModuleName: importAnotherModule(ctx.ModuleName, ctx.ModuleName, ctx.FullPath),
+		}
+	)
 
 	for _, message := range ctx.DomainMessages {
 		for _, f := range message.Fields {
 			var (
-				binding = f.TestingBinding
-				cfgCall = cfg.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr) + "("
-				call    = strings.TrimPrefix(f.TestingCall, cfgCall)
+				binding   = f.TestingBinding
+				cfgCall   = cfg.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr) + "("
+				call      = strings.TrimPrefix(f.TestingCall, cfgCall)
+				fieldType = f.DomainType
 			)
 
-			if module, ok := needsImportAnotherProtoModule(binding, "", ctx.ModuleName, message.Receiver); ok {
+			if options := mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto); options != nil && options.GetTesting() != nil {
+				importTestingRule = true
+			}
+
+			if module, ok := needsImportAnotherProtoModule(binding, fieldType, ctx.ModuleName, message.Receiver); ok {
 				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 
@@ -43,6 +52,13 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 			if module, ok := getModuleFromZeroValueCall(call, f.ProtoField); ok {
 				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
+		}
+	}
+
+	if importTestingRule && cfg.Testing != nil && cfg.Testing.PackageImport != nil {
+		imports[cfg.Testing.PackageImport.Name] = &Import{
+			Name:  cfg.Testing.PackageImport.Name,
+			Alias: cfg.Testing.PackageImport.Alias,
 		}
 	}
 

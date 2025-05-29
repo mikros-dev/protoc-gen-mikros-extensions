@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
@@ -22,7 +22,7 @@ type Message struct {
 
 	isHTTPService bool
 	converter     *converters.Message
-	extensions    *extensions.MikrosMessageExtensions
+	extensions    *mikros_extensions.MikrosMessageExtensions
 }
 
 type LoadMessagesOptions struct {
@@ -76,7 +76,7 @@ func loadMessages(pkg *protobuf.Protobuf, opt LoadMessagesOptions) ([]*Message, 
 			ProtoMessage:  m,
 			isHTTPService: pkg.Service != nil && pkg.Service.IsHTTP(),
 			converter:     converter,
-			extensions:    extensions.LoadMessageExtensions(m.Proto),
+			extensions:    mikros_extensions.LoadMessageExtensions(m.Proto),
 		}
 	}
 
@@ -185,9 +185,9 @@ func (m *Message) OutboundExport() bool {
 	return false
 }
 
-func (m *Message) MapFields() []*Field {
+func (m *Message) MapFields(templateName string) []*Field {
 	var fields []*Field
-	for _, field := range m.Fields {
+	for _, field := range m.GetFields(templateName) {
 		if field.IsMap {
 			fields = append(fields, field)
 		}
@@ -199,25 +199,25 @@ func (m *Message) MapFields() []*Field {
 func (m *Message) HasCustomApiCodeExtension() bool {
 	if m.extensions != nil {
 		if options := m.extensions.GetCustomApi(); options != nil {
-			return len(options.GetCode()) > 0
+			return len(options.GetFunction()) > 0 || len(options.GetBlock()) > 0
 		}
 	}
 
 	return false
 }
 
-type CustomCode struct {
+type CustomFunction struct {
 	Signature string
 	Body      string
 }
 
-func (m *Message) CustomApiCode() []*CustomCode {
-	var customCodes []*CustomCode
+func (m *Message) CustomFunctions() []*CustomFunction {
+	var customCodes []*CustomFunction
 
 	if m.extensions != nil {
 		if options := m.extensions.GetCustomApi(); options != nil {
-			for _, c := range options.GetCode() {
-				customCodes = append(customCodes, &CustomCode{
+			for _, c := range options.GetFunction() {
+				customCodes = append(customCodes, &CustomFunction{
 					Signature: c.GetSignature(),
 					Body:      c.GetBody(),
 				})
@@ -228,11 +228,31 @@ func (m *Message) CustomApiCode() []*CustomCode {
 	return customCodes
 }
 
+type CustomBlock struct {
+	Block string
+}
+
+func (m *Message) CustomBlocks() []*CustomBlock {
+	var customBlocks []*CustomBlock
+
+	if m.extensions != nil {
+		if options := m.extensions.GetCustomApi(); options != nil {
+			for _, c := range options.GetBlock() {
+				customBlocks = append(customBlocks, &CustomBlock{
+					Block: c,
+				})
+			}
+		}
+	}
+
+	return customBlocks
+}
+
 func (m *Message) GetFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return true
 	}
-	if templateName == "outbound" {
+	if templateName == "api:outbound" {
 		filter = func(field *Field) bool {
 			return !field.OutboundHide()
 		}
@@ -270,15 +290,15 @@ func (m *Message) HasValidatableField() bool {
 
 func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 	for _, field := range m.Fields {
-		ext := extensions.LoadFieldExtensions(field.ProtoField.Proto)
+		ext := mikros_extensions.LoadFieldExtensions(field.ProtoField.Proto)
 		if ext == nil {
 			continue
 		}
 
 		if validation := ext.GetValidate(); validation != nil {
-			nonCustomRules := []extensions.FieldValidatorRule{
-				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX,
-				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED,
+			nonCustomRules := []mikros_extensions.FieldValidatorRule{
+				mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX,
+				mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED,
 			}
 
 			if !slices.Contains(nonCustomRules, validation.GetRule()) {

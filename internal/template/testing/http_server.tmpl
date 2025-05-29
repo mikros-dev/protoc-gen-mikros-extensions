@@ -3,6 +3,10 @@ package {{.ModuleName}}{{$packageName := .ModuleName}}
 
 {{if .HasImportFor templateName}}
 import (
+    "context"
+    "github.com/mikros-dev/mikros"
+    definition_api "github.com/mikros-dev/mikros/apis/features/definition"
+    logger_api "github.com/mikros-dev/mikros/apis/features/logger"
 {{- range .GetTemplateImports templateName}}
     {{.Alias}} "{{.Name}}"
 {{- end}}
@@ -10,12 +14,29 @@ import (
 {{end}}
 
 // NewHttpServer is a helper function for creating the HTTP server for
-// unit tests.
-func NewHttpServer(serviceName string, logger interface{}, handlers interface{}, response {{$packageName}}.ResponseForwarder) (*{{$packageName}}.HttpServer, error) {
+// unit tests. One must ensure that this function is called after the
+// Service.Start call inside the tests, because it needs to retrieve
+// internal features available only after this call.
+func NewHttpServer(svc *mikros.Service, handlers interface{}, response {{$packageName}}.ResponseForwarder, decoder {{$packageName}}.FieldDecoder) (*{{$packageName}}.HttpServer, error) {
     s := {{$packageName}}.NewHttpServer({{$packageName}}.NewHttpServerOptions{
         Response: response,
+        Field: decoder,
     })
 
-    err := s.SetupServer(serviceName, logger, router.New(), handlers, nil)
+    var (
+        ctx = context.TODO()
+        defs definition_api.DefinitionAPI
+        logger logger_api.LoggerAPI
+    )
+
+    // Get mikros features for the HTTP server we're going to initialize
+    if err := svc.Feature(ctx, &defs); err != nil {
+        return nil, err
+    }
+    if err := svc.Feature(ctx, &logger); err != nil {
+        return nil, err
+    }
+
+    err := s.SetupServer(defs.ServiceName(), logger, router.New(), handlers, nil)
     return s, err
 }

@@ -38,11 +38,18 @@ func (w *routesWrapper) {{.Name}}(ctx *fasthttp.RequestCtx) {
     {{- end}}
 
     input, err := w.parse{{.Request.Name}}FromRequest(ctx)
+
+    var headers []string
+    ctx.Request.Header.VisitAll(func(key, value []byte) {
+        headers = append(headers, fmt.Sprintf("%s=%s", string(key), string(value)))
+    })
     w.Logger.Debugf(ctx, "request payload details", map[string]interface{}{
         "request.endpoint": string(ctx.RequestURI()),
         "request.method": string(ctx.Method()),
+        "request.headers": headers,
         "request.payload": input,
     })
+
     if err != nil {
         w.Response.ToError(ctx, err)
         w.Logger.Errorf(ctx, "could not parse request input")

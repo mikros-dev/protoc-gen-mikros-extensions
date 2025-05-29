@@ -5,17 +5,20 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/stoewer/go-strcase"
+
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/translation"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type Method struct {
 	Name                  string
-	RequestName           string
-	ResponseName          string
+	RequestType           string
+	ResponseType          string
 	AdditionalHTTPMethods []HttpRule
 	Request               *Message
 	PathArguments         []*MethodField
@@ -24,9 +27,11 @@ type Method struct {
 	BodyArguments         []*MethodField
 	ProtoMethod           *protobuf.Method
 
-	endpoint *Endpoint
-	service  *extensions.MikrosServiceExtensions
-	method   *extensions.MikrosMethodExtensions
+	prefixServiceName bool
+	moduleName        string
+	endpoint          *Endpoint
+	service           *mikros_extensions.MikrosServiceExtensions
+	method            *mikros_extensions.MikrosMethodExtensions
 }
 
 type HttpRule struct {
@@ -41,21 +46,21 @@ type MethodField struct {
 	Field     *Field
 }
 
-func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error) {
+func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Settings) ([]*Method, error) {
 	if pkg.Service == nil {
 		return nil, nil
 	}
 
 	var (
 		methods = make([]*Method, len(pkg.Service.Methods))
-		service = extensions.LoadServiceExtensions(pkg.Service.Proto)
+		service = mikros_extensions.LoadServiceExtensions(pkg.Service.Proto)
 	)
 
 	for i, method := range pkg.Service.Methods {
 		var (
 			msg              *Message
 			endpoint         = getEndpoint(method)
-			methodExtensions = extensions.LoadMethodExtensions(method.Proto)
+			methodExtensions = mikros_extensions.LoadMethodExtensions(method.Proto)
 		)
 
 		index := slices.IndexFunc(messages, func(m *Message) bool {
@@ -86,8 +91,8 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 
 		m := &Method{
 			Name:                  method.Name,
-			RequestName:           method.RequestType.Name,
-			ResponseName:          method.ResponseType.Name,
+			RequestType:           method.RequestType.Name,
+			ResponseType:          method.ResponseType.Name,
 			AdditionalHTTPMethods: getAdditionalHttpRules(method),
 			Request:               msg,
 			PathArguments:         path,
@@ -95,6 +100,8 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message) ([]*Method, error)
 			HeaderArguments:       header,
 			BodyArguments:         body,
 			ProtoMethod:           method,
+			prefixServiceName:     cfg.Templates.Routes.PrefixServiceName,
+			moduleName:            pkg.ModuleName,
 			endpoint:              endpoint,
 			service:               service,
 			method:                methodExtensions,
@@ -133,7 +140,7 @@ func getPathArguments(m *Message, endpoint *Endpoint) ([]*MethodField, error) {
 	return fields, nil
 }
 
-func getHeaderArguments(m *Message, methodExtensions *extensions.MikrosMethodExtensions) ([]*MethodField, error) {
+func getHeaderArguments(m *Message, methodExtensions *mikros_extensions.MikrosMethodExtensions) ([]*MethodField, error) {
 	var fields []*MethodField
 
 	if methodExtensions == nil {
@@ -162,7 +169,7 @@ func getHeaderArguments(m *Message, methodExtensions *extensions.MikrosMethodExt
 	return fields, nil
 }
 
-func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *extensions.MikrosMethodExtensions) []*MethodField {
+func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []*MethodField {
 	var fields []*MethodField
 
 	if endpoint != nil {
@@ -199,7 +206,7 @@ func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *extensi
 	return fields
 }
 
-func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *extensions.MikrosMethodExtensions) []string {
+func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []string {
 	parameters := getBodyParametersFromEndpoint(m, endpoint, methodExtensions)
 
 	if endpoint != nil {
@@ -214,7 +221,7 @@ func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *ext
 	return parameters
 }
 
-func getBodyParameters(m *Message, endpoint *Endpoint, methodExtensions *extensions.MikrosMethodExtensions) ([]*MethodField, error) {
+func getBodyParameters(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) ([]*MethodField, error) {
 	var fields []*MethodField
 
 	if endpoint != nil {
@@ -245,7 +252,7 @@ func getBodyParameters(m *Message, endpoint *Endpoint, methodExtensions *extensi
 	return fields, nil
 }
 
-func getBodyParametersFromEndpoint(m *Message, endpoint *Endpoint, methodExtensions *extensions.MikrosMethodExtensions) []string {
+func getBodyParametersFromEndpoint(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []string {
 	var parameters []string
 
 	if endpoint != nil {
@@ -300,9 +307,9 @@ func validateBodyArguments(m *Message, endpoint *Endpoint) error {
 func getAdditionalHttpRules(method *protobuf.Method) []HttpRule {
 	var rules []HttpRule
 
-	if googleHttp := extensions.LoadGoogleAnnotations(method.Proto); googleHttp != nil {
+	if googleHttp := mikros_extensions.LoadGoogleAnnotations(method.Proto); googleHttp != nil {
 		for _, r := range googleHttp.GetAdditionalBindings() {
-			method, endpoint := extensions.GetHttpEndpoint(r)
+			method, endpoint := mikros_extensions.GetHttpEndpoint(r)
 			rules = append(rules, HttpRule{
 				Method:   method,
 				Endpoint: endpoint,
@@ -316,7 +323,7 @@ func getAdditionalHttpRules(method *protobuf.Method) []HttpRule {
 func (m *Method) Validate() error {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
-			if authorization.GetMode() == extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM && authorization.GetCustomAuthName() == "" {
+			if authorization.GetMode() == mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM && authorization.GetCustomAuthName() == "" {
 				return fmt.Errorf("custom auth name is required when mode is AUTHORIZATION_MODE_CUSTOM")
 			}
 		}
@@ -335,15 +342,20 @@ func (m *Method) HTTPMethod() string {
 
 func (m *Method) Endpoint() string {
 	if m.endpoint != nil {
-		return m.endpoint.Path
+		endpoint := m.endpoint.Path
+		if m.prefixServiceName {
+			endpoint = fmt.Sprintf("/%v%v", strcase.KebabCase(m.moduleName), endpoint)
+		}
+
+		return endpoint
 	}
 
 	return ""
 }
 
-func (m *Method) EndpointByTemplateKind(kind template.Kind) string {
+func (m *Method) EndpointByTemplateKind(kind tpl_types.Kind) string {
 	if endpoint := m.Endpoint(); endpoint != "" {
-		if kind == template.KindRust {
+		if kind == tpl_types.KindRust {
 			return translation.RustEndpoint(endpoint)
 		}
 
@@ -365,7 +377,7 @@ func (m *Method) AuthModeKey() string {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
 			mode := authorization.GetMode()
-			if mode == extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM {
+			if mode == mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM {
 				return authorization.GetCustomAuthName()
 			}
 		}
@@ -405,7 +417,7 @@ func (m *Method) HasHeaderArguments() bool {
 func (m *Method) HasAuth() bool {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
-			return authorization.GetMode() != extensions.AuthorizationMode_AUTHORIZATION_MODE_NO_AUTH
+			return authorization.GetMode() != mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_NO_AUTH
 		}
 	}
 
@@ -436,7 +448,7 @@ func (m *Method) GetPathParameterNames() string {
 	return ""
 }
 
-func (m *Method) GetPathParameterTypesByTemplateKind(kind template.Kind) string {
+func (m *Method) GetPathParameterTypesByTemplateKind(kind tpl_types.Kind) string {
 	if m.HasPathArguments() {
 		types := make([]string, len(m.PathArguments))
 		for i, arg := range m.PathArguments {

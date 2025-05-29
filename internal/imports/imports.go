@@ -8,7 +8,7 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 type Context struct {
@@ -36,8 +36,12 @@ type Field struct {
 	IsArray                        bool
 	IsProtobufTimestamp            bool
 	IsOutboundBitflag              bool
+	IsMessage                      bool
+	OutboundHide                   bool
 	ConversionDomainToWire         string
+	ConversionWireToDomain         string
 	ConversionWireOutputToOutbound string
+	DomainType                     string
 	WireType                       string
 	OutboundType                   string
 	TestingBinding                 string
@@ -59,25 +63,26 @@ type Import struct {
 	Name  string
 }
 
-func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[template.Name][]*Import {
+func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[tpl_types.Name][]*Import {
 	var (
-		golang  = template.KindGo
-		testing = template.KindTest
+		golang  = tpl_types.KindGo
+		testing = tpl_types.KindTest
 	)
 
-	return map[template.Name][]*Import{
-		template.NewName(golang, "domain"):               loadDomainTemplateImports(ctx, cfg),
-		template.NewName(golang, "enum"):                 loadEnumTemplateImports(),
-		template.NewName(golang, "custom_api"):           loadCustomApiTemplateImports(ctx),
-		template.NewName(golang, "http_server"):          loadHttpServerTemplateImports(),
-		template.NewName(golang, "routes"):               loadRoutesTemplateImports(ctx),
-		template.NewName(golang, "wire_input"):           loadWireInputTemplateImports(ctx, cfg),
-		template.NewName(golang, "outbound"):             loadOutboundTemplateImports(ctx, cfg),
-		template.NewName(golang, "common"):               loadCommonTemplateImports(ctx),
-		template.NewName(golang, "validation"):           loadValidationTemplateImports(ctx, cfg),
-		template.NewName(testing, "testing"):             loadTestingTemplateImports(ctx, cfg),
-		template.NewName(testing, "http_server"):         loadTestingHttpServerTemplateImports(ctx),
-		template.NewName(template.KindRust, "router.rs"): loadRustRouterTemplateImports(ctx),
+	return map[tpl_types.Name][]*Import{
+		tpl_types.NewName(golang, "domain"):                loadDomainTemplateImports(ctx, cfg),
+		tpl_types.NewName(golang, "enum"):                  loadEnumTemplateImports(),
+		tpl_types.NewName(golang, "custom_api"):            loadCustomApiTemplateImports(ctx),
+		tpl_types.NewName(golang, "http_server"):           loadHttpServerTemplateImports(),
+		tpl_types.NewName(golang, "routes"):                loadRoutesTemplateImports(ctx),
+		tpl_types.NewName(golang, "wire"):                  loadWireTemplateImports(ctx, cfg),
+		tpl_types.NewName(golang, "wire_input"):            loadWireInputTemplateImports(ctx, cfg),
+		tpl_types.NewName(golang, "outbound"):              loadOutboundTemplateImports(ctx, cfg),
+		tpl_types.NewName(golang, "common"):                loadCommonTemplateImports(ctx),
+		tpl_types.NewName(golang, "validation"):            loadValidationTemplateImports(ctx, cfg),
+		tpl_types.NewName(testing, "testing"):              loadTestingTemplateImports(ctx, cfg),
+		tpl_types.NewName(testing, "http_server"):          loadTestingHttpServerTemplateImports(ctx),
+		tpl_types.NewName(tpl_types.KindRust, "router.rs"): loadRustRouterTemplateImports(ctx),
 	}
 }
 
@@ -212,6 +217,9 @@ var (
 func checkImportNeededFromFieldType(fieldType string) (string, bool) {
 	if strings.HasPrefix(fieldType, "map[") {
 		fieldType = mapTypeRe.ReplaceAllString(fieldType, "")
+	}
+	if strings.HasPrefix(fieldType, "[]") {
+		fieldType = strings.TrimPrefix(fieldType, "[]")
 	}
 
 	fieldType = strings.TrimPrefix(fieldType, "*")

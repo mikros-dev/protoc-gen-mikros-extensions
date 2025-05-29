@@ -3,22 +3,23 @@ package main
 import (
 	"embed"
 
-	"google.golang.org/protobuf/proto"
-	descriptor "google.golang.org/protobuf/types/descriptorpb"
-
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/mikros/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
+
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/examples/addons/domain_improve/proto"
 )
 
-func loadDomainImprove(msg *descriptor.DescriptorProto) *extensions.DomainImprove {
-	if msg.Options != nil {
-		v := proto.GetExtension(msg.Options, extensions.E_Improve)
-		if val, ok := v.(*extensions.DomainImprove); ok {
-			return val
+func loadDomainImprove(msg *context.Message) *proto.DomainImprove {
+	if extensions.HasExtension(msg.ProtoMessage.Proto.GetOptions(), proto.E_Improve.TypeDescriptor()) {
+		var domainImprove proto.DomainImprove
+		if err := extensions.RetrieveExtension(msg.ProtoMessage.Proto.GetOptions(), proto.E_Improve.TypeDescriptor(), &domainImprove); err != nil {
+			return nil
 		}
+
+		return &domainImprove
 	}
 
 	return nil
@@ -32,7 +33,7 @@ type Context struct {
 }
 
 func (c *Context) HasImproveDomainCall(msg *context.Message) bool {
-	if d := loadDomainImprove(msg.ProtoMessage.Proto); d != nil {
+	if d := loadDomainImprove(msg); d != nil {
 		return d.GetNewApi()
 	}
 
@@ -50,17 +51,17 @@ func (d *DomainImproveAddon) GetContext(ctx interface{}) interface{} {
 	return addonCtx
 }
 
-func (d *DomainImproveAddon) GetTemplateImports(_ template.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
+func (d *DomainImproveAddon) GetTemplateImports(_ tpl_types.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
 	// Does not have imports
 	return nil
 }
 
-func (d *DomainImproveAddon) GetTemplateValidator(name template.Name, ctx interface{}) (template.ValidateForExecution, bool) {
+func (d *DomainImproveAddon) GetTemplateValidator(name tpl_types.Name, ctx interface{}) (tpl_types.ValidateForExecution, bool) {
 	c := ctx.(*context.Context)
 	pc := c.AddonContext(addonName).(*Context)
 
-	validators := map[template.Name]template.ValidateForExecution{
-		template.NewName(template.KindGo, "domain_improve"): func() bool {
+	validators := map[tpl_types.Name]tpl_types.ValidateForExecution{
+		tpl_types.NewName(tpl_types.KindGo, "domain_improve"): func() bool {
 			for _, msg := range c.DomainMessages() {
 				if pc.HasImproveDomainCall(msg) {
 					return true
@@ -75,8 +76,8 @@ func (d *DomainImproveAddon) GetTemplateValidator(name template.Name, ctx interf
 	return v, ok
 }
 
-func (d *DomainImproveAddon) Kind() template.Kind {
-	return template.KindGo
+func (d *DomainImproveAddon) Kind() tpl_types.Kind {
+	return tpl_types.KindGo
 }
 
 func (d *DomainImproveAddon) Templates() embed.FS {

@@ -10,7 +10,10 @@ import (
 {{end}}
 
 {{range .CustomApiExtensions}}
-{{- range .CustomApiCode}}
+{{- range .CustomBlocks}}
+{{.Block}}
+{{end}}
+{{- range .CustomFunctions}}
 func {{.Signature}} {
     {{.Body}}
 }
