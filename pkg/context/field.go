@@ -302,6 +302,7 @@ func (f *Field) HeaderArgumentByTemplateKind(kind tpl_types.Kind) string {
 
 func (f *Field) ConvertWireOutputToOutboundByTemplateKind(kind tpl_types.Kind, receiver string) string {
 	if kind == tpl_types.KindRust {
+		// TODO: move this code to translate/rust
 		if f.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 			return fmt.Sprintf("%s.%s.unwrap().into()", receiver, f.ProtoName)
 		}

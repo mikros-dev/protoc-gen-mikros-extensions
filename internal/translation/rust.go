@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os/exec"
 	"regexp"
+	"strings"
 
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
@@ -18,13 +19,18 @@ func RustEndpoint(endpoint string) string {
 
 func RustFieldType(fieldType descriptor.FieldDescriptorProto_Type, isOptional, isArray bool, messageType string, field *protobuf.Field) string {
 	rustType := rustFieldType(fieldType)
+
 	if fieldType == descriptor.FieldDescriptorProto_TYPE_ENUM {
 		rustType = rustEnumFieldType()
 	}
+
 	if fieldType == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		rustType = rustMessageFieldType(messageType)
 		if field.IsTimestamp() {
-			rustType = "Option<prost_wkt_types::Timestamp>"
+			rustType = "prost_wkt_types::Timestamp"
+		}
+		if field.IsProtoStruct() {
+			rustType = "prost_wkt_types::Struct"
 		}
 	}
 
@@ -39,10 +45,12 @@ func RustFieldType(fieldType descriptor.FieldDescriptorProto_Type, isOptional, i
 }
 
 func rustEnumFieldType() string {
+	// TODO
 	return ""
 }
 
 func rustMessageFieldType(messageType string) string {
+	messageType = strings.ReplaceAll(messageType, ".", "::")
 	return messageType
 }
 
