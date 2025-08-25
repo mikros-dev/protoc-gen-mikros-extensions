@@ -294,7 +294,7 @@ func (m *Method) Endpoint() string {
 
 func (m *Method) HasRequiredBody() bool {
 	if m.endpoint != nil {
-		return m.endpoint.Body != ""
+		return m.endpoint.Body != "" && !m.SkipAutoParse()
 	}
 
 	return false
@@ -345,6 +345,16 @@ func (m *Method) HasAuth() bool {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
 			return authorization.GetMode() != mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_NO_AUTH
+		}
+	}
+
+	return false
+}
+
+func (m *Method) SkipAutoParse() bool {
+	if m.method != nil {
+		if http := m.method.GetHttp(); http != nil {
+			return http.GetSkipAutoParse()
 		}
 	}
 

@@ -2,7 +2,7 @@ module examples
 
 replace github.com/mikros-dev/protoc-gen-mikros-extensions => ./../..
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/mikros-dev/protoc-gen-mikros-extensions v0.0.0-00010101000000-000000000000

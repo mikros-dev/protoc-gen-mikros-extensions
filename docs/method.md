@@ -10,7 +10,8 @@ An RPC method has the following options available to be used:
 
 Available options:
 
-| Name     | Type   | Modifier | Description                                   |
-|----------|--------|----------|-----------------------------------------------|
-| auth_arg | string | array    | Sets authorization values for the RPC.        |
-| header   | string | array    | Sets header variables that the RPC will have. |
+| Name            | Type   | Modifier | Description                                                                                                                                |
+|-----------------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| auth_arg        | string | array    | Sets authorization values for the RPC.                                                                                                     |
+| header          | string | array    | Sets header variables that the RPC will have.                                                                                              |
+| skip_auto_parse | bool   |          | Enables or disables the generated code for parsing the request message<br> in the handler, i.e, it will be client responsibility to parse. |
