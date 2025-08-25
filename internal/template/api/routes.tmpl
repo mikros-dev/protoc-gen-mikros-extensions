@@ -71,6 +71,7 @@ func (w *routesWrapper) {{.Name}}(ctx *fasthttp.RequestCtx) {
 func (w *routesWrapper) parse{{$request.Name}}FromRequest(ctx *fasthttp.RequestCtx) (*{{$request.Name}}, error) {
     request := &{{$request.DomainName}}{}
 
+    {{- if not .SkipAutoParse}}
     {{- if .HasRequiredBody}}
     if len(ctx.PostBody()) == 0 {
         return nil, emptyBodyError
@@ -105,6 +106,7 @@ func (w *routesWrapper) parse{{$request.Name}}FromRequest(ctx *fasthttp.RequestC
             return nil, fmt.Errorf("{{.ProtoName}}@header: %w", err)
         }
     }
+    {{- end}}
     {{- end}}
 
     return request.IntoWireInput(), nil
