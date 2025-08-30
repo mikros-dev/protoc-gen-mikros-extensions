@@ -294,7 +294,7 @@ func (m *Method) Endpoint() string {
 
 func (m *Method) HasRequiredBody() bool {
 	if m.endpoint != nil {
-		return m.endpoint.Body != "" && !m.SkipAutoParse()
+		return m.endpoint.Body != "" && !m.ParseRequestInService()
 	}
 
 	return false
@@ -351,10 +351,10 @@ func (m *Method) HasAuth() bool {
 	return false
 }
 
-func (m *Method) SkipAutoParse() bool {
+func (m *Method) ParseRequestInService() bool {
 	if m.method != nil {
 		if http := m.method.GetHttp(); http != nil {
-			return http.GetSkipAutoParse()
+			return http.GetParseRequestInService()
 		}
 	}
 
