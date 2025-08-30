@@ -35,7 +35,7 @@ message MikrosMethodExtensions {
 message HttpMethodExtensions {
   repeated string header = 1;
   repeated string auth_arg = 2;
-  optional bool skip_auto_parse = 3;
+  optional bool parse_request_in_service = 3;
 }
 
 extend google.protobuf.EnumOptions {
