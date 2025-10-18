@@ -1,6 +1,6 @@
 package imports
 
-func loadRoutesTemplateImports(ctx *Context) []*Import {
+func loadFasthttpRoutesTemplateImports(ctx *Context) []*Import {
 	imports := map[string]*Import{
 		packages["fasthttp"].Name: packages["fasthttp"],
 		packages["fmt"].Name:      packages["fmt"],

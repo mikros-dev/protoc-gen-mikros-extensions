@@ -182,10 +182,10 @@ func (c *Context) GetTemplateValidator(name tpl_types.Name, _ interface{}) (tpl_
 		tpl_types.NewName("api", "custom_api"): func() bool {
 			return len(c.CustomApiExtensions()) > 0
 		},
-		tpl_types.NewName("api", "http_server"): func() bool {
+		tpl_types.NewName("api", "fasthttp_server"): func() bool {
 			return c.IsHTTPService()
 		},
-		tpl_types.NewName("api", "routes"): func() bool {
+		tpl_types.NewName("api", "fasthttp_routes"): func() bool {
 			return c.IsHTTPService()
 		},
 		tpl_types.NewName("api", "outbound"): func() bool {

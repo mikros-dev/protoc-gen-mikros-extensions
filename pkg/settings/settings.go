@@ -39,7 +39,7 @@ type Database struct {
 }
 
 type Http struct {
-	Framework string `toml:"framework" validate:"oneof=fasthttp" default:"fasthttp"`
+	Framework string `toml:"framework" validate:"oneof=fasthttp std" default:"std"`
 }
 
 type Templates struct {

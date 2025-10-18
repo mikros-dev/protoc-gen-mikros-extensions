@@ -1,6 +1,6 @@
 package imports
 
-func loadHttpServerTemplateImports() []*Import {
+func loadFasthttpServerTemplateImports() []*Import {
 	imports := map[string]*Import{
 		packages["context"].Name:         packages["context"],
 		packages["errors"].Name:          packages["errors"],
