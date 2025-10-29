@@ -24,6 +24,7 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 			var (
 				fieldExtensions = mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto)
 				validation      *mikros_extensions.FieldValidateOptions
+				call            = f.ValidationCall
 			)
 
 			if fieldExtensions != nil {
@@ -33,12 +34,10 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 				continue
 			}
 
-			if validation.GetRule() == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
-				imports["regex"] = packages["regex"]
+			if ok := addRegexForValidationTemplate(imports, validation); ok {
 				continue
 			}
 
-			call := f.ValidationCall
 			if cfg.Validations != nil && cfg.Validations.RulePackageImport != nil {
 				if strings.Contains(call, fmt.Sprintf("%s.", cfg.Validations.RulePackageImport.Alias)) {
 					imports[cfg.Validations.RulePackageImport.Name] = &Import{
@@ -63,12 +62,21 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 	return toSlice(imports)
 }
 
+func addRegexForValidationTemplate(imports map[string]*Import, validation *mikros_extensions.FieldValidateOptions) bool {
+	if validation.GetRule() == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
+		imports["regex"] = packages["regex"]
+		return true
+	}
+
+	return false
+}
+
 func isConditionalValidation(call string) bool {
 	return strings.HasPrefix(call, "validation.When(") && strings.HasSuffix(call, ", validation.Required)")
 }
 
 // filterExternalModulesValues extracts values from a validation.When call
-// that reference symbols from external modules (i.e., prefixed with module name).
+// that references symbols from external modules (i.e., prefixed with module name).
 func filterExternalModulesValues(call string) []string {
 	call = strings.TrimPrefix(call, "validation.When(")
 	call = strings.TrimSuffix(call, ", validation.Required)")

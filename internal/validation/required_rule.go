@@ -8,8 +8,8 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
 
-type RequiredCondition struct {
-	Rules                      []*RequiredFieldRuleOptions
+type requiredCondition struct {
+	Rules                      []*requiredFieldRuleOptions
 	Negative                   bool
 	UsePrefixCondition         bool
 	DefaultConditionOperation  string
@@ -17,7 +17,7 @@ type RequiredCondition struct {
 	RuleConditionOperation     string
 }
 
-type RequiredFieldRuleOptions struct {
+type requiredFieldRuleOptions struct {
 	FieldName string
 	Value     string
 	Type      descriptor.FieldDescriptorProto_Type
@@ -32,7 +32,7 @@ type requiredRuleParseOptions struct {
 
 // loadRequiredCondition parses the required field condition, if any. It
 // ensures that only one required option is used at the moment.
-func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
+func loadRequiredCondition(options *CallOptions) (*requiredCondition, error) {
 	var (
 		found             = 0
 		validationOptions = options.Options.GetValidate()
@@ -47,7 +47,7 @@ func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 		return nil, err
 	}
 	if requiredIf != nil {
-		found += 1
+		found++
 	}
 
 	requiredWith, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
@@ -59,7 +59,7 @@ func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 		return nil, err
 	}
 	if requiredWith != nil {
-		found += 1
+		found++
 	}
 
 	requiredAll, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
@@ -69,7 +69,7 @@ func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 		return nil, err
 	}
 	if requiredAll != nil {
-		found += 1
+		found++
 	}
 
 	requiredAny, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
@@ -79,7 +79,7 @@ func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 		return nil, err
 	}
 	if requiredAny != nil {
-		found += 1
+		found++
 	}
 
 	if found > 1 {
@@ -121,8 +121,11 @@ func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
 }
 
 // parseRequiredRuleOptions parses field required tag options strings into a
-// validator.RequiredCondition structure.
-func parseRequiredRuleOptions(options *CallOptions, parseOptions *requiredRuleParseOptions) (*RequiredCondition, error) {
+// validator.requiredCondition structure.
+func parseRequiredRuleOptions(
+	options *CallOptions,
+	parseOptions *requiredRuleParseOptions,
+) (*requiredCondition, error) {
 	var (
 		negative  bool
 		fieldRule string
@@ -133,7 +136,11 @@ func parseRequiredRuleOptions(options *CallOptions, parseOptions *requiredRulePa
 	}
 	if parseOptions.Reverse != "" {
 		if fieldRule != "" {
-			return nil, fmt.Errorf("cannot have both '%s' and '%s' options together", parseOptions.Condition, parseOptions.Reverse)
+			return nil, fmt.Errorf(
+				"cannot have both '%s' and '%s' options together",
+				parseOptions.Condition,
+				parseOptions.Reverse,
+			)
 		}
 
 		fieldRule = parseOptions.Reverse
@@ -150,25 +157,29 @@ func parseRequiredRuleOptions(options *CallOptions, parseOptions *requiredRulePa
 		return nil, err
 	}
 
-	return &RequiredCondition{
+	return &requiredCondition{
 		Rules:    rule,
 		Negative: negative,
 	}, nil
 }
 
 // parseFieldRule parses a strings with formats "field" or "field value"
-// into a validator.RequiredFieldRuleOptions structure. It also finds the
+// into a validator.requiredFieldRuleOptions structure. It also finds the
 // field type inside the protobuf structures to allow later validation.
-func parseFieldRule(fieldRule string, options *CallOptions, maxFields int) ([]*RequiredFieldRuleOptions, error) {
+func parseFieldRule(fieldRule string, options *CallOptions, maxFields int) ([]*requiredFieldRuleOptions, error) {
 	var (
-		rules  []*RequiredFieldRuleOptions
+		rules  []*requiredFieldRuleOptions
 		fields [][]string
 		parts  = strings.Split(fieldRule, " ")
 	)
 
 	// Validates if we have the expected number of fields from fieldRule
 	if maxFields != 0 && len(parts) != maxFields {
-		return nil, fmt.Errorf("malformed field rule, the number of fields should be '%d' but found '%d'", maxFields, len(parts))
+		return nil, fmt.Errorf(
+			"malformed field rule, the number of fields should be '%d' but found '%d'",
+			maxFields,
+			len(parts),
+		)
 	}
 	if maxFields == 0 && (len(parts)%2 != 0) {
 		// No maxFields means that the rule should have an even number of parts
@@ -219,7 +230,7 @@ func parseFieldRule(fieldRule string, options *CallOptions, maxFields int) ([]*R
 			}
 		}
 
-		rules = append(rules, &RequiredFieldRuleOptions{
+		rules = append(rules, &requiredFieldRuleOptions{
 			FieldName: name,
 			Type:      fieldType,
 			TypeName:  typeName,
@@ -232,7 +243,10 @@ func parseFieldRule(fieldRule string, options *CallOptions, maxFields int) ([]*R
 
 // findFieldProtoSpec uses a field name, which can be in a golang format or in
 // the protobuf format, to find its real information, such as name and type.
-func findFieldProtoSpec(name string, options *CallOptions) (string, descriptor.FieldDescriptorProto_Type, string, error) {
+func findFieldProtoSpec(
+	name string,
+	options *CallOptions,
+) (string, descriptor.FieldDescriptorProto_Type, string, error) {
 	var (
 		message = options.Message.Proto
 		schema  = options.Message.Schema

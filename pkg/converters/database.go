@@ -8,13 +8,17 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 )
 
+// Database represents a database conversion mechanism used to generate
+// the proper source code inside the templates.
 type Database struct {
 	Kind DatabaseKind
 	defs *mikros_extensions.MikrosFieldExtensions
 }
 
+// DatabaseKind represents the database kind.
 type DatabaseKind int
 
+// Supported database kinds.
 const (
 	MongoDB DatabaseKind = iota
 	Gorm
@@ -35,6 +39,7 @@ func databaseFromString(kind string, defs *mikros_extensions.MikrosFieldExtensio
 	return db
 }
 
+// FieldName returns the database field name for the given name.
 func (d *Database) FieldName(name string) string {
 	fieldName := name
 	if d.Kind == MongoDB {
@@ -54,6 +59,7 @@ func (d *Database) FieldName(name string) string {
 	return strcase.SnakeCase(fieldName)
 }
 
+// Tag returns the database struct tag for the given name.
 func (d *Database) Tag(name string) string {
 	if d.Kind == MongoDB {
 		omitempty := ",omitempty"

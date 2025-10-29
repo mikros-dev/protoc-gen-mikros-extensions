@@ -1,9 +1,13 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
+// Name represents a template name.
 type Name string
 
+// NewName returns a new template name.
 func NewName(prefix, name string) Name {
 	return Name(fmt.Sprintf("%s:%s", prefix, name))
 }

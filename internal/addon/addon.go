@@ -9,10 +9,16 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
 )
 
+// Addon represents a dynamic plugin integration enabling extended functionality
+// at runtime.
 type Addon struct {
+	// Symbol holds a reference to the addon implementation, which must adhere
+	// to specific interfaces.
 	Symbol interface{}
 }
 
+// LoadAddons loads addon plugins from the specified path, filters files with
+// `.so` extensions, and initializes Addon objects.
 func LoadAddons(path string) ([]*Addon, error) {
 	files, err := os.ReadDir(path)
 	if err != nil {
@@ -54,6 +60,8 @@ func loadAddon(path string) (*Addon, error) {
 	}, nil
 }
 
+// Addon retrieves the addon implementation from the Symbol field if it
+// implements the addon.Addon interface.
 func (a *Addon) Addon() addon.Addon {
 	if ad, ok := a.Symbol.(addon.Addon); ok {
 		return ad
@@ -63,6 +71,8 @@ func (a *Addon) Addon() addon.Addon {
 	return nil
 }
 
+// OutboundExtension retrieves the addon implementation from the Symbol field
+// if it implements the addon.OutboundExtension interface.
 func (a *Addon) OutboundExtension() addon.OutboundExtension {
 	if ad, ok := a.Symbol.(addon.OutboundExtension); ok {
 		return ad

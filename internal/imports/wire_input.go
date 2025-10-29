@@ -22,7 +22,7 @@ func loadWireInputImportsFromMessages(ctx *Context, cfg *settings.Settings, mess
 	for _, msg := range messages {
 		for _, f := range msg.Fields {
 			var (
-				call             = cfg.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr) + "("
+				call             = cfg.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr) + "("
 				conversionToWire = strings.TrimPrefix(f.ConversionDomainToWire, call)
 				wireType         = strings.TrimPrefix(f.WireType, "[]*")
 			)

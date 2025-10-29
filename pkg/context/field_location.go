@@ -1,27 +1,30 @@
 package context
 
+// FieldLocation represents the location of a field in an HTTP request,
+// such as body, query, path, or header.
 type FieldLocation int32
 
+// Supported field locations.
 const (
-	FieldLocation_Unknown FieldLocation = iota
-	FieldLocation_Body
-	FieldLocation_Query
-	FieldLocation_Path
-	FieldLocation_Header
+	FieldLocationUnknown FieldLocation = iota
+	FieldLocationBody
+	FieldLocationQuery
+	FieldLocationPath
+	FieldLocationHeader
 )
 
 func (l FieldLocation) String() string {
 	switch l {
-	case FieldLocation_Body:
+	case FieldLocationBody:
 		return "body"
 
-	case FieldLocation_Query:
+	case FieldLocationQuery:
 		return "query"
 
-	case FieldLocation_Path:
+	case FieldLocationPath:
 		return "path"
 
-	case FieldLocation_Header:
+	case FieldLocationHeader:
 		return "header"
 
 	default:

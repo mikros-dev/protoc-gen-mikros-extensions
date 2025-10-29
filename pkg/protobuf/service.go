@@ -8,6 +8,7 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
 
+// Service represents a service loaded from protobuf.
 type Service struct {
 	Name    string
 	Methods []*Method
@@ -18,7 +19,8 @@ type parseServiceOptions struct {
 	Files map[string]*protogen.File
 }
 
-func (p *parseServiceOptions) GetApiFile() *protogen.File {
+// GetAPIFile returns the first file which has a service definition.
+func (p *parseServiceOptions) GetAPIFile() *protogen.File {
 	for _, f := range p.Files {
 		// Get the first which has a service definition.
 		if len(f.Services) > 0 {
@@ -30,7 +32,7 @@ func (p *parseServiceOptions) GetApiFile() *protogen.File {
 }
 
 func parseService(options *parseServiceOptions) *Service {
-	api := options.GetApiFile()
+	api := options.GetAPIFile()
 
 	// Don't do anything if the package does not have an _api.proto file.
 	if api == nil {
@@ -53,6 +55,7 @@ func parseService(options *parseServiceOptions) *Service {
 	}
 }
 
+// IsHTTP returns true if the service has any HTTP methods.
 func (s *Service) IsHTTP() bool {
 	for _, m := range s.Methods {
 		if m.HTTPMethod != "" {

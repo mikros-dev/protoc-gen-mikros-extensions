@@ -57,7 +57,12 @@ func loadImportsFromMessagesToWire(ctx *Context, cfg *settings.Settings, message
 			}
 
 			// Import other modules?
-			if module, ok := needsImportAnotherProtoModule(conversionToDomain, domainType, ctx.ModuleName, msg.Receiver); ok {
+			if module, ok := needsImportAnotherProtoModule(
+				conversionToDomain,
+				domainType,
+				ctx.ModuleName,
+				msg.Receiver,
+			); ok {
 				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 			}
 		}

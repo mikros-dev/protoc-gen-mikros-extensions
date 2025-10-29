@@ -7,6 +7,8 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 )
 
+// Enum represents an enumeration with metadata and entries to be used inside
+// templates by its context.
 type Enum struct {
 	IsBitflagKind bool
 	IsErrorCode   bool
@@ -16,6 +18,7 @@ type Enum struct {
 	ProtoEnum     *protobuf.Enum
 }
 
+// EnumEntry represents an entry of an enumeration.
 type EnumEntry struct {
 	HasEntryDefinition bool
 	ProtoName          string
@@ -70,6 +73,8 @@ func loadEnumEntries(enum *descriptor.EnumDescriptorProto) []*EnumEntry {
 	return entries
 }
 
+// HasEntryDefinition returns true if the enum has at least one entry with
+// custom definitions.
 func (e *Enum) HasEntryDefinition() bool {
 	for _, entry := range e.Entries {
 		if entry.HasEntryDefinition {

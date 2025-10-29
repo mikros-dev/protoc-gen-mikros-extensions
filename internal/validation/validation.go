@@ -12,6 +12,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
+// CallOptions represents the options to build a validation call.
 type CallOptions struct {
 	IsArray   bool
 	IsMessage bool
@@ -23,14 +24,17 @@ type CallOptions struct {
 	Message   *protobuf.Message
 }
 
+// Call represents a validation call.
 type Call struct {
 	apiCall string
 }
 
+// NewCall creates a validation call object to retrieve validation expression
+// of fields.
 func NewCall(options *CallOptions) (*Call, error) {
 	var apiCall string
 	if options != nil {
-		c, err := buildApiCall(options)
+		c, err := buildAPICall(options)
 		if err != nil {
 			return nil, err
 		}
@@ -42,7 +46,7 @@ func NewCall(options *CallOptions) (*Call, error) {
 	}, nil
 }
 
-func buildApiCall(options *CallOptions) (string, error) {
+func buildAPICall(options *CallOptions) (string, error) {
 	if options.Options == nil || options.Options.GetValidate() == nil {
 		// No validation
 		return "", nil
@@ -76,7 +80,10 @@ func buildCall(options *CallOptions) (string, error) {
 
 	if validationOptions.GetDive() {
 		if !options.IsArray && !options.IsMessage {
-			return "", fmt.Errorf("field '%s' must be an array or a another message to have dive rule option enabled", options.ProtoName)
+			return "", fmt.Errorf(
+				"field '%s' must be an array or a another message to have dive rule option enabled",
+				options.ProtoName,
+			)
 		}
 
 		if call != "" {
@@ -124,7 +131,7 @@ func buildCall(options *CallOptions) (string, error) {
 	return handleEndCall(options, requiredCondition, call), nil
 }
 
-func handleBeginCall(options *CallOptions, requiredCondition *RequiredCondition) string {
+func handleBeginCall(options *CallOptions, requiredCondition *requiredCondition) string {
 	if requiredCondition == nil {
 		return ""
 	}
@@ -133,7 +140,7 @@ func handleBeginCall(options *CallOptions, requiredCondition *RequiredCondition)
 	return fmt.Sprintf("validation.When(%s", condition)
 }
 
-func buildConditionalValidationCall(options *CallOptions, condition *RequiredCondition) string {
+func buildConditionalValidationCall(options *CallOptions, condition *requiredCondition) string {
 	var (
 		args       = ""
 		totalRules = len(condition.Rules)
@@ -208,7 +215,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 	return call, nil
 }
 
-func handleEndCall(options *CallOptions, requiredCondition *RequiredCondition, call string) string {
+func handleEndCall(options *CallOptions, requiredCondition *requiredCondition, call string) string {
 	validationOptions := options.Options.GetValidate()
 	if validationOptions.GetDive() || requiredCondition != nil {
 		call += ")"
@@ -221,6 +228,7 @@ func needsComma(call string) bool {
 	return call != "" && !strings.HasSuffix(call, "(")
 }
 
-func (c *Call) ApiCall() string {
+// APICall returns the API call to be used in the generated code.
+func (c *Call) APICall() string {
 	return c.apiCall
 }

@@ -96,7 +96,7 @@ func toImportsContext(ctx *Context) *imports.Context {
 		wireInput = append(wireInput, messageToImportMessage(m))
 	}
 
-	for _, m := range ctx.CustomApiExtensions() {
+	for _, m := range ctx.CustomAPIExtensions() {
 		wireExtensions = append(wireExtensions, messageToImportMessage(m))
 	}
 
@@ -116,5 +116,39 @@ func toImportsContext(ctx *Context) *imports.Context {
 		ValidatableMessages:     validate,
 		WireExtensions:          wireExtensions,
 		WireInputMessages:       wireInput,
+	}
+}
+
+func fieldToImportField(f *Field) *imports.Field {
+	return &imports.Field{
+		IsArray:                        f.IsArray,
+		IsProtobufTimestamp:            f.ProtoField.IsTimestamp(),
+		IsOutboundBitflag:              f.IsOutboundBitflag(),
+		IsMessage:                      f.IsMessageFromOtherPackage() || f.ProtoField.IsMessageFromPackage(),
+		OutboundHide:                   f.OutboundHide(),
+		ConversionDomainToWire:         f.ConvertDomainTypeToWireType(),
+		ConversionWireToDomain:         f.ConvertWireTypeToDomainType(),
+		ConversionWireOutputToOutbound: f.ConvertWireOutputToOutbound("r"),
+		DomainType:                     f.DomainType(),
+		WireType:                       f.WireType(),
+		OutboundType:                   f.OutboundType(),
+		TestingBinding:                 f.TestingValueBinding(),
+		TestingCall:                    f.TestingValueCall(),
+		ValidationCall:                 f.ValidationCall(),
+		ProtoField:                     f.ProtoField,
+	}
+}
+
+func messageToImportMessage(m *Message) *imports.Message {
+	var fields []*imports.Field
+	for _, f := range m.Fields {
+		fields = append(fields, fieldToImportField(f))
+	}
+
+	return &imports.Message{
+		ValidationNeedsCustomRuleOptions: m.ValidationNeedsCustomRuleOptions(),
+		Receiver:                         m.GetReceiverName(),
+		Fields:                           fields,
+		ProtoMessage:                     m.ProtoMessage,
 	}
 }

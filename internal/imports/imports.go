@@ -11,6 +11,7 @@ import (
 	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
+// Context represents the context template information specific for imports.
 type Context struct {
 	HasValidatableMessage   bool
 	OutboundHasBitflagField bool
@@ -25,6 +26,7 @@ type Context struct {
 	WireInputMessages       []*Message
 }
 
+// Message represents a message.
 type Message struct {
 	ValidationNeedsCustomRuleOptions bool
 	IsWireInputKind                  bool
@@ -33,6 +35,7 @@ type Message struct {
 	ProtoMessage                     *protobuf.Message
 }
 
+// Field represents a field inside a Message.
 type Field struct {
 	IsArray                        bool
 	IsProtobufTimestamp            bool
@@ -51,23 +54,26 @@ type Field struct {
 	ProtoField                     *protobuf.Field
 }
 
+// Method represents a method declared inside a service.
 type Method struct {
 	HasRequiredBody    bool
 	HasQueryArguments  bool
 	HasHeaderArguments bool
 }
 
+// Import represents an import statement inside a template.
 type Import struct {
 	Alias string
 	Name  string
 }
 
+// LoadTemplateImports loads the imports for the templates.
 func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[tpl_types.Name][]*Import {
 	return map[tpl_types.Name][]*Import{
 		tpl_types.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
 		tpl_types.NewName("api", "enum"):            loadEnumTemplateImports(),
-		tpl_types.NewName("api", "custom_api"):      loadCustomApiTemplateImports(ctx),
-		tpl_types.NewName("api", "http_server"):     loadHttpServerTemplateImports(),
+		tpl_types.NewName("api", "custom_api"):      loadCustomAPITemplateImports(ctx),
+		tpl_types.NewName("api", "http_server"):     loadHTTPServerTemplateImports(),
 		tpl_types.NewName("api", "routes"):          loadRoutesTemplateImports(ctx),
 		tpl_types.NewName("api", "wire"):            loadWireTemplateImports(ctx, cfg),
 		tpl_types.NewName("api", "wire_input"):      loadWireInputTemplateImports(ctx, cfg),
@@ -87,7 +93,7 @@ func toSlice(ipt map[string]*Import) []*Import {
 
 	for _, i := range ipt {
 		s[index] = i
-		index += 1
+		index++
 	}
 
 	slices.SortFunc(s, func(a, b *Import) int {
@@ -107,9 +113,16 @@ func toSlice(ipt map[string]*Import) []*Import {
 	return s
 }
 
+func addConvertersIfNeeded(imports map[string]*Import, cfg *settings.Settings, binding string) {
+	// Import user converters package?
+	if i, ok := needsUserConvertersPackage(cfg, binding); ok {
+		imports["converters"] = i
+	}
+}
+
 func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*Import, bool) {
 	if cfg.Templates.Common != nil {
-		for _, dep := range cfg.Templates.Common.Api {
+		for _, dep := range cfg.Templates.Common.API {
 			var moduleName string
 			if dep.Import != nil {
 				moduleName = dep.Import.ModuleName()
@@ -125,6 +138,32 @@ func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (
 	}
 
 	return nil, false
+}
+
+func addTimeIfNeeded(imports map[string]*Import, f *Field) bool {
+	// Import time package?
+	if f.IsProtobufTimestamp {
+		imports["time"] = packages["time"]
+		return true
+	}
+
+	return false
+}
+
+func addProtoTimestampIfNeeded(imports map[string]*Import, wireType string) bool {
+	// Import proto timestamp package?
+	if strings.HasPrefix(wireType, "ts.") || strings.HasPrefix(wireType, "*ts.") {
+		imports["prototimestamp"] = packages["prototimestamp"]
+		return true
+	}
+
+	return false
+}
+
+func addModuleIfNeeded(imports map[string]*Import, binding, fieldType, currentModule, receiver, fullPath string) {
+	if module, ok := needsImportAnotherProtoModule(binding, fieldType, currentModule, receiver); ok {
+		imports[module] = importAnotherModule(module, currentModule, fullPath)
+	}
 }
 
 // needsImportAnotherProtoModule checks if a conversion call that is being made must have

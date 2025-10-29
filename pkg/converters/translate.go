@@ -4,6 +4,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// ProtoTypeToGoType converts a protobuf type to a Go type.
 func ProtoTypeToGoType(protobufType protoreflect.Kind, messageType, moduleName string) string {
 	switch protobufType {
 	case protoreflect.BoolKind:

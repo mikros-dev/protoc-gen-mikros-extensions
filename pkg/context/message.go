@@ -11,6 +11,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
+// Message represents a message to be used inside templates by its context.
 type Message struct {
 	Name         string
 	DomainName   string
@@ -25,11 +26,11 @@ type Message struct {
 	extensions    *mikros_extensions.MikrosMessageExtensions
 }
 
-type LoadMessagesOptions struct {
+type loadMessagesOptions struct {
 	Settings *settings.Settings
 }
 
-func loadMessages(pkg *protobuf.Protobuf, opt LoadMessagesOptions) ([]*Message, error) {
+func loadMessages(pkg *protobuf.Protobuf, opt loadMessagesOptions) ([]*Message, error) {
 	var (
 		messages      = make([]*Message, len(pkg.Messages))
 		isHTTPService bool
@@ -49,7 +50,7 @@ func loadMessages(pkg *protobuf.Protobuf, opt LoadMessagesOptions) ([]*Message, 
 		)
 
 		for i, f := range m.Fields {
-			field, err := loadField(LoadFieldOptions{
+			field, err := loadField(loadFieldOptions{
 				IsHTTPService:    isHTTPService,
 				ModuleName:       pkg.ModuleName,
 				Receiver:         getReceiver(m.Name),
@@ -106,10 +107,12 @@ func getEndpointFromMessage(msgName string, pkg *protobuf.Protobuf) *Endpoint {
 	return nil
 }
 
+// GetReceiverName returns the receiver name for the message.
 func (m *Message) GetReceiverName() string {
 	return getReceiver(m.Name)
 }
 
+// HasArrayField returns true if the message has at least one array field.
 func (m *Message) HasArrayField() bool {
 	for _, field := range m.Fields {
 		if field.IsArray {
@@ -120,6 +123,7 @@ func (m *Message) HasArrayField() bool {
 	return false
 }
 
+// HasMapField returns true if the message has at least one map field.
 func (m *Message) HasMapField() bool {
 	for _, field := range m.Fields {
 		if field.IsMap {
@@ -130,6 +134,7 @@ func (m *Message) HasMapField() bool {
 	return false
 }
 
+// BindableFields returns the fields that can be bound.
 func (m *Message) BindableFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return field.IsBindable()
@@ -150,6 +155,7 @@ func (m *Message) BindableFields(templateName string) []*Field {
 	return fields
 }
 
+// ArrayFields returns the fields that are arrays.
 func (m *Message) ArrayFields() []*Field {
 	var fields []*Field
 	for _, field := range m.Fields {
@@ -161,6 +167,7 @@ func (m *Message) ArrayFields() []*Field {
 	return fields
 }
 
+// DomainExport returns true if the message should be exported to the domain.
 func (m *Message) DomainExport() bool {
 	if m.extensions != nil {
 		if options := m.extensions.GetDomain(); options != nil {
@@ -171,6 +178,8 @@ func (m *Message) DomainExport() bool {
 	return true
 }
 
+// OutboundExport returns true if the message should be exported to the outbound
+// template.
 func (m *Message) OutboundExport() bool {
 	// Response messages from HTTP services always have outbound enabled
 	if m.Type == converters.WireOutputMessage && m.isHTTPService {
@@ -185,6 +194,7 @@ func (m *Message) OutboundExport() bool {
 	return false
 }
 
+// MapFields returns the fields that are maps.
 func (m *Message) MapFields(templateName string) []*Field {
 	var fields []*Field
 	for _, field := range m.GetFields(templateName) {
@@ -196,7 +206,9 @@ func (m *Message) MapFields(templateName string) []*Field {
 	return fields
 }
 
-func (m *Message) HasCustomApiCodeExtension() bool {
+// HasCustomAPICodeExtension returns true if the message has custom API code
+// defined in it.
+func (m *Message) HasCustomAPICodeExtension() bool {
 	if m.extensions != nil {
 		if options := m.extensions.GetCustomApi(); options != nil {
 			return len(options.GetFunction()) > 0 || len(options.GetBlock()) > 0
@@ -206,11 +218,13 @@ func (m *Message) HasCustomApiCodeExtension() bool {
 	return false
 }
 
+// CustomFunction represents a custom function defined in a message.
 type CustomFunction struct {
 	Signature string
 	Body      string
 }
 
+// CustomFunctions returns the custom functions defined in the message.
 func (m *Message) CustomFunctions() []*CustomFunction {
 	var customCodes []*CustomFunction
 
@@ -228,10 +242,12 @@ func (m *Message) CustomFunctions() []*CustomFunction {
 	return customCodes
 }
 
+// CustomBlock represents a custom block defined in a message.
 type CustomBlock struct {
 	Block string
 }
 
+// CustomBlocks returns the custom blocks defined in the message.
 func (m *Message) CustomBlocks() []*CustomBlock {
 	var customBlocks []*CustomBlock
 
@@ -248,6 +264,7 @@ func (m *Message) CustomBlocks() []*CustomBlock {
 	return customBlocks
 }
 
+// GetFields returns the fields of the message.
 func (m *Message) GetFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return true
@@ -268,6 +285,7 @@ func (m *Message) GetFields(templateName string) []*Field {
 	return fields
 }
 
+// HasBitflagField returns true if the message has at least one bitflag field.
 func (m *Message) HasBitflagField() bool {
 	for _, field := range m.Fields {
 		if field.IsOutboundBitflag() {
@@ -278,6 +296,8 @@ func (m *Message) HasBitflagField() bool {
 	return false
 }
 
+// HasValidatableField returns true if the message has at least one field that
+// is validatable.
 func (m *Message) HasValidatableField() bool {
 	for _, field := range m.Fields {
 		if field.IsValidatable() {
@@ -288,6 +308,8 @@ func (m *Message) HasValidatableField() bool {
 	return false
 }
 
+// ValidationNeedsCustomRuleOptions returns true if the validation needs custom
+// rule options.
 func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 	for _, field := range m.Fields {
 		ext := mikros_extensions.LoadFieldExtensions(field.ProtoField.Proto)
@@ -310,10 +332,12 @@ func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 	return false
 }
 
+// IsWireInputKind returns true if the message is a wire input message.
 func (m *Message) IsWireInputKind() bool {
 	return m.Type == converters.WireInputMessage
 }
 
+// ValidatableFields returns the fields that are validatable.
 func (m *Message) ValidatableFields() []*Field {
 	var fields []*Field
 	for _, f := range m.Fields {

@@ -13,14 +13,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-type NewFieldOptions struct {
-	IsArray        bool
-	GoType         string
-	ProtoField     *protobuf.Field
-	Settings       *settings.Settings
-	FieldConverter *converters.Field
-}
-
+// Field represents a field for testing templates.
 type Field struct {
 	isArray        bool
 	goType         string
@@ -29,6 +22,17 @@ type Field struct {
 	fieldConverter *converters.Field
 }
 
+// NewFieldOptions represents the options used to create a new field for testing
+// templates.
+type NewFieldOptions struct {
+	IsArray        bool
+	GoType         string
+	ProtoField     *protobuf.Field
+	Settings       *settings.Settings
+	FieldConverter *converters.Field
+}
+
+// NewField creates a new field for testing templates.
 func NewField(options *NewFieldOptions) *Field {
 	return &Field{
 		isArray:        options.IsArray,
@@ -39,13 +43,14 @@ func NewField(options *NewFieldOptions) *Field {
 	}
 }
 
+// BindingValue returns the binding expression of a field for testing templates.
 func (f *Field) BindingValue(isPointer bool) string {
 	if f.proto.IsTimestamp() {
 		if f.isArray {
 			return "v.([]*time.Time)"
 		}
 
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
 		return fmt.Sprintf("%s(v.(time.Time))", call)
 	}
 
@@ -65,13 +70,15 @@ func (f *Field) BindingValue(isPointer bool) string {
 
 	binding := fmt.Sprintf("v.(%v)", t)
 	if f.proto.IsOptional() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
 		binding = fmt.Sprintf("%s(%v)", call, binding)
 	}
 
 	return binding
 }
 
+// ValueInitCall returns the value initialization expression of a field for
+// testing templates.
 func (f *Field) ValueInitCall(isPointer bool) string {
 	if c, ok := f.customValueInitCall(); ok {
 		return c
@@ -82,13 +89,17 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 	}
 
 	if f.proto.IsMap() || f.isArray || f.proto.IsMessage() {
-		return fmt.Sprintf("zeroValue(res.%s).Interface().(%s)", f.proto.GoName, f.fieldConverter.DomainTypeForTest(isPointer))
+		return fmt.Sprintf(
+			"zeroValue(res.%s).Interface().(%s)",
+			f.proto.GoName,
+			f.fieldConverter.DomainTypeForTest(isPointer),
+		)
 	}
 
 	if f.proto.Type == descriptor.FieldDescriptorProto_TYPE_STRING {
 		value := `""`
 		if f.proto.IsOptional() {
-			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+			call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
 			value = fmt.Sprintf("%s(%s)", call, value)
 		}
 
@@ -98,7 +109,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 	if f.proto.Type == descriptor.FieldDescriptorProto_TYPE_BOOL {
 		value := "false"
 		if f.proto.IsOptional() {
-			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+			call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
 			value = fmt.Sprintf("%s(%s)", call, value)
 		}
 
@@ -111,7 +122,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 
 	value := "0"
 	if f.proto.IsOptional() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
 		value = fmt.Sprintf("%s(%s(%s))", call, f.fieldConverter.DomainTypeForTest(false), value)
 	}
 
@@ -150,14 +161,21 @@ func (f *Field) getEnumTestCallValue() string {
 
 	path := strings.Split(string(f.proto.Schema.Enum.GoIdent.GoImportPath), "/")
 	module = fmt.Sprintf("%v.", path[len(path)-1])
-	conversionCall := fmt.Sprintf(`%[1]v%[2]v.FromString(0, %[1]v%[2]v_name[randomIndex(%d, %d, []int{%s})]).ValueWithoutPrefix()`, module, name, minN, maxN, values)
+	conversionCall := fmt.Sprintf(
+		`%[1]v%[2]v.FromString(0, %[1]v%[2]v_name[randomIndex(%d, %d, []int{%s})]).ValueWithoutPrefix()`,
+		module,
+		name,
+		minN,
+		maxN,
+		values,
+	)
 
 	if f.isArray {
 		conversionCall = fmt.Sprintf("%v%v{%v}", module, name, conversionCall)
 	}
 
 	if f.proto.IsOptional() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
 		conversionCall = fmt.Sprintf("%s(%s)", call, conversionCall)
 	}
 

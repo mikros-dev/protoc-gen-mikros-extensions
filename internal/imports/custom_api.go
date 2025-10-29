@@ -4,7 +4,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 )
 
-func loadCustomApiTemplateImports(ctx *Context) []*Import {
+func loadCustomAPITemplateImports(ctx *Context) []*Import {
 	imports := make(map[string]*Import)
 
 	for _, m := range ctx.WireExtensions {

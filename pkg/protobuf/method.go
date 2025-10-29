@@ -8,10 +8,11 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
 
+// Method represents a method loaded from a protobuf service.
 type Method struct {
 	Name         string
-	RequestType  *Name
-	ResponseType *Name
+	RequestType  *ProtoName
+	ResponseType *ProtoName
 	HTTPMethod   string
 	Endpoint     string
 	Proto        *descriptor.MethodDescriptorProto
@@ -23,22 +24,22 @@ func parseMethod(method *descriptor.MethodDescriptorProto) *Method {
 		endpoint   string
 	)
 
-	if googleApi := getGoogleHttpAPIIfAny(method); googleApi != nil {
-		httpMethod, endpoint = getMethodAndEndpoint(googleApi)
+	if googleAPI := getGoogleHTTPAPIIfAny(method); googleAPI != nil {
+		httpMethod, endpoint = getMethodAndEndpoint(googleAPI)
 	}
 
 	return &Method{
 		Name:         method.GetName(),
-		RequestType:  newName(method.GetInputType()),
-		ResponseType: newName(method.GetOutputType()),
+		RequestType:  protoName(method.GetInputType()),
+		ResponseType: protoName(method.GetOutputType()),
 		HTTPMethod:   httpMethod,
 		Endpoint:     endpoint,
 		Proto:        method,
 	}
 }
 
-// getGoogleHttpAPIIfAny gets the google.api.http extension of a method if exists.
-func getGoogleHttpAPIIfAny(msg *descriptor.MethodDescriptorProto) *annotations.HttpRule {
+// getGoogleHTTPAPIIfAny gets the google.api.http extension of a method if exists.
+func getGoogleHTTPAPIIfAny(msg *descriptor.MethodDescriptorProto) *annotations.HttpRule {
 	if msg.Options != nil {
 		h := proto.GetExtension(msg.Options, annotations.E_Http)
 		return h.(*annotations.HttpRule)
@@ -78,6 +79,7 @@ func getMethodAndEndpoint(rule *annotations.HttpRule) (string, string) {
 	return method, endpoint
 }
 
+// HasHTTPBody returns true if the method has a body.
 func (m *Method) HasHTTPBody() bool {
 	return m.HTTPMethod == "POST" || m.HTTPMethod == "PUT"
 }
