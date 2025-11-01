@@ -27,6 +27,7 @@ type Context struct {
 
 type Message struct {
 	ValidationNeedsCustomRuleOptions bool
+	IsWireInputKind                  bool
 	Receiver                         string
 	Fields                           []*Field
 	ProtoMessage                     *protobuf.Message
@@ -104,47 +105,6 @@ func toSlice(ipt map[string]*Import) []*Import {
 	})
 
 	return s
-}
-
-func loadImportsFromMessages(ctx *Context, cfg *settings.Settings, messages []*Message) map[string]*Import {
-	imports := make(map[string]*Import)
-
-	for _, msg := range messages {
-		for _, f := range msg.Fields {
-			var (
-				call             = cfg.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr) + "("
-				conversionToWire = strings.TrimPrefix(f.ConversionDomainToWire, call)
-				wireType         = strings.TrimPrefix(f.WireType, "[]*")
-			)
-
-			// Import user converters package?
-			if i, ok := needsUserConvertersPackage(cfg, conversionToWire); ok {
-				imports["converters"] = i
-			}
-
-			// Import time package?
-			if f.IsProtobufTimestamp {
-				imports["time"] = packages["time"]
-
-				if !f.IsArray {
-					continue
-				}
-			}
-
-			// Import proto timestamp package?
-			if strings.HasPrefix(wireType, "ts.") || strings.HasPrefix(wireType, "*ts.") {
-				imports["prototimestamp"] = packages["prototimestamp"]
-				continue
-			}
-
-			// Import other modules?
-			if module, ok := needsImportAnotherProtoModule(conversionToWire, wireType, ctx.ModuleName, msg.Receiver); ok {
-				imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
-			}
-		}
-	}
-
-	return imports
 }
 
 func needsUserConvertersPackage(cfg *settings.Settings, conversionCall string) (*Import, bool) {

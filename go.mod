@@ -2,6 +2,8 @@ module github.com/mikros-dev/protoc-gen-mikros-extensions
 
 go 1.24.0
 
+toolchain go1.25.0
+
 require (
 	dario.cat/mergo v1.0.1
 	github.com/BurntSushi/toml v1.5.0
