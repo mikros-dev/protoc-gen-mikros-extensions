@@ -69,6 +69,7 @@ func toImportsContext(ctx *Context) *imports.Context {
 
 		return &imports.Message{
 			ValidationNeedsCustomRuleOptions: m.ValidationNeedsCustomRuleOptions(),
+			IsWireInputKind:                  m.IsWireInputKind(),
 			Receiver:                         m.GetReceiverName(),
 			Fields:                           fields,
 			ProtoMessage:                     m.ProtoMessage,
