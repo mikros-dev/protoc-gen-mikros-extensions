@@ -52,14 +52,20 @@ func (w *routesWrapper) {{.Name}}(ctx *fasthttp.RequestCtx) {
 
     if err != nil {
         w.Response.ToError(ctx, err)
-        w.Logger.Errorf(ctx, "could not parse request input")
+        w.Logger.Errorf(ctx, "could not parse request input", map[string]interface{}{
+            "error": err.Error(),
+        })
+
         return
     }
 
     out, err := w.Handler.{{.Name}}(ctx, input)
     if err != nil {
         w.Response.ToError(ctx, err)
-        w.Logger.Errorf(ctx, "internal handler error")
+        w.Logger.Errorf(ctx, "internal handler error", map[string]interface{}{
+            "error": err.Error(),
+        })
+
         return
     }
 
