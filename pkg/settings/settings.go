@@ -15,17 +15,19 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 )
 
+// Settings represents the settings loaded from the configuration file.
 type Settings struct {
 	Debug       bool         `toml:"debug"`
 	Suffix      *Suffix      `toml:"suffix" default:"{}"`
 	Database    *Database    `toml:"database" default:"{}"`
-	Http        *Http        `toml:"http" default:"{}"`
+	HTTP        *HTTP        `toml:"http" default:"{}"`
 	Templates   *Templates   `toml:"templates" default:"{}"`
 	Validations *Validations `toml:"validations"`
 	Addons      *Addons      `toml:"addons"`
 	Testing     *Testing     `toml:"testing" default:"{}"`
 }
 
+// Suffix represents the suffixes used in the generated code.
 type Suffix struct {
 	Domain     string `toml:"domain" default:"Domain"`
 	Outbound   string `toml:"outbound" default:"Outbound"`
@@ -34,59 +36,66 @@ type Suffix struct {
 	WireOutput string `toml:"wire_output" default:"Response"`
 }
 
+// Database represents the database used in the generated code.
 type Database struct {
 	Kind string `toml:"kind" validate:"oneof=mongo gorm" default:"mongo"`
 }
 
-type Http struct {
+// HTTP represents the HTTP framework used in the generated code.
+type HTTP struct {
 	Framework string `toml:"framework" validate:"oneof=fasthttp" default:"fasthttp"`
 }
 
+// Templates represents the templates used in the generated code.
 type Templates struct {
-	Api      bool    `toml:"api" default:"true"`
+	API      bool    `toml:"api" default:"true"`
 	Test     bool    `toml:"test" default:"false"`
 	TestPath string  `toml:"test_path" default:"test"`
-	ApiPath  string  `toml:"api_path" default:"go"`
+	APIPath  string  `toml:"api_path" default:"go"`
 	Common   *Common `toml:"common" default:"{}"`
 	Routes   *Routes `toml:"routes" default:"{}"`
 }
 
+// Common represents the common operations for all templates used in the
+// generated code.
 type Common struct {
 	Converters bool                   `toml:"converters" default:"true"`
-	Api        map[string]*Dependency `toml:"api"`
+	API        map[string]*Dependency `toml:"api"`
 }
 
+// Dependency represents a dependency used in the common operations for
+// all templates.
 type Dependency struct {
 	Import      *Import                `toml:"import"`
 	PackageName string                 `toml:"package_name"`
 	Calls       map[string]interface{} `toml:"calls"`
 }
 
+// Routes represents the routes used in the generated code.
 type Routes struct {
 	PrefixServiceName bool `toml:"prefix_service_name_in_endpoints"`
 }
 
+// Validations represents the validations used in the generated code.
 type Validations struct {
 	RulePackageImport *Import                `toml:"rule_package_import"`
 	Rule              map[string]*CustomCall `toml:"rule"`
 	Custom            map[string]*CustomCall `toml:"custom"`
 }
 
+// CustomCall represents a custom validation call.
 type CustomCall struct {
 	ArgsRequired bool   `toml:"args_required"`
 	Name         string `toml:"name"`
 }
 
+// Import represents a package imported inside the templates.
 type Import struct {
 	Name  string `toml:"name"`
 	Alias string `toml:"alias"`
 }
 
-type Testing struct {
-	PackageImport *Import                `toml:"package_import"`
-	Custom        map[string]*CustomCall `toml:"custom"`
-}
-
+// ModuleName returns the module name of the import.
 func (i *Import) ModuleName() string {
 	var (
 		parts = strings.Split(i.Name, "/")
@@ -108,10 +117,18 @@ func isVersionPattern(s string) bool {
 	return re.MatchString(s)
 }
 
+// Testing represents the testing settings used in the generated code.
+type Testing struct {
+	PackageImport *Import                `toml:"package_import"`
+	Custom        map[string]*CustomCall `toml:"custom"`
+}
+
+// Addons represents the addons used in the generated code.
 type Addons struct {
 	Path string `toml:"path"`
 }
 
+// LoadSettings loads the settings from the configuration file.
 func LoadSettings(filename string) (*Settings, error) {
 	var settings Settings
 
@@ -147,15 +164,14 @@ func loadDefaultSettings() (*Settings, error) {
 	return s, nil
 }
 
+// Validate validates the settings.
 func (s *Settings) Validate() error {
 	validate := validator.New()
-	if err := validate.Struct(s); err != nil {
-		return err
-	}
-
-	return nil
+	return validate.Struct(s)
 }
 
+// IsSupportedCustomValidationRule checks if a custom validation rule is
+// supported or not.
 func (s *Settings) IsSupportedCustomValidationRule(ruleName string) error {
 	if s.Validations == nil {
 		return errors.New("validations settings not set")
@@ -172,6 +188,8 @@ func (s *Settings) IsSupportedCustomValidationRule(ruleName string) error {
 	return nil
 }
 
+// GetValidationRule retrieves the validation rule settings for the specified
+// rule.
 func (s *Settings) GetValidationRule(rule mikros_extensions.FieldValidatorRule) (*CustomCall, error) {
 	if s.Validations != nil && s.Validations.Rule != nil {
 		name := strings.ToLower(strings.TrimPrefix(rule.String(), "FIELD_VALIDATOR_RULE_"))
@@ -185,6 +203,8 @@ func (s *Settings) GetValidationRule(rule mikros_extensions.FieldValidatorRule) 
 	return nil, nil
 }
 
+// GetValidationCustomRule retrieves the custom validation rule settings by the
+// given name from the configuration.
 func (s *Settings) GetValidationCustomRule(name string) (*CustomCall, error) {
 	if s.Validations != nil && s.Validations.Custom != nil {
 		if r, ok := s.Validations.Custom[name]; ok {
@@ -197,6 +217,8 @@ func (s *Settings) GetValidationCustomRule(name string) (*CustomCall, error) {
 	return nil, nil
 }
 
+// GetTestingCustomRule retrieves the custom validation rule settings for testing
+// templates by the given name from the configuration.
 func (s *Settings) GetTestingCustomRule(name string) (*CustomCall, error) {
 	if s.Testing != nil && s.Testing.Custom != nil {
 		if r, ok := s.Testing.Custom[name]; ok {
@@ -209,38 +231,46 @@ func (s *Settings) GetTestingCustomRule(name string) (*CustomCall, error) {
 	return nil, nil
 }
 
-type CommonApi string
+// CommonAPI represents supported common APIs.
+type CommonAPI string
 
+// Supported common APIs.
 const (
-	CommonApiConverters CommonApi = "converters"
+	CommonAPIConverters CommonAPI = "converters"
 )
 
-func (c CommonApi) String() string {
+func (c CommonAPI) String() string {
 	return string(c)
 }
 
+// CommonCall represents a call from a common API.
 type CommonCall struct {
-	api       CommonApi
+	api       CommonAPI
 	call      string
 	fieldName string
 }
 
 // Supported common APIs.
+//
+//revive:disable:line-length-limit
 var (
-	CommonCallToPtr          = CommonCall{CommonApiConverters, "toPtr", "to_ptr"}
-	CommonCallToValue        = CommonCall{CommonApiConverters, "toValue", "to_value"}
-	CommonCallProtoToTimePtr = CommonCall{CommonApiConverters, "protoTimestampToTimePtr", "proto_timestamp_to_go_time_ptr"}
-	CommonCallTimeToProto    = CommonCall{CommonApiConverters, "timeToProtoTimestamp", "go_time_to_proto_timestamp"}
-	CommonCallMapToStruct    = CommonCall{CommonApiConverters, "mapToGrpcStruct", "go_map_to_proto_struct"}
-	CommonCallToProtoValue   = CommonCall{CommonApiConverters, "convertToProtobufValue", "go_interface_to_proto_value"}
+	CommonCallToPtr          = CommonCall{CommonAPIConverters, "toPtr", "to_ptr"}
+	CommonCallToValue        = CommonCall{CommonAPIConverters, "toValue", "to_value"}
+	CommonCallProtoToTimePtr = CommonCall{CommonAPIConverters, "protoTimestampToTimePtr", "proto_timestamp_to_go_time_ptr"}
+	CommonCallTimeToProto    = CommonCall{CommonAPIConverters, "timeToProtoTimestamp", "go_time_to_proto_timestamp"}
+	CommonCallMapToStruct    = CommonCall{CommonAPIConverters, "mapToGrpcStruct", "go_map_to_proto_struct"}
+	CommonCallToProtoValue   = CommonCall{CommonAPIConverters, "convertToProtobufValue", "go_interface_to_proto_value"}
 )
 
-func (s *Settings) GetCommonCall(apiName CommonApi, call CommonCall) string {
+//revive:enable:line-length-limit
+
+// GetCommonCall returns the call for the specified common API and call.
+func (s *Settings) GetCommonCall(apiName CommonAPI, call CommonCall) string {
 	if s.Templates.Common.Converters {
 		return call.call
 	}
 
-	if api, ok := s.Templates.Common.Api[apiName.String()]; ok {
+	if api, ok := s.Templates.Common.API[apiName.String()]; ok {
 		if c, ok := buildDependencyCall(api, call); ok {
 			return c
 		}

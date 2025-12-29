@@ -1,7 +1,9 @@
 package converters
 
+// MessageKind represents the type of message.
 type MessageKind int
 
+// Supported message kinds.
 const (
 	UnknownMessageKind MessageKind = iota
 	WireMessage

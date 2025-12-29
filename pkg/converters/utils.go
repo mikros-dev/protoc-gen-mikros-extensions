@@ -6,6 +6,7 @@ import (
 	"github.com/stoewer/go-strcase"
 )
 
+// TrimPackageName trims the package name from the given name.
 func TrimPackageName(name, packageName string) string {
 	if name == "" {
 		return ""

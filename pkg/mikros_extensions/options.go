@@ -8,6 +8,7 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
 
+// LoadGoogleAnnotations loads the HTTP rule from the method options.
 func LoadGoogleAnnotations(method *descriptor.MethodDescriptorProto) *annotations.HttpRule {
 	if method.Options != nil {
 		h := proto.GetExtension(method.Options, annotations.E_Http)
@@ -17,7 +18,8 @@ func LoadGoogleAnnotations(method *descriptor.MethodDescriptorProto) *annotation
 	return nil
 }
 
-func GetHttpEndpoint(rule *annotations.HttpRule) (string, string) {
+// GetHTTPEndpoint returns the endpoint and method from the HTTP rule.
+func GetHTTPEndpoint(rule *annotations.HttpRule) (string, string) {
 	var (
 		endpoint string
 		method   string
@@ -48,6 +50,7 @@ func GetHttpEndpoint(rule *annotations.HttpRule) (string, string) {
 	return endpoint, method
 }
 
+// RetrieveParameters returns the parameters from the endpoint.
 func RetrieveParameters(endpoint string) []string {
 	var parameters []string
 	re := regexp.MustCompile(`{[A-Za-z_.0-9]*}`)
@@ -59,11 +62,13 @@ func RetrieveParameters(endpoint string) []string {
 	return parameters
 }
 
+// RetrieveParametersFromAdditionalBindings returns the parameters from the
+// additional bindings of an HTTP rule.
 func RetrieveParametersFromAdditionalBindings(rule *annotations.HttpRule) []string {
 	var parameters []string
 
 	for _, r := range rule.GetAdditionalBindings() {
-		if endpoint, _ := GetHttpEndpoint(r); endpoint != "" {
+		if endpoint, _ := GetHTTPEndpoint(r); endpoint != "" {
 			parameters = append(parameters, RetrieveParameters(endpoint)...)
 		}
 	}
@@ -71,6 +76,7 @@ func RetrieveParametersFromAdditionalBindings(rule *annotations.HttpRule) []stri
 	return parameters
 }
 
+// LoadMethodExtensions loads the Mikros extensions from the method options.
 func LoadMethodExtensions(method *descriptor.MethodDescriptorProto) *MikrosMethodExtensions {
 	if method.Options != nil {
 		v := proto.GetExtension(method.Options, E_MethodOptions)
@@ -82,6 +88,7 @@ func LoadMethodExtensions(method *descriptor.MethodDescriptorProto) *MikrosMetho
 	return nil
 }
 
+// LoadEnumExtensions loads the Mikros extensions from the enum options.
 func LoadEnumExtensions(enum *descriptor.EnumDescriptorProto) *MikrosEnumExtensions {
 	if enum.Options != nil {
 		v := proto.GetExtension(enum.Options, E_EnumOptions)
@@ -93,6 +100,7 @@ func LoadEnumExtensions(enum *descriptor.EnumDescriptorProto) *MikrosEnumExtensi
 	return nil
 }
 
+// LoadEnumValueExtensions loads the Mikros extensions from the enum value options.
 func LoadEnumValueExtensions(enumValue *descriptor.EnumValueDescriptorProto) *MikrosEnumValueExtensions {
 	if enumValue.Options != nil {
 		v := proto.GetExtension(enumValue.Options, E_EnumValueOptions)
@@ -104,6 +112,7 @@ func LoadEnumValueExtensions(enumValue *descriptor.EnumValueDescriptorProto) *Mi
 	return nil
 }
 
+// LoadFieldExtensions loads the Mikros extensions from the field options.
 func LoadFieldExtensions(field *descriptor.FieldDescriptorProto) *MikrosFieldExtensions {
 	if field.Options != nil {
 		v := proto.GetExtension(field.Options, E_FieldOptions)
@@ -115,6 +124,7 @@ func LoadFieldExtensions(field *descriptor.FieldDescriptorProto) *MikrosFieldExt
 	return nil
 }
 
+// LoadMessageExtensions loads the Mikros extensions from the message options.
 func LoadMessageExtensions(message *descriptor.DescriptorProto) *MikrosMessageExtensions {
 	if message.Options != nil {
 		v := proto.GetExtension(message.Options, E_MessageOptions)
@@ -126,6 +136,7 @@ func LoadMessageExtensions(message *descriptor.DescriptorProto) *MikrosMessageEx
 	return nil
 }
 
+// LoadServiceExtensions loads the Mikros extensions from the service options.
 func LoadServiceExtensions(service *descriptor.ServiceDescriptorProto) *MikrosServiceExtensions {
 	if service.Options != nil {
 		v := proto.GetExtension(service.Options, E_ServiceOptions)

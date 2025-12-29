@@ -10,12 +10,12 @@ import (
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 	"github.com/stoewer/go-strcase"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
-	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
 )
 
 // Templates is an object that holds information related to a group of
@@ -30,6 +30,7 @@ type Templates struct {
 	templateInfos    []*Info
 }
 
+// Info holds information about a template file.
 type Info struct {
 	name  string
 	data  []byte
@@ -37,12 +38,13 @@ type Info struct {
 	addon *addon.Addon
 }
 
+// Options represents the options used to load the templates.
 type Options struct {
 	// StrictValidators if enabled forces us to use the validator function
 	// for a template only if it is declared. Otherwise, the template will be
 	// ignored.
 	StrictValidators bool
-	Kind             tpl_types.Kind
+	Kind             spec.Kind
 	Path             string
 	FilesPrefix      string `validate:"required"`
 	Plugin           *protogen.Plugin
@@ -56,9 +58,10 @@ type Options struct {
 // object manipulated inside the template file, must implement.
 type Context interface {
 	Extension() string
-	tpl_types.Validator
+	spec.Validator
 }
 
+// Load loads the templates from the given options.
 func Load(options Options) (*Templates, error) {
 	validate := validator.New()
 	if err := validate.Struct(options); err != nil {
@@ -72,15 +75,15 @@ func Load(options Options) (*Templates, error) {
 	)
 
 	if options.Plugin != nil {
-		mName, pName, p, err := protobuf.GetPackageNameAndPath(options.Plugin)
+		info, err := protobuf.GetPackageInfo(options.Plugin)
 		if err != nil {
 			return nil, err
 		}
 
 		// module name should not have the version suffix.
-		module = strings.TrimSuffix(mName, "v1")
-		path = p
-		packageName = pName
+		module = strings.TrimSuffix(info.ModuleName, "v1")
+		path = info.Path
+		packageName = info.PackageName
 	}
 
 	if options.Path != "" {
@@ -129,18 +132,18 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		}
 
 		basename := filenameWithoutExtension(t.Name())
-		helperApi := tpl_types.HelperApi()
+		helperAPI := spec.DefaultFuncMap()
 		for k, v := range api {
-			helperApi[k] = v
+			helperAPI[k] = v
 		}
 
-		helperApi["templateName"] = func() string {
-			return tpl_types.NewName(prefix, basename).String()
+		helperAPI["templateName"] = func() string {
+			return spec.NewName(prefix, basename).String()
 		}
 
 		// Specific addons APIs
 		if addon != nil {
-			helperApi["addonName"] = func() string {
+			helperAPI["addonName"] = func() string {
 				return addon.Addon().Name()
 			}
 		}
@@ -148,7 +151,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		infos = append(infos, &Info{
 			name:  basename,
 			data:  data,
-			api:   helperApi,
+			api:   helperAPI,
 			addon: addon,
 		})
 	}
@@ -156,7 +159,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 	return infos, nil
 }
 
-func canUseAddon(tplKind, addonKind tpl_types.Kind) bool {
+func canUseAddon(tplKind, addonKind spec.Kind) bool {
 	return tplKind == addonKind
 }
 
@@ -172,71 +175,11 @@ type Generated struct {
 	Data         *bytes.Buffer
 }
 
+// Execute executes the templates and returns the generated files.
 func (t *Templates) Execute() ([]*Generated, error) {
-	execute := func(tpl *Info) (*Generated, error) {
-		prefix := t.filesPrefix
-		if tpl.addon != nil {
-			prefix = tpl.addon.Addon().Name()
-		}
-
-		tplValidator := t.context.GetTemplateValidator
-		if tpl.addon != nil {
-			tplValidator = tpl.addon.Addon().GetTemplateValidator
-		}
-
-		templateValidator, ok := tplValidator(tpl_types.NewName(prefix, tpl.name), t.context)
-		if !ok && t.strictValidators {
-			// The validator should not be executed in this case, since we don't
-			// have one for this template, we can skip it.
-			return nil, nil
-		}
-		if ok && !templateValidator() {
-			// Ignores the template if its validation condition is not
-			// satisfied
-			return nil, nil
-		}
-
-		parsedTemplate, err := parse(tpl.name, tpl.data, tpl.api)
-		if err != nil {
-			return nil, err
-		}
-
-		var buf bytes.Buffer
-		w := bufio.NewWriter(&buf)
-
-		if err := parsedTemplate.Execute(w, t.context); err != nil {
-			return nil, err
-		}
-		if err := w.Flush(); err != nil {
-			return nil, err
-		}
-
-		// Filename: Path + Package Name + Module Name + Template Name + Extension
-		templateName := fmt.Sprintf("%s.%s", t.moduleName, tpl.name)
-		if tpl.addon != nil {
-			templateName = fmt.Sprintf("%s.%s.%s", t.moduleName, strcase.SnakeCase(tpl.addon.Addon().Name()), tpl.name)
-		}
-
-		filename := filepath.Join(
-			t.path,
-			strings.ReplaceAll(t.packageName, ".", "/"),
-			templateName,
-		)
-		if t.context.Extension() != "" {
-			filename += fmt.Sprintf(".%s", t.context.Extension())
-		}
-
-		return &Generated{
-			Data:         &buf,
-			Filename:     filename,
-			TemplateName: tpl.name,
-			Extension:    t.context.Extension(),
-		}, nil
-	}
-
 	var gen []*Generated
 	for _, tpl := range t.templateInfos {
-		g, err := execute(tpl)
+		g, err := t.executeSingleTemplate(tpl)
 		if err != nil {
 			return nil, err
 		}
@@ -248,11 +191,94 @@ func (t *Templates) Execute() ([]*Generated, error) {
 	return gen, nil
 }
 
-func parse(key string, data []byte, helperApi template.FuncMap) (*template.Template, error) {
-	t, err := template.New(key).Funcs(helperApi).Parse(string(data))
+func (t *Templates) executeSingleTemplate(tpl *Info) (*Generated, error) {
+	if skip, err := t.shouldSkipTemplate(tpl); err != nil || skip {
+		return nil, err
+	}
+
+	parsedTemplate, err := parse(tpl.name, tpl.data, tpl.api)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := t.executeTemplate(parsedTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Generated{
+		Data:         buf,
+		Filename:     t.buildOutputFilename(tpl),
+		TemplateName: tpl.name,
+		Extension:    t.context.Extension(),
+	}, nil
+}
+
+func (t *Templates) shouldSkipTemplate(tpl *Info) (bool, error) {
+	prefix := t.filesPrefix
+	if tpl.addon != nil {
+		prefix = tpl.addon.Addon().Name()
+	}
+
+	tplValidatorProvider := t.context.GetTemplateValidator
+	if tpl.addon != nil {
+		tplValidatorProvider = tpl.addon.Addon().GetTemplateValidator
+	}
+
+	validatorFn, ok := tplValidatorProvider(spec.NewName(prefix, tpl.name), t.context)
+	if !ok && t.strictValidators {
+		// The validator should not be executed in this case. Since we don't
+		// have one for this template, we can skip it.
+		return true, nil
+	}
+	if ok && !validatorFn() {
+		// Ignores the template if its validation condition is not
+		// satisfied
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func parse(key string, data []byte, helperAPI template.FuncMap) (*template.Template, error) {
+	t, err := template.New(key).Funcs(helperAPI).Parse(string(data))
 	if err != nil {
 		return nil, err
 	}
 
 	return t, nil
+}
+
+func (t *Templates) executeTemplate(tpl *template.Template) (*bytes.Buffer, error) {
+	var buf bytes.Buffer
+	w := bufio.NewWriter(&buf)
+
+	if err := tpl.Execute(w, t.context); err != nil {
+		return nil, err
+	}
+	if err := w.Flush(); err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
+func (t *Templates) buildOutputFilename(tpl *Info) string {
+	// Filename: Path + Package Name + Module Name + Template Name + Extension
+	templateName := fmt.Sprintf("%s.%s", t.moduleName, tpl.name)
+	if tpl.addon != nil {
+		templateName = fmt.Sprintf("%s.%s.%s", t.moduleName, strcase.SnakeCase(tpl.addon.Addon().Name()), tpl.name)
+	}
+
+	filename := filepath.Join(
+		t.path,
+		strings.ReplaceAll(t.packageName, ".", "/"),
+		templateName,
+	)
+
+	if ext := t.context.Extension(); ext != "" {
+		filename += fmt.Sprintf(".%s", ext)
+	}
+
+	return filename
 }

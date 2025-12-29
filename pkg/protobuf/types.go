@@ -4,13 +4,16 @@ import (
 	"strings"
 )
 
-type Name struct {
+// ProtoName represents a name in the form of protobuf package.name or just
+// name. If the name is in the form of package.name, the Package field will
+// contain the package name.
+type ProtoName struct {
 	Name      string
 	ProtoName string
 	Package   string
 }
 
-func newName(s string) *Name {
+func protoName(s string) *ProtoName {
 	var (
 		name = s
 		pkg  string
@@ -22,13 +25,13 @@ func newName(s string) *Name {
 		name = parts[len(parts)-1]
 	}
 
-	return &Name{
+	return &ProtoName{
 		Name:      name,
 		ProtoName: s,
 		Package:   pkg,
 	}
 }
 
-func (n *Name) String() string {
+func (n *ProtoName) String() string {
 	return n.Name
 }

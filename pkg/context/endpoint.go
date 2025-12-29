@@ -9,35 +9,36 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 )
 
+// Endpoint represents an endpoint loaded from protobuf Google annotations.
 type Endpoint struct {
 	Body           string
 	Path           string
 	Method         string
 	Parameters     []string
-	HttpExtensions *mikros_extensions.HttpMethodExtensions
+	HTTPExtensions *mikros_extensions.HttpMethodExtensions
 }
 
 func getEndpoint(method *protobuf.Method) *Endpoint {
-	googleHttp := mikros_extensions.LoadGoogleAnnotations(method.Proto)
-	if googleHttp == nil {
+	googleHTTP := mikros_extensions.LoadGoogleAnnotations(method.Proto)
+	if googleHTTP == nil {
 		return nil
 	}
 
 	e := &Endpoint{
-		Body: googleHttp.GetBody(),
+		Body: googleHTTP.GetBody(),
 	}
 
-	if endpoint, m := mikros_extensions.GetHttpEndpoint(googleHttp); endpoint != "" {
+	if endpoint, m := mikros_extensions.GetHTTPEndpoint(googleHTTP); endpoint != "" {
 		e.Path = endpoint
 		e.Method = m
 		e.Parameters = mikros_extensions.RetrieveParameters(endpoint)
-		e.Parameters = append(e.Parameters, mikros_extensions.RetrieveParametersFromAdditionalBindings(googleHttp)...)
+		e.Parameters = append(e.Parameters, mikros_extensions.RetrieveParametersFromAdditionalBindings(googleHTTP)...)
 	}
 
 	m := mikros_extensions.LoadMethodExtensions(method.Proto)
 	if m != nil {
 		if op := m.GetHttp(); op != nil {
-			e.HttpExtensions = op
+			e.HTTPExtensions = op
 		}
 	}
 
@@ -46,22 +47,22 @@ func getEndpoint(method *protobuf.Method) *Endpoint {
 
 func getFieldLocation(field *descriptor.FieldDescriptorProto, endpoint *Endpoint) FieldLocation {
 	if endpoint == nil {
-		return FieldLocation_Body
+		return FieldLocationBody
 	}
 
 	if isEndpointParameter(field.GetName(), endpoint) {
-		return FieldLocation_Path
+		return FieldLocationPath
 	}
 
 	if isHeaderParameter(field.GetName(), endpoint) {
-		return FieldLocation_Header
+		return FieldLocationHeader
 	}
 
 	if strings.Contains(endpoint.Body, field.GetName()) || endpoint.Body == "*" {
-		return FieldLocation_Body
+		return FieldLocationBody
 	}
 
-	return FieldLocation_Query
+	return FieldLocationQuery
 }
 
 func isEndpointParameter(name string, endpoint *Endpoint) bool {
@@ -77,8 +78,8 @@ func isEndpointParameter(name string, endpoint *Endpoint) bool {
 }
 
 func isHeaderParameter(name string, endpoint *Endpoint) bool {
-	if endpoint != nil && endpoint.HttpExtensions != nil {
-		for _, n := range endpoint.HttpExtensions.GetHeader() {
+	if endpoint != nil && endpoint.HTTPExtensions != nil {
+		for _, n := range endpoint.HTTPExtensions.GetHeader() {
 			if name == n {
 				return true
 			}

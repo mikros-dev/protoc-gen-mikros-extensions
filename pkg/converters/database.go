@@ -8,13 +8,17 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 )
 
+// Database represents a database conversion mechanism used to generate
+// the proper source code inside the templates.
 type Database struct {
 	Kind DatabaseKind
 	defs *mikros_extensions.MikrosFieldExtensions
 }
 
+// DatabaseKind represents the database kind.
 type DatabaseKind int
 
+// Supported database kinds.
 const (
 	MongoDB DatabaseKind = iota
 	Gorm
@@ -35,6 +39,7 @@ func databaseFromString(kind string, defs *mikros_extensions.MikrosFieldExtensio
 	return db
 }
 
+// FieldName returns the database field name for the given name.
 func (d *Database) FieldName(name string) string {
 	fieldName := name
 	if d.Kind == MongoDB {
@@ -54,76 +59,85 @@ func (d *Database) FieldName(name string) string {
 	return strcase.SnakeCase(fieldName)
 }
 
+// Tag returns the database struct tag for the given name.
 func (d *Database) Tag(name string) string {
 	if d.Kind == MongoDB {
-		omitempty := ",omitempty"
-		if d.defs != nil {
-			if db := d.defs.GetDatabase(); db != nil {
-				if db.GetAllowEmpty() {
-					omitempty = ""
-				}
-			}
-		}
-
-		return fmt.Sprintf(`bson:"%s%s"`, d.FieldName(name), omitempty)
+		return d.handleMongoTag(name)
 	}
 
 	if d.Kind == Gorm {
-		if d.defs != nil {
-			if db := d.defs.GetDatabase(); db != nil {
-				return getPostgresTag(db)
-			}
-		}
+		return d.handleGormTag()
 	}
 
 	return ""
 }
 
-func getPostgresTag(db *mikros_extensions.FieldDatabaseOptions) string {
-	var tag string
+func (d *Database) handleMongoTag(name string) string {
+	omitempty := ",omitempty"
+	if d.defs != nil {
+		if db := d.defs.GetDatabase(); db != nil {
+			if db.GetAllowEmpty() {
+				omitempty = ""
+			}
+		}
+	}
+
+	return fmt.Sprintf(`bson:"%s%s"`, d.FieldName(name), omitempty)
+}
+
+func (d *Database) handleGormTag() string {
+	if d.defs == nil {
+		return ""
+	}
+
+	if db := d.defs.GetDatabase(); db != nil {
+		return buildGormTag(db)
+	}
+
+	return ""
+}
+
+func buildGormTag(db *mikros_extensions.FieldDatabaseOptions) string {
+	var (
+		tag   string
+		flags = []struct {
+			Condition bool
+			FlagName  string
+		}{
+			{
+				Condition: db.GetIndex(),
+				FlagName:  "index",
+			},
+			{
+				Condition: db.GetUnique(),
+				FlagName:  "unique",
+			},
+			{
+				Condition: db.GetUniqueIndex(),
+				FlagName:  "uniqueIndex",
+			},
+			{
+				Condition: db.GetPrimaryKey(),
+				FlagName:  "primaryKey",
+			},
+			{
+				Condition: db.GetAutoIncrement(),
+				FlagName:  "autoIncrement",
+			},
+		}
+	)
 
 	if n := db.GetName(); n != "" {
 		tag += "column=" + n
 	}
 
-	if db.GetIndex() {
-		if tag != "" {
-			tag += ","
+	for _, flag := range flags {
+		if flag.Condition {
+			if tag != "" {
+				tag += ","
+			}
+			tag += flag.FlagName
 		}
-
-		tag += "index"
-	}
-
-	if db.GetUnique() {
-		if tag != "" {
-			tag += ","
-		}
-
-		tag += "unique"
-	}
-
-	if db.GetUniqueIndex() {
-		if tag != "" {
-			tag += ","
-		}
-
-		tag += "uniqueIndex"
-	}
-
-	if db.GetPrimaryKey() {
-		if tag != "" {
-			tag += ","
-		}
-
-		tag += "primaryKey"
-	}
-
-	if db.GetAutoIncrement() {
-		if tag != "" {
-			tag += ","
-		}
-
-		tag += "autoIncrement"
 	}
 
 	if tag != "" {

@@ -13,11 +13,12 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
+// Method represents a method to be used inside templates by its context.
 type Method struct {
 	Name                  string
 	RequestType           string
 	ResponseType          string
-	AdditionalHTTPMethods []HttpRule
+	AdditionalHTTPMethods []HTTPRule
 	Request               *Message
 	PathArguments         []*MethodField
 	QueryArguments        []*MethodField
@@ -31,11 +32,13 @@ type Method struct {
 	method            *mikros_extensions.MikrosMethodExtensions
 }
 
-type HttpRule struct {
+// HTTPRule represents a HTTP rule defined inside a method.
+type HTTPRule struct {
 	Method   string
 	Endpoint string
 }
 
+// MethodField represents a field of a method.
 type MethodField struct {
 	GoName    string
 	ProtoName string
@@ -84,7 +87,7 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Sett
 			Name:                  method.Name,
 			RequestType:           method.RequestType.Name,
 			ResponseType:          method.ResponseType.Name,
-			AdditionalHTTPMethods: getAdditionalHttpRules(method),
+			AdditionalHTTPMethods: getAdditionalHTTPRules(method),
 			Request:               msg,
 			PathArguments:         path,
 			QueryArguments:        getQueryArguments(msg, endpoint, methodExtensions),
@@ -114,7 +117,11 @@ func getPathArguments(m *Message, endpoint *Endpoint) ([]*MethodField, error) {
 				return f.ProtoName == name
 			})
 			if index == -1 {
-				return nil, fmt.Errorf("field '%s' declared in path arguments not found inside message '%s' definition", name, m.Name)
+				return nil, fmt.Errorf(
+					"field '%s' declared in path arguments not found inside message '%s' definition",
+					name,
+					m.Name,
+				)
 			}
 
 			field := m.Fields[index]
@@ -129,7 +136,10 @@ func getPathArguments(m *Message, endpoint *Endpoint) ([]*MethodField, error) {
 	return fields, nil
 }
 
-func getHeaderArguments(m *Message, methodExtensions *mikros_extensions.MikrosMethodExtensions) ([]*MethodField, error) {
+func getHeaderArguments(
+	m *Message,
+	methodExtensions *mikros_extensions.MikrosMethodExtensions,
+) ([]*MethodField, error) {
 	var fields []*MethodField
 
 	if methodExtensions == nil {
@@ -157,7 +167,11 @@ func getHeaderArguments(m *Message, methodExtensions *mikros_extensions.MikrosMe
 	return fields, nil
 }
 
-func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []*MethodField {
+func getQueryArguments(
+	m *Message,
+	endpoint *Endpoint,
+	methodExtensions *mikros_extensions.MikrosMethodExtensions,
+) []*MethodField {
 	var fields []*MethodField
 
 	if endpoint != nil {
@@ -193,7 +207,11 @@ func getQueryArguments(m *Message, endpoint *Endpoint, methodExtensions *mikros_
 	return fields
 }
 
-func getParametersToFilter(m *Message, endpoint *Endpoint, methodExtensions *mikros_extensions.MikrosMethodExtensions) []string {
+func getParametersToFilter(
+	m *Message,
+	endpoint *Endpoint,
+	methodExtensions *mikros_extensions.MikrosMethodExtensions,
+) []string {
 	parameters := getBodyParameters(m, endpoint)
 
 	if endpoint != nil {
@@ -243,13 +261,13 @@ func validateBodyArguments(m *Message, endpoint *Endpoint) error {
 	return nil
 }
 
-func getAdditionalHttpRules(method *protobuf.Method) []HttpRule {
-	var rules []HttpRule
+func getAdditionalHTTPRules(method *protobuf.Method) []HTTPRule {
+	var rules []HTTPRule
 
-	if googleHttp := mikros_extensions.LoadGoogleAnnotations(method.Proto); googleHttp != nil {
-		for _, r := range googleHttp.GetAdditionalBindings() {
-			method, endpoint := mikros_extensions.GetHttpEndpoint(r)
-			rules = append(rules, HttpRule{
+	if googleHTTP := mikros_extensions.LoadGoogleAnnotations(method.Proto); googleHTTP != nil {
+		for _, r := range googleHTTP.GetAdditionalBindings() {
+			method, endpoint := mikros_extensions.GetHTTPEndpoint(r)
+			rules = append(rules, HTTPRule{
 				Method:   method,
 				Endpoint: endpoint,
 			})
@@ -259,10 +277,13 @@ func getAdditionalHttpRules(method *protobuf.Method) []HttpRule {
 	return rules
 }
 
+// Validate validates if the method is properly configured.
 func (m *Method) Validate() error {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
-			if authorization.GetMode() == mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM && authorization.GetCustomAuthName() == "" {
+			isCustomMode := authorization.GetMode() == mikros_extensions.AuthorizationMode_AUTHORIZATION_MODE_CUSTOM
+			isAuthNameEmpty := authorization.GetCustomAuthName() == ""
+			if isCustomMode && isAuthNameEmpty {
 				return fmt.Errorf("custom auth name is required when mode is AUTHORIZATION_MODE_CUSTOM")
 			}
 		}
@@ -271,6 +292,7 @@ func (m *Method) Validate() error {
 	return nil
 }
 
+// HTTPMethod returns the HTTP method of the method.
 func (m *Method) HTTPMethod() string {
 	if m.endpoint != nil {
 		return m.endpoint.Method
@@ -279,6 +301,7 @@ func (m *Method) HTTPMethod() string {
 	return ""
 }
 
+// Endpoint returns the endpoint of the method.
 func (m *Method) Endpoint() string {
 	if m.endpoint != nil {
 		endpoint := m.endpoint.Path
@@ -292,6 +315,7 @@ func (m *Method) Endpoint() string {
 	return ""
 }
 
+// HasRequiredBody returns true if the method has a required body.
 func (m *Method) HasRequiredBody() bool {
 	if m.endpoint != nil {
 		return m.endpoint.Body != "" && !m.ParseRequestInService()
@@ -300,6 +324,8 @@ func (m *Method) HasRequiredBody() bool {
 	return false
 }
 
+// AuthModeKey returns the key of the auth mode. If the mode is
+// AUTHORIZATION_MODE_CUSTOM, it returns the custom auth name.
 func (m *Method) AuthModeKey() string {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
@@ -313,34 +339,43 @@ func (m *Method) AuthModeKey() string {
 	return ""
 }
 
+// AuthModeValue returns the value of the auth mode. If the mode is
+// AUTHORIZATION_MODE_CUSTOM, it returns the auth arguments.
 func (m *Method) AuthModeValue() string {
-	if m.method != nil {
-		if http := m.method.GetHttp(); http != nil {
-			var args []string
-			for _, arg := range http.GetAuthArg() {
-				if strings.HasSuffix(arg, "@header") {
-					args = append(args, fmt.Sprintf(`string(ctx.Request.Header.Peek("%s"))`, strings.TrimSuffix(arg, "@header")))
-					continue
-				}
-
-				args = append(args, fmt.Sprintf(`"%s"`, arg))
-			}
-
-			return `[]string{` + strings.Join(args, `,`) + `}`
-		}
+	if m.method == nil {
+		return ""
 	}
 
-	return ""
+	http := m.method.GetHttp()
+	if http == nil {
+		return ""
+	}
+
+	var args []string
+	for _, arg := range http.GetAuthArg() {
+		if strings.HasSuffix(arg, "@header") {
+			argument := fmt.Sprintf(`string(ctx.Request.Header.Peek("%s"))`, strings.TrimSuffix(arg, "@header"))
+			args = append(args, argument)
+			continue
+		}
+
+		args = append(args, fmt.Sprintf(`"%s"`, arg))
+	}
+
+	return `[]string{` + strings.Join(args, `,`) + `}`
 }
 
+// HasQueryArguments returns true if the method has query arguments.
 func (m *Method) HasQueryArguments() bool {
 	return len(m.QueryArguments) > 0
 }
 
+// HasHeaderArguments returns true if the method has header arguments.
 func (m *Method) HasHeaderArguments() bool {
 	return len(m.HeaderArguments) > 0
 }
 
+// HasAuth returns true if the method has auth.
 func (m *Method) HasAuth() bool {
 	if m.service != nil {
 		if authorization := m.service.GetAuthorization(); authorization != nil {
@@ -351,6 +386,8 @@ func (m *Method) HasAuth() bool {
 	return false
 }
 
+// ParseRequestInService returns true if the request should be parsed in the
+// service.
 func (m *Method) ParseRequestInService() bool {
 	if m.method != nil {
 		if http := m.method.GetHttp(); http != nil {

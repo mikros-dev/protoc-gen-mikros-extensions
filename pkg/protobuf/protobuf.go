@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
+// Protobuf represents a protobuf file loaded.
 type Protobuf struct {
 	ModuleName   string
 	PackageName  string
@@ -18,12 +19,14 @@ type Protobuf struct {
 	Files        map[string]*protogen.File
 }
 
+// ParseOptions represents the options to parse a protobuf file.
 type ParseOptions struct {
 	Plugin *protogen.Plugin
 }
 
+// Parse parses a protobuf file.
 func Parse(options ParseOptions) (*Protobuf, error) {
-	moduleName, packageName, path, err := GetPackageNameAndPath(options.Plugin)
+	info, err := GetPackageInfo(options.Plugin)
 	if err != nil {
 		return nil, err
 	}
@@ -40,20 +43,20 @@ func Parse(options ParseOptions) (*Protobuf, error) {
 
 	files := make(map[string]*protogen.File)
 	for name, f := range options.Plugin.FilesByPath {
-		if string(f.GoPackageName) != moduleName {
+		if string(f.GoPackageName) != info.ModuleName {
 			files[name] = f
 		}
 	}
 
 	return &Protobuf{
-		ModuleName:  moduleName,
-		PackageName: packageName,
-		FullPath:    path,
+		ModuleName:  info.ModuleName,
+		PackageName: info.PackageName,
+		FullPath:    info.Path,
 		Service: parseService(&parseServiceOptions{
 			Files: packageProtoFiles,
 		}),
 		Messages: parseMessages(&parseMessagesOptions{
-			ModuleName: moduleName,
+			ModuleName: info.ModuleName,
 			Files:      packageProtoFiles,
 		}),
 		Enums: parseEnums(&parseEnumsOptions{

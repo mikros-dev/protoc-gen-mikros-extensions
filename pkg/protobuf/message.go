@@ -8,6 +8,7 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
 
+// Message represents a message loaded from protobuf.
 type Message struct {
 	Name       string
 	Fields     []*Field
@@ -42,6 +43,7 @@ func parseMessages(options *parseMessagesOptions) []*Message {
 	return messages
 }
 
+// ParseMessagesFromFile parses all messages from a given file.
 func ParseMessagesFromFile(file *protogen.File, moduleName string) []*Message {
 	messages := make([]*Message, len(file.Proto.MessageType))
 	for i, msg := range file.Proto.MessageType {

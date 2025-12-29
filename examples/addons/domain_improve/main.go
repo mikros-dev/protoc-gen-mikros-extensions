@@ -3,13 +3,12 @@ package main
 import (
 	"embed"
 
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/examples/addons/domain_improve/proto"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
-
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/examples/addons/domain_improve/proto"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
 func loadDomainImprove(msg *context.Message) *proto.DomainImprove {
@@ -51,17 +50,17 @@ func (d *DomainImproveAddon) GetContext(ctx interface{}) interface{} {
 	return addonCtx
 }
 
-func (d *DomainImproveAddon) GetTemplateImports(_ tpl_types.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
+func (d *DomainImproveAddon) GetTemplateImports(_ spec.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
 	// Does not have imports
 	return nil
 }
 
-func (d *DomainImproveAddon) GetTemplateValidator(name tpl_types.Name, ctx interface{}) (tpl_types.ValidateForExecution, bool) {
+func (d *DomainImproveAddon) GetTemplateValidator(name spec.Name, ctx interface{}) (spec.ExecutionFunc, bool) {
 	c := ctx.(*context.Context)
 	pc := c.AddonContext(addonName).(*Context)
 
-	validators := map[tpl_types.Name]tpl_types.ValidateForExecution{
-		tpl_types.NewName(addonName, "domain_improve"): func() bool {
+	validators := map[spec.Name]spec.ExecutionFunc{
+		spec.NewName(addonName, "domain_improve"): func() bool {
 			for _, msg := range c.DomainMessages() {
 				if pc.HasImproveDomainCall(msg) {
 					return true
@@ -76,8 +75,8 @@ func (d *DomainImproveAddon) GetTemplateValidator(name tpl_types.Name, ctx inter
 	return v, ok
 }
 
-func (d *DomainImproveAddon) Kind() tpl_types.Kind {
-	return tpl_types.KindApi
+func (d *DomainImproveAddon) Kind() spec.Kind {
+	return spec.KindAPI
 }
 
 func (d *DomainImproveAddon) Templates() embed.FS {

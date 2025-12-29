@@ -6,8 +6,14 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
+// DescriptorObject is an interface representing a protocol buffer message
+// with reflection capabilities. It embeds the comparable interface to ensure
+// all implementing types can be compared.
 type DescriptorObject interface {
 	comparable
+
+	// ProtoReflect returns the protoreflect.Message for accessing metadata and
+	// reflective operations.
 	ProtoReflect() protoreflect.Message
 }
 
@@ -28,7 +34,11 @@ func HasExtension[T DescriptorObject](msg T, options protoreflect.ExtensionTypeD
 // RetrieveExtension extracts an extension from a protobuf message and
 // fills target with it. It returns nil if the message does not have the
 // extension.
-func RetrieveExtension[T DescriptorObject](msg T, options protoreflect.ExtensionTypeDescriptor, target proto.Message) error {
+func RetrieveExtension[T DescriptorObject](
+	msg T,
+	options protoreflect.ExtensionTypeDescriptor,
+	target proto.Message,
+) error {
 	var zero T
 	if msg == zero {
 		return nil
@@ -49,9 +59,5 @@ func RetrieveExtension[T DescriptorObject](msg T, options protoreflect.Extension
 		return err
 	}
 
-	if err := proto.Unmarshal(data, target); err != nil {
-		return err
-	}
-
-	return nil
+	return proto.Unmarshal(data, target)
 }

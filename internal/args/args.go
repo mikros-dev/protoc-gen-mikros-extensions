@@ -8,11 +8,13 @@ import (
 	"strings"
 )
 
+// Args represents the plugin arguments.
 type Args struct {
 	SettingsFilename string
 	flags            flag.FlagSet
 }
 
+// NewArgsFromString parses the plugin arguments from a string.
 func NewArgsFromString(s string) (*Args, error) {
 	if s == "" {
 		return &Args{}, nil
@@ -42,6 +44,7 @@ func NewArgsFromString(s string) (*Args, error) {
 	return args, nil
 }
 
+// NewArgs creates a new Args instance.
 func NewArgs() *Args {
 	o := &Args{}
 
@@ -50,10 +53,12 @@ func NewArgs() *Args {
 	return o
 }
 
+// FlagsSet returns the flags set function of the arguments.
 func (a *Args) FlagsSet() func(string, string) error {
 	return a.flags.Set
 }
 
+// GetPluginName returns the plugin name.
 func (a *Args) GetPluginName() string {
 	return filepath.Base(os.Args[0])
 }

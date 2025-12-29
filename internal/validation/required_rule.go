@@ -8,8 +8,8 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
 
-type RequiredCondition struct {
-	Rules                      []*RequiredFieldRuleOptions
+type requiredCondition struct {
+	Rules                      []*requiredFieldRuleOptions
 	Negative                   bool
 	UsePrefixCondition         bool
 	DefaultConditionOperation  string
@@ -17,7 +17,7 @@ type RequiredCondition struct {
 	RuleConditionOperation     string
 }
 
-type RequiredFieldRuleOptions struct {
+type requiredFieldRuleOptions struct {
 	FieldName string
 	Value     string
 	Type      descriptor.FieldDescriptorProto_Type
@@ -30,99 +30,96 @@ type requiredRuleParseOptions struct {
 	MaxFieldsToParse int
 }
 
+type ruleConfig struct {
+	parseOpts *requiredRuleParseOptions
+	apply     func(*requiredCondition)
+}
+
 // loadRequiredCondition parses the required field condition, if any. It
 // ensures that only one required option is used at the moment.
-func loadRequiredCondition(options *CallOptions) (*RequiredCondition, error) {
+func loadRequiredCondition(options *CallOptions) (*requiredCondition, error) {
 	var (
-		found             = 0
-		validationOptions = options.Options.GetValidate()
+		configs = buildRuleConfigs(options)
+		result  *requiredCondition
 	)
 
-	requiredIf, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
-		Condition:        validationOptions.GetRequiredIf(),
-		Reverse:          validationOptions.GetRequiredIfNot(),
-		MaxFieldsToParse: 2,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if requiredIf != nil {
-		found += 1
+	for _, cfg := range configs {
+		cond, err := parseRequiredRuleOptions(options, cfg.parseOpts)
+		if err != nil {
+			return nil, err
+		}
+		if cond != nil {
+			if result != nil {
+				return nil, errors.New("cannot have more than one 'required_' option for field")
+			}
+
+			cfg.apply(cond)
+			result = cond
+		}
 	}
 
-	requiredWith, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
-		Condition:        validationOptions.GetRequiredWith(),
-		Reverse:          validationOptions.GetRequiredWithout(),
-		MaxFieldsToParse: 1,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if requiredWith != nil {
-		found += 1
-	}
+	return result, nil
+}
 
-	requiredAll, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
-		Condition: validationOptions.GetRequiredAll(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	if requiredAll != nil {
-		found += 1
-	}
+func buildRuleConfigs(options *CallOptions) []ruleConfig {
+	v := options.Options.GetValidate()
 
-	requiredAny, err := parseRequiredRuleOptions(options, &requiredRuleParseOptions{
-		Condition: validationOptions.GetRequiredAny(),
-	})
-	if err != nil {
-		return nil, err
+	return []ruleConfig{
+		{
+			parseOpts: &requiredRuleParseOptions{
+				Condition:        v.GetRequiredIf(),
+				Reverse:          v.GetRequiredIfNot(),
+				MaxFieldsToParse: 2,
+			},
+			apply: func(rc *requiredCondition) {
+				rc.UsePrefixCondition = true
+				rc.DefaultConditionOperation = "=="
+				rc.NegativeConditionOperation = "!="
+			},
+		},
+		{
+			parseOpts: &requiredRuleParseOptions{
+				Condition:        v.GetRequiredWith(),
+				Reverse:          v.GetRequiredWithout(),
+				MaxFieldsToParse: 1,
+			},
+			apply: func(rc *requiredCondition) {
+				rc.UsePrefixCondition = false
+				rc.DefaultConditionOperation = "!="
+				rc.NegativeConditionOperation = "=="
+			},
+		},
+		{
+			parseOpts: &requiredRuleParseOptions{
+				Condition: v.GetRequiredAll(),
+			},
+			apply: func(rc *requiredCondition) {
+				rc.UsePrefixCondition = true
+				rc.DefaultConditionOperation = "=="
+				rc.NegativeConditionOperation = "!="
+				rc.RuleConditionOperation = "&&"
+			},
+		},
+		{
+			parseOpts: &requiredRuleParseOptions{
+				Condition: v.GetRequiredAny(),
+			},
+			apply: func(rc *requiredCondition) {
+				rc.UsePrefixCondition = true
+				rc.DefaultConditionOperation = "=="
+				rc.NegativeConditionOperation = "!="
+				rc.RuleConditionOperation = "||"
+			},
+		},
 	}
-	if requiredAny != nil {
-		found += 1
-	}
-
-	if found > 1 {
-		return nil, errors.New("cannot have more than one 'required_' option for field")
-	}
-
-	// Decides which required option to return.
-	if requiredIf != nil {
-		requiredIf.UsePrefixCondition = true
-		requiredIf.DefaultConditionOperation = "=="
-		requiredIf.NegativeConditionOperation = "!="
-		return requiredIf, nil
-	}
-
-	if requiredWith != nil {
-		requiredWith.UsePrefixCondition = false
-		requiredWith.DefaultConditionOperation = "!="
-		requiredWith.NegativeConditionOperation = "=="
-		return requiredWith, nil
-	}
-
-	if requiredAll != nil {
-		requiredAll.UsePrefixCondition = true
-		requiredAll.DefaultConditionOperation = "=="
-		requiredAll.NegativeConditionOperation = "!="
-		requiredAll.RuleConditionOperation = "&&"
-		return requiredAll, nil
-	}
-
-	if requiredAny != nil {
-		requiredAny.UsePrefixCondition = true
-		requiredAny.DefaultConditionOperation = "=="
-		requiredAny.NegativeConditionOperation = "!="
-		requiredAny.RuleConditionOperation = "||"
-		return requiredAny, nil
-	}
-
-	return nil, nil
 }
 
 // parseRequiredRuleOptions parses field required tag options strings into a
-// validator.RequiredCondition structure.
-func parseRequiredRuleOptions(options *CallOptions, parseOptions *requiredRuleParseOptions) (*RequiredCondition, error) {
+// validator.requiredCondition structure.
+func parseRequiredRuleOptions(
+	options *CallOptions,
+	parseOptions *requiredRuleParseOptions,
+) (*requiredCondition, error) {
 	var (
 		negative  bool
 		fieldRule string
@@ -133,7 +130,11 @@ func parseRequiredRuleOptions(options *CallOptions, parseOptions *requiredRulePa
 	}
 	if parseOptions.Reverse != "" {
 		if fieldRule != "" {
-			return nil, fmt.Errorf("cannot have both '%s' and '%s' options together", parseOptions.Condition, parseOptions.Reverse)
+			return nil, fmt.Errorf(
+				"cannot have both '%s' and '%s' options together",
+				parseOptions.Condition,
+				parseOptions.Reverse,
+			)
 		}
 
 		fieldRule = parseOptions.Reverse
@@ -150,89 +151,90 @@ func parseRequiredRuleOptions(options *CallOptions, parseOptions *requiredRulePa
 		return nil, err
 	}
 
-	return &RequiredCondition{
+	return &requiredCondition{
 		Rules:    rule,
 		Negative: negative,
 	}, nil
 }
 
-// parseFieldRule parses a strings with formats "field" or "field value"
-// into a validator.RequiredFieldRuleOptions structure. It also finds the
+// parseFieldRule parses a string with formats "field" or "field value"
+// into a validator.requiredFieldRuleOptions structure. It also finds the
 // field type inside the protobuf structures to allow later validation.
-func parseFieldRule(fieldRule string, options *CallOptions, maxFields int) ([]*RequiredFieldRuleOptions, error) {
-	var (
-		rules  []*RequiredFieldRuleOptions
-		fields [][]string
-		parts  = strings.Split(fieldRule, " ")
-	)
-
-	// Validates if we have the expected number of fields from fieldRule
-	if maxFields != 0 && len(parts) != maxFields {
-		return nil, fmt.Errorf("malformed field rule, the number of fields should be '%d' but found '%d'", maxFields, len(parts))
-	}
-	if maxFields == 0 && (len(parts)%2 != 0) {
-		// No maxFields means that the rule should have an even number of parts
-		// after splitting it. For example: Field1 value1 Field2 value2 Field3 value3
-		return nil, errors.New("malformed field rule, the number of fields and values is invalid, it should be even")
+func parseFieldRule(
+	fieldRule string,
+	options *CallOptions,
+	maxFields int,
+) ([]*requiredFieldRuleOptions, error) {
+	parts := strings.Split(fieldRule, " ")
+	if err := validateRuleParts(parts, maxFields); err != nil {
+		return nil, err
 	}
 
-	// Puts together field names and values into a single slice inside another
-	// slice. This way we can iterate over them later in an easy way.
-	if maxFields == 1 {
-		fields = append(fields, []string{parts[0]})
-	}
-	if maxFields != 1 {
-		for i, j := 0, 2; i < len(parts); i, j = i+2, j+2 {
-			fields = append(fields, parts[i:j])
-		}
-	}
-
-	for _, field := range fields {
-		name, fieldType, typeName, err := findFieldProtoSpec(field[0], options)
+	var rules []*requiredFieldRuleOptions
+	for i := 0; i < len(parts); {
+		spec, err := findFieldProtoSpec(parts[i], options)
 		if err != nil {
 			return nil, err
 		}
 
-		// All fields must have a value to be evaluated.
-		value := ""
-		switch fieldType {
-		case descriptor.FieldDescriptorProto_TYPE_DOUBLE, descriptor.FieldDescriptorProto_TYPE_FLOAT,
-			descriptor.FieldDescriptorProto_TYPE_INT64, descriptor.FieldDescriptorProto_TYPE_UINT64,
-			descriptor.FieldDescriptorProto_TYPE_INT32, descriptor.FieldDescriptorProto_TYPE_FIXED64,
-			descriptor.FieldDescriptorProto_TYPE_FIXED32, descriptor.FieldDescriptorProto_TYPE_UINT32,
-			descriptor.FieldDescriptorProto_TYPE_SFIXED32, descriptor.FieldDescriptorProto_TYPE_SFIXED64,
-			descriptor.FieldDescriptorProto_TYPE_SINT32, descriptor.FieldDescriptorProto_TYPE_SINT64:
-			value = "0"
+		// Determine value: use provided value or default based on type
+		value := getDefaultValueForType(spec.Type)
+		i++ // Move to the next part (potential value)
 
-		case descriptor.FieldDescriptorProto_TYPE_BOOL:
-			value = "false"
-
-		case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-			value = "nil"
-		}
-
-		if len(field) > 1 {
-			value = field[1]
-
+		if maxFields != 1 && i < len(parts) {
+			value = parts[i]
 			if value == "$empty" {
 				value = ""
 			}
+			i++ // Move to the next field name
 		}
 
-		rules = append(rules, &RequiredFieldRuleOptions{
-			FieldName: name,
-			Type:      fieldType,
-			TypeName:  typeName,
-			Value:     value,
-		})
+		spec.Value = value
+		rules = append(rules, spec)
 	}
 
 	return rules, nil
 }
 
+func validateRuleParts(parts []string, maxFields int) error {
+	if maxFields != 0 && len(parts) != maxFields {
+		return fmt.Errorf(
+			"malformed field rule, the number of fields should be '%d' but found '%d'",
+			maxFields,
+			len(parts),
+		)
+	}
+	if maxFields == 0 && (len(parts)%2 != 0) {
+		return errors.New("malformed field rule, the number of fields and values is invalid, it should be even")
+	}
+
+	return nil
+}
+
+func getDefaultValueForType(fieldType descriptor.FieldDescriptorProto_Type) string {
+	switch fieldType {
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE, descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_INT64, descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_INT32, descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32, descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32, descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SINT32, descriptor.FieldDescriptorProto_TYPE_SINT64:
+		return "0"
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return "false"
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		return "nil"
+	default:
+		return ""
+	}
+}
+
 // findFieldProtoSpec uses a field name, which can be in a golang format or in
 // the protobuf format, to find its real information, such as name and type.
-func findFieldProtoSpec(name string, options *CallOptions) (string, descriptor.FieldDescriptorProto_Type, string, error) {
+func findFieldProtoSpec(
+	name string,
+	options *CallOptions,
+) (*requiredFieldRuleOptions, error) {
 	var (
 		message = options.Message.Proto
 		schema  = options.Message.Schema
@@ -240,9 +242,13 @@ func findFieldProtoSpec(name string, options *CallOptions) (string, descriptor.F
 
 	for f, field := range message.Field {
 		if name == schema.Fields[f].GoName || name == field.GetJsonName() || name == field.GetName() {
-			return schema.Fields[f].GoName, field.GetType(), field.GetTypeName(), nil
+			return &requiredFieldRuleOptions{
+				FieldName: schema.Fields[f].GoName,
+				Type:      field.GetType(),
+				TypeName:  field.GetTypeName(),
+			}, nil
 		}
 	}
 
-	return "", 0, "", fmt.Errorf("could not find field with name '%s' for validation rule", name)
+	return nil, fmt.Errorf("could not find field with name '%s' for validation rule", name)
 }

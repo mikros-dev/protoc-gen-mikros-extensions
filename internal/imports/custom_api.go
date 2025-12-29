@@ -2,9 +2,20 @@ package imports
 
 import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
-func loadCustomApiTemplateImports(ctx *Context) []*Import {
+// CustomAPI represents the 'api/custom_api.tmpl' importer.
+type CustomAPI struct{}
+
+// Name returns the template name.
+func (c *CustomAPI) Name() spec.Name {
+	return spec.NewName("api", "custom_api")
+}
+
+// Load returns a slice of imports for the template.
+func (c *CustomAPI) Load(ctx *Context, _ *settings.Settings) []*Import {
 	imports := make(map[string]*Import)
 
 	for _, m := range ctx.WireExtensions {

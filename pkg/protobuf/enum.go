@@ -9,6 +9,7 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
 
+// Enum represents an enum loaded from protobuf.
 type Enum struct {
 	Name   string
 	Prefix string
@@ -28,6 +29,7 @@ func (e *Enum) String() string {
 		strings.Join(entries, ","))
 }
 
+// EnumEntry represents an enum entry loaded from protobuf.
 type EnumEntry struct {
 	ProtoName string
 	Proto     *descriptor.EnumValueDescriptorProto
@@ -51,6 +53,7 @@ func parseEnums(options *parseEnumsOptions) []*Enum {
 	return enums
 }
 
+// ParseEnumsFromFile parses all enums from a given file.
 func ParseEnumsFromFile(file *protogen.File) []*Enum {
 	var enums []*Enum
 

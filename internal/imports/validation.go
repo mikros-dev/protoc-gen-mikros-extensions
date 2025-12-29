@@ -6,9 +6,19 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
-func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
+// Validation represents the 'api/validation.tmpl' importer
+type Validation struct{}
+
+// Name returns the template name.
+func (v *Validation) Name() spec.Name {
+	return spec.NewName("api", "validation")
+}
+
+// Load returns a slice of imports for the template.
+func (v *Validation) Load(ctx *Context, cfg *settings.Settings) []*Import {
 	imports := make(map[string]*Import)
 
 	if ctx.HasValidatableMessage {
@@ -21,55 +31,75 @@ func loadValidationTemplateImports(ctx *Context, cfg *settings.Settings) []*Impo
 		}
 
 		for _, f := range m.Fields {
-			var (
-				fieldExtensions = mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto)
-				validation      *mikros_extensions.FieldValidateOptions
-			)
-
-			if fieldExtensions != nil {
-				validation = fieldExtensions.GetValidate()
-			}
-			if validation == nil {
-				continue
-			}
-
-			if validation.GetRule() == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
-				imports["regex"] = packages["regex"]
-				continue
-			}
-
-			call := f.ValidationCall
-			if cfg.Validations != nil && cfg.Validations.RulePackageImport != nil {
-				if strings.Contains(call, fmt.Sprintf("%s.", cfg.Validations.RulePackageImport.Alias)) {
-					imports[cfg.Validations.RulePackageImport.Name] = &Import{
-						Alias: cfg.Validations.RulePackageImport.Alias,
-						Name:  cfg.Validations.RulePackageImport.Name,
-					}
-				}
-			}
-
-			// If a conditional validation is being made, we check if values used
-			// by it belong from an external module.
-			if isConditionalValidation(call) {
-				values := filterExternalModulesValues(call)
-				for _, value := range values {
-					moduleName := getModuleName(value)
-					imports[moduleName] = importAnotherModule(moduleName, ctx.ModuleName, ctx.FullPath)
-				}
-			}
+			v.processField(ctx, cfg, f, imports)
 		}
 	}
 
 	return toSlice(imports)
 }
 
-func isConditionalValidation(call string) bool {
+func (v *Validation) processField(ctx *Context, cfg *settings.Settings, f *Field, imports map[string]*Import) {
+	var (
+		fieldExtensions = mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto)
+		validation      *mikros_extensions.FieldValidateOptions
+	)
+
+	if fieldExtensions != nil {
+		validation = fieldExtensions.GetValidate()
+	}
+	if validation == nil {
+		return
+	}
+
+	if ok := v.addRegexForValidationTemplate(imports, validation); ok {
+		return
+	}
+
+	if cfg.Validations != nil && cfg.Validations.RulePackageImport != nil {
+		if strings.Contains(f.ValidationCall, fmt.Sprintf("%s.", cfg.Validations.RulePackageImport.Alias)) {
+			imports[cfg.Validations.RulePackageImport.Name] = &Import{
+				Alias: cfg.Validations.RulePackageImport.Alias,
+				Name:  cfg.Validations.RulePackageImport.Name,
+			}
+		}
+	}
+
+	// If a conditional validation is being made, we check if values used
+	// by it belong from an external module.
+	v.addExternalModuleImport(ctx, f, imports)
+}
+
+func (v *Validation) addRegexForValidationTemplate(
+	imports map[string]*Import,
+	validation *mikros_extensions.FieldValidateOptions,
+) bool {
+	if validation.GetRule() == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
+		imports["regex"] = packages["regex"]
+		return true
+	}
+
+	return false
+}
+
+func (v *Validation) addExternalModuleImport(ctx *Context, field *Field, imports map[string]*Import) {
+	call := field.ValidationCall
+
+	if v.isConditionalValidation(call) {
+		values := v.filterExternalModulesValues(call)
+		for _, value := range values {
+			moduleName := getModuleName(value)
+			imports[moduleName] = importAnotherModule(moduleName, ctx.ModuleName, ctx.FullPath)
+		}
+	}
+}
+
+func (v *Validation) isConditionalValidation(call string) bool {
 	return strings.HasPrefix(call, "validation.When(") && strings.HasSuffix(call, ", validation.Required)")
 }
 
 // filterExternalModulesValues extracts values from a validation.When call
-// that reference symbols from external modules (i.e., prefixed with module name).
-func filterExternalModulesValues(call string) []string {
+// that references symbols from external modules (i.e., prefixed with module name).
+func (v *Validation) filterExternalModulesValues(call string) []string {
 	call = strings.TrimPrefix(call, "validation.When(")
 	call = strings.TrimSuffix(call, ", validation.Required)")
 

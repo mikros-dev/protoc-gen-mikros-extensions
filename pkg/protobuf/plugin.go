@@ -13,13 +13,13 @@ func getPackageProtoFiles(plugin *protogen.Plugin) (map[string]*protogen.File, e
 		files = make(map[string]*protogen.File)
 	)
 
-	moduleName, _, _, err := GetPackageNameAndPath(plugin)
+	info, err := GetPackageInfo(plugin)
 	if err != nil {
 		return nil, err
 	}
 
 	for name, file := range plugin.FilesByPath {
-		if isProtoFileFromCurrentPackage(file, moduleName) {
+		if isProtoFileFromCurrentPackage(file, info.ModuleName) {
 			files[strings.TrimSuffix(filepath.Base(name), ".proto")] = file
 		}
 	}
@@ -31,11 +31,19 @@ func getPackageProtoFiles(plugin *protogen.Plugin) (map[string]*protogen.File, e
 	return files, nil
 }
 
-// GetPackageNameAndPath try to retrieve the golang module name from the list of .proto
+// PackageInfo contains the package name, module name and path of the current
+// file being processed.
+type PackageInfo struct {
+	PackageName string
+	ModuleName  string
+	Path        string
+}
+
+// GetPackageInfo try to retrieve the golang module name from the list of .proto
 // files.
-func GetPackageNameAndPath(plugin *protogen.Plugin) (string, string, string, error) {
+func GetPackageInfo(plugin *protogen.Plugin) (*PackageInfo, error) {
 	if len(plugin.Files) == 0 {
-		return "", "", "", errors.New("cannot find the module name without .proto files")
+		return nil, errors.New("cannot find the module name without .proto files")
 	}
 
 	// The last file in the slice is always the main .proto file that is being
@@ -43,7 +51,11 @@ func GetPackageNameAndPath(plugin *protogen.Plugin) (string, string, string, err
 	file := plugin.Files[len(plugin.Files)-1]
 
 	path := strings.ReplaceAll(file.GoImportPath.String(), "\"", "")
-	return string(file.GoPackageName), file.Proto.GetPackage(), path, nil
+	return &PackageInfo{
+		PackageName: file.Proto.GetPackage(),
+		ModuleName:  string(file.GoPackageName),
+		Path:        path,
+	}, nil
 }
 
 func isProtoFileFromCurrentPackage(file *protogen.File, packageName string) bool {

@@ -12,6 +12,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
+// CallOptions represents the options to build a validation call.
 type CallOptions struct {
 	IsArray   bool
 	IsMessage bool
@@ -23,14 +24,17 @@ type CallOptions struct {
 	Message   *protobuf.Message
 }
 
+// Call represents a validation call.
 type Call struct {
 	apiCall string
 }
 
+// NewCall creates a validation call object to retrieve validation expression
+// of fields.
 func NewCall(options *CallOptions) (*Call, error) {
 	var apiCall string
 	if options != nil {
-		c, err := buildApiCall(options)
+		c, err := buildAPICall(options)
 		if err != nil {
 			return nil, err
 		}
@@ -42,7 +46,7 @@ func NewCall(options *CallOptions) (*Call, error) {
 	}, nil
 }
 
-func buildApiCall(options *CallOptions) (string, error) {
+func buildAPICall(options *CallOptions) (string, error) {
 	if options.Options == nil || options.Options.GetValidate() == nil {
 		// No validation
 		return "", nil
@@ -58,73 +62,86 @@ func buildCall(options *CallOptions) (string, error) {
 	}
 
 	var (
-		call              = handleBeginCall(options, requiredCondition)
+		parts             []string
 		validationOptions = options.Options.GetValidate()
+		begin             = handleBeginCall(options, requiredCondition)
 	)
 
-	// Required is always enabled if a required_ condition is being used.
+	if begin != "" {
+		parts = append(parts, begin)
+	}
+
+	// Handle required
 	if validationOptions.GetRequired() || requiredCondition != nil {
-		if call != "" {
-			call += ", "
-		}
-
-		call += "validation.Required"
+		req := "validation.Required"
 		if msg := validationOptions.GetErrorMessage(); msg != "" {
-			call += fmt.Sprintf(`.Error("%s")`, msg)
+			req += fmt.Sprintf(`.Error("%s")`, msg)
 		}
+		parts = append(parts, req)
 	}
 
-	if validationOptions.GetDive() {
-		if !options.IsArray && !options.IsMessage {
-			return "", fmt.Errorf("field '%s' must be an array or a another message to have dive rule option enabled", options.ProtoName)
-		}
-
-		if call != "" {
-			call += ", "
-		}
-
-		if options.IsArray {
-			call += "validation.Each("
-		}
-		if options.IsMessage {
-			call += fmt.Sprintf("validation.By(%vValidator(options...)", options.ProtoType)
-		}
-	}
-
-	if validationOptions.GetMaxLength() > 0 {
-		if needsComma(call) {
-			call += ", "
-		}
-
-		call += fmt.Sprintf("validation.Length(1, %d)", validationOptions.GetMaxLength())
-	}
-
-	if validationOptions.GetMin() > 0 {
-		if needsComma(call) {
-			call += ", "
-		}
-
-		call += fmt.Sprintf("validation.Min(%d)", validationOptions.GetMin())
-	}
-
-	if validationOptions.GetMax() > 0 {
-		if needsComma(call) {
-			call += ", "
-		}
-
-		call += fmt.Sprintf("validation.Max(%d)", validationOptions.GetMax())
-	}
-
-	c, err := handleRule(options, call)
+	// Handle dive/message nesting
+	dive, err := buildDiveCall(options)
 	if err != nil {
 		return "", err
 	}
-	call = c
+	if dive != "" {
+		parts = append(parts, dive)
+	}
+
+	// Handle constraints (length, min, max)
+	parts = append(parts, buildConstraints(validationOptions)...)
+
+	// Handle rules and finalize
+	call := strings.Join(parts, ", ")
+	call, err = handleRule(options, call)
+	if err != nil {
+		return "", err
+	}
 
 	return handleEndCall(options, requiredCondition, call), nil
 }
 
-func handleBeginCall(options *CallOptions, requiredCondition *RequiredCondition) string {
+func buildDiveCall(options *CallOptions) (string, error) {
+	opts := options.Options.GetValidate()
+	if !opts.GetDive() {
+		return "", nil
+	}
+
+	if !options.IsArray && !options.IsMessage {
+		return "", fmt.Errorf(
+			"field '%s' must be an array or a another message to have dive rule option enabled",
+			options.ProtoName,
+		)
+	}
+
+	var diveParts []string
+	if options.IsArray {
+		diveParts = append(diveParts, "validation.Each(")
+	}
+	if options.IsMessage {
+		diveParts = append(diveParts, fmt.Sprintf("validation.By(%vValidator(options...)", options.ProtoType))
+	}
+
+	return strings.Join(diveParts, ", "), nil
+}
+
+func buildConstraints(opts *mikros_extensions.FieldValidateOptions) []string {
+	var constraints []string
+	if opts.GetMaxLength() > 0 {
+		constraints = append(constraints, fmt.Sprintf("validation.Length(1, %d)", opts.GetMaxLength()))
+	}
+	if opts.GetMin() > 0 {
+		constraints = append(constraints, fmt.Sprintf("validation.Min(%d)", opts.GetMin()))
+	}
+	if opts.GetMax() > 0 {
+		constraints = append(constraints, fmt.Sprintf("validation.Max(%d)", opts.GetMax()))
+	}
+
+	return constraints
+}
+
+func handleBeginCall(options *CallOptions, requiredCondition *requiredCondition) string {
 	if requiredCondition == nil {
 		return ""
 	}
@@ -133,7 +150,7 @@ func handleBeginCall(options *CallOptions, requiredCondition *RequiredCondition)
 	return fmt.Sprintf("validation.When(%s", condition)
 }
 
-func buildConditionalValidationCall(options *CallOptions, condition *RequiredCondition) string {
+func buildConditionalValidationCall(options *CallOptions, condition *requiredCondition) string {
 	var (
 		args       = ""
 		totalRules = len(condition.Rules)
@@ -208,7 +225,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 	return call, nil
 }
 
-func handleEndCall(options *CallOptions, requiredCondition *RequiredCondition, call string) string {
+func handleEndCall(options *CallOptions, requiredCondition *requiredCondition, call string) string {
 	validationOptions := options.Options.GetValidate()
 	if validationOptions.GetDive() || requiredCondition != nil {
 		call += ")"
@@ -221,6 +238,7 @@ func needsComma(call string) bool {
 	return call != "" && !strings.HasSuffix(call, "(")
 }
 
-func (c *Call) ApiCall() string {
+// APICall returns the API call to be used in the generated code.
+func (c *Call) APICall() string {
 	return c.apiCall
 }

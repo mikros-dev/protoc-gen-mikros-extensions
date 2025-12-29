@@ -21,6 +21,7 @@ const (
 	wireToOutbound
 )
 
+// Field is the object used to make conversions between field types.
 type Field struct {
 	isArray           bool
 	isHTTPService     bool
@@ -36,6 +37,7 @@ type Field struct {
 	validation        *validation.Call
 }
 
+// FieldOptions is the options used to create a new field.
 type FieldOptions struct {
 	IsHTTPService bool
 	Receiver      string
@@ -45,6 +47,7 @@ type FieldOptions struct {
 	Settings      *settings.Settings
 }
 
+// NewField creates a new field converter.
 func NewField(options FieldOptions) (*Field, error) {
 	var (
 		fieldExtensions = mikros_extensions.LoadFieldExtensions(options.ProtoField.Proto)
@@ -52,10 +55,14 @@ func NewField(options FieldOptions) (*Field, error) {
 	)
 
 	field := &Field{
-		isArray:           isArray,
-		isHTTPService:     options.IsHTTPService,
-		goName:            options.ProtoField.Schema.GoName,
-		goType:            ProtoTypeToGoType(options.ProtoField.Schema.Desc.Kind(), options.ProtoField.Proto.GetTypeName(), options.ProtoMessage.ModuleName),
+		isArray:       isArray,
+		isHTTPService: options.IsHTTPService,
+		goName:        options.ProtoField.Schema.GoName,
+		goType: ProtoTypeToGoType(
+			options.ProtoField.Schema.Desc.Kind(),
+			options.ProtoField.Proto.GetTypeName(),
+			options.ProtoMessage.ModuleName,
+		),
 		receiver:          options.Receiver,
 		msg:               options.Message,
 		fieldExtensions:   fieldExtensions,
@@ -146,6 +153,8 @@ func (f *Field) DomainType(isPointer bool) string {
 	return f.convertFromWireType(isPointer, false, wireToDomain)
 }
 
+// DomainTypeForTest returns the current field type for testing templates for
+// the domain.
 func (f *Field) DomainTypeForTest(isPointer bool) string {
 	return f.convertFromWireType(isPointer, true, wireToDomain)
 }
@@ -156,55 +165,83 @@ func (f *Field) OutboundType(isPointer bool) string {
 }
 
 func (f *Field) convertFromWireType(isPointer, testMode bool, mode conversionMode) string {
-	if mode == wireToOutbound && f.fieldExtensions != nil && f.fieldExtensions.GetOutbound() != nil {
-		if t := f.fieldExtensions.GetOutbound().GetCustomType(); t != "" {
-			return t
-		}
+	if mode == wireToOutbound && f.fieldExtensions.GetOutbound().GetCustomType() != "" {
+		return f.fieldExtensions.GetOutbound().GetCustomType()
 	}
 
-	if f.proto.IsEnum() {
-		return optional("string", f.isArray, isPointer)
+	// Handle Built-in Proto Types
+	if t, ok := f.getBuiltInType(isPointer); ok {
+		return t
 	}
 
-	if f.proto.IsProtoStruct() {
-		return optional("map[string]interface{}", f.isArray, false)
-	}
-
-	if f.proto.IsTimestamp() {
-		return optional("time.Time", f.isArray, isPointer)
-	}
-
-	if f.proto.IsProtoValue() {
-		return "interface{}"
-	}
-
+	// Handle Complex Types
 	if f.proto.IsMap() {
 		key, value := f.getMapKeyValueTypes(testMode, mode)
 		return fmt.Sprintf("map[%s]%s", key, value)
 	}
 
-	// Handle fields from other modules
-	if module, name, ok := f.handleOtherModuleField(f.goType); ok {
-		prefix := ""
-		if module != f.proto.ModuleName() || testMode {
-			prefix = fmt.Sprintf("%s.", module)
-		}
-
-		suffix := f.msg.WireToDomain(name)
-		if mode == wireToOutbound {
-			suffix = f.msg.WireOutputToOutbound(name)
-		}
-
-		t := fmt.Sprintf("%s%s", prefix, suffix)
-		return optional(t, f.isArray, isPointer)
+	// Handle External/Cross-Module Types
+	if t, ok := f.getExternalModuleType(isPointer, testMode, mode); ok {
+		return t
 	}
 
-	// Handle outbound specific types
+	// Default
+	baseType := f.goType
 	if mode == wireToOutbound {
-		return optional(f.convertFromWireTypeToOutbound(), f.isArray, isPointer)
+		baseType = f.convertFromWireTypeToOutbound()
 	}
 
-	return optional(f.goType, f.isArray, isPointer)
+	return optional(baseType, f.isArray, isPointer)
+}
+
+func (f *Field) getBuiltInType(isPointer bool) (string, bool) {
+	switch {
+	case f.proto.IsEnum():
+		return optional("string", f.isArray, isPointer), true
+	case f.proto.IsProtoStruct():
+		return optional("map[string]interface{}", f.isArray, false), true
+	case f.proto.IsTimestamp():
+		return optional("time.Time", f.isArray, isPointer), true
+	case f.proto.IsProtoValue():
+		return "interface{}", true
+	}
+
+	return "", false
+}
+
+func (f *Field) getExternalModuleType(isPointer, testMode bool, mode conversionMode) (string, bool) {
+	module, name, ok := f.handleOtherModuleField(f.goType)
+	if !ok {
+		return "", false
+	}
+
+	prefix := ""
+	if module != f.proto.ModuleName() || testMode {
+		prefix = fmt.Sprintf("%s.", module)
+	}
+
+	suffix := f.msg.WireToDomain(name)
+	if mode == wireToOutbound {
+		suffix = f.msg.WireOutputToOutbound(name)
+	}
+
+	return optional(prefix+suffix, f.isArray, isPointer), true
+}
+
+func optional(outType string, isArray, isPointer bool) string {
+	if isPointer {
+		return array("*"+outType, isArray)
+	}
+
+	return array(outType, isArray)
+}
+
+func array(outType string, isArray bool) string {
+	if isArray {
+		return "[]" + outType
+	}
+
+	return outType
 }
 
 func (f *Field) convertFromWireTypeToOutbound() string {
@@ -232,7 +269,8 @@ func (f *Field) getMapKeyValueTypes(testMode bool, mode conversionMode) (string,
 			valueType = f.msg.WireOutputToOutbound(string(v.Message().Name()))
 		}
 
-		if module, _, ok := f.handleOtherModuleField(string(v.Message().FullName())); ok && (module != f.proto.ModuleName() || testMode) {
+		module, _, ok := f.handleOtherModuleField(string(v.Message().FullName()))
+		if ok && (module != f.proto.ModuleName() || testMode) {
 			valueType = fmt.Sprintf("%s.%s", module, valueType)
 		}
 
@@ -244,22 +282,6 @@ func (f *Field) getMapKeyValueTypes(testMode bool, mode conversionMode) (string,
 	}
 
 	return key, value
-}
-
-func array(outType string, isArray bool) string {
-	if isArray {
-		return "[]" + outType
-	}
-
-	return outType
-}
-
-func optional(outType string, isArray, isPointer bool) string {
-	if isPointer {
-		return array("*"+outType, isArray)
-	}
-
-	return array(outType, isArray)
 }
 
 func (f *Field) handleOtherModuleField(fieldType string) (string, string, bool) {
@@ -284,6 +306,8 @@ func (f *Field) hasModuleAsPrefix(fieldType string) bool {
 		!f.proto.IsProtobufWrapper()
 }
 
+// DomainName returns the domain name associated with the field. It is formatted
+// in UpperCamelCase if annotations is available, or the Go name.
 func (f *Field) DomainName() string {
 	if f.fieldExtensions != nil {
 		if domain := f.fieldExtensions.GetDomain(); domain != nil {
@@ -296,6 +320,8 @@ func (f *Field) DomainName() string {
 	return f.goName
 }
 
+// DomainTag generates the struct tag string for the field based on its domain
+// and naming conventions. It also adds the database struct tag if available.
 func (f *Field) DomainTag() string {
 	var (
 		domain    *mikros_extensions.FieldDomainOptions
@@ -332,10 +358,14 @@ func (f *Field) DomainTag() string {
 	return tag
 }
 
+// InboundTag generates and returns the struct tag string for the inbound
+// structure.
 func (f *Field) InboundTag() string {
 	return fmt.Sprintf("`json:\"%s\"`", f.InboundName())
 }
 
+// InboundName returns the inbound name of the field, defaulting to snake_case
+// unless overwritten by specific extensions.
 func (f *Field) InboundName() string {
 	name := f.DomainName()
 	if f.fieldExtensions != nil {
@@ -359,6 +389,8 @@ func (f *Field) InboundName() string {
 	return fieldName
 }
 
+// OutboundTag generates the outbound struct tag for the field based on its
+// domain name and outbound configuration options.
 func (f *Field) OutboundTag() string {
 	var (
 		outbound *mikros_extensions.FieldOutboundOptions
@@ -400,11 +432,14 @@ func (f *Field) OutboundTag() string {
 	return tag
 }
 
+// OutboundName returns the outbound field name.
 func (f *Field) OutboundName() string {
 	return f.goName
 }
 
-func (f *Field) OutboundJsonTagFieldName() string {
+// OutboundJSONTagFieldName generates and returns the outbound JSON tag name
+// for the field.
+func (f *Field) OutboundJSONTagFieldName() string {
 	var (
 		name = f.DomainName()
 	)
@@ -430,23 +465,25 @@ func (f *Field) OutboundJsonTagFieldName() string {
 	return fieldName
 }
 
+// ConvertToWireType converts the field to its wire-compatible type based on
+// protobuf schema and field settings.
 func (f *Field) ConvertToWireType(wireInput bool) string {
 	if f.proto.IsEnum() {
 		return f.enumWireType()
 	}
 
 	if f.proto.IsProtoValue() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToProtoValue)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToProtoValue)
 		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
 	if f.proto.IsTimestamp() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallTimeToProto)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallTimeToProto)
 		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
 	if f.proto.IsProtoStruct() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallMapToStruct)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallMapToStruct)
 		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
@@ -481,19 +518,21 @@ func (f *Field) enumWireType() string {
 
 	arg := fmt.Sprintf("%s.%s", f.receiver, f.goName)
 	if f.proto.IsOptional() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToValue)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToValue)
 		arg = fmt.Sprintf("%s(%s)", call, arg)
 	}
 
 	conversionCall := fmt.Sprintf("%[1]s.FromString(%[1]s(0), %s)", name, arg)
 	if f.proto.IsOptional() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
 		conversionCall = fmt.Sprintf("%s(%s)", call, conversionCall)
 	}
 
 	return conversionCall
 }
 
+// ConvertDomainTypeToWireType converts the domain type into its wire-protocol
+// representation.
 func (f *Field) ConvertDomainTypeToWireType() string {
 	if f.proto.IsEnum() {
 		call := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", f.receiver, f.DomainName())
@@ -523,6 +562,8 @@ func (f *Field) ConvertDomainTypeToWireType() string {
 	return fmt.Sprintf("%s.%s", f.receiver, f.DomainName())
 }
 
+// ConvertDomainTypeToArrayWireType converts the domain-specific representation to
+// its array wire format as a string.
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool) string {
 	if f.proto.IsEnum() {
 		name := TrimPackageName(f.goType, f.proto.ModuleName())
@@ -539,7 +580,7 @@ func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool
 	}
 
 	if f.proto.IsTimestamp() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallTimeToProto)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallTimeToProto)
 		return fmt.Sprintf("%s(%s)", call, receiver)
 	}
 
@@ -554,6 +595,8 @@ func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool
 	return receiver
 }
 
+// ConvertWireTypeToArrayDomainType converts a wire type into a
+// domain-specific representation for array fields.
 func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
 	if f.proto.IsEnum() {
 		return fmt.Sprintf("%s.ValueWithoutPrefix()", receiver)
@@ -570,6 +613,8 @@ func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
 	return receiver
 }
 
+// ConvertDomainTypeToMapWireType converts a domain type to its corresponding
+// map wire type representation.
 func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) string {
 	_, value, valueKind := f.getMapKeyValueTypesForWire()
 
@@ -579,7 +624,7 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) 
 
 	if valueKind.Kind() == protoreflect.MessageKind {
 		if strings.Contains(value, "ts.Timestamp") {
-			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallTimeToProto)
+			call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallTimeToProto)
 			return fmt.Sprintf("%s(%s)", call, receiver)
 		}
 
@@ -593,6 +638,8 @@ func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) 
 	return receiver
 }
 
+// ConvertWireTypeToMapDomainType converts a wire type value into the corresponding
+// map domain type representation.
 func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
 	_, value, valueKind := f.getMapKeyValueTypesForWire()
 
@@ -611,6 +658,8 @@ func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
 	return receiver
 }
 
+// ConvertWireOutputToOutbound converts the field's wire format output into the
+// outbound.
 func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 	if f.fieldExtensions != nil {
 		if outbound := f.fieldExtensions.GetOutbound(); outbound != nil && outbound.GetBitflag() != nil {
@@ -627,7 +676,7 @@ func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 		conversionCall := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", receiver, f.goName)
 
 		if f.proto.IsOptional() {
-			call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallToPtr)
+			call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
 			conversionCall = fmt.Sprintf("%s(%s)", call, conversionCall)
 		}
 
@@ -639,7 +688,7 @@ func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 	}
 
 	if f.proto.IsTimestamp() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTimePtr)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallProtoToTimePtr)
 		return fmt.Sprintf("%s(%s.%s)", call, f.receiver, f.DomainName())
 	}
 
@@ -654,6 +703,8 @@ func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
 	return fmt.Sprintf("%s.%s", receiver, f.goName)
 }
 
+// ConvertWireOutputToMapOutbound converts the field wire output to its map
+// outbound representation.
 func (f *Field) ConvertWireOutputToMapOutbound(receiver string) string {
 	v := f.proto.Schema.Desc.MapValue()
 
@@ -668,13 +719,15 @@ func (f *Field) ConvertWireOutputToMapOutbound(receiver string) string {
 	return receiver
 }
 
+// ConvertWireOutputToArrayOutbound converts the field wire format output into
+// an appropriate outbound array representation.
 func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
 	if f.proto.IsEnum() {
 		return fmt.Sprintf("%s.ValueWithoutPrefix()", receiver)
 	}
 
 	if f.proto.IsTimestamp() {
-		call := f.settings.GetCommonCall(settings.CommonApiConverters, settings.CommonCallProtoToTimePtr)
+		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallProtoToTimePtr)
 		return fmt.Sprintf("%s(%s)", call, receiver)
 	}
 
@@ -689,6 +742,8 @@ func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
 	return receiver
 }
 
+// ValidationName constructs and returns the validation call name for the
+// field.
 func (f *Field) ValidationName(receiver string) string {
 	var address string
 	if f.needsAddressNotation() {
@@ -700,17 +755,23 @@ func (f *Field) ValidationName(receiver string) string {
 
 func (f *Field) needsAddressNotation() bool {
 	if !f.isHTTPService {
-		// Non HTTP services always need the address notation
+		// Non-HTTP services always need the address notation
 		return true
 	}
 
-	return !f.isArray && !f.proto.IsProtoStruct() && !f.proto.IsProtobufWrapper() && !f.proto.IsMessage() && !f.proto.IsOptional()
+	return !f.isArray &&
+		!f.proto.IsProtoStruct() &&
+		!f.proto.IsProtobufWrapper() &&
+		!f.proto.IsMessage() &&
+		!f.proto.IsOptional()
 }
 
+// ValidationCall retrieves the validation API call from the field's validation
+// if it exists.
 func (f *Field) ValidationCall() string {
 	if f.validation == nil {
 		return ""
 	}
 
-	return f.validation.ApiCall()
+	return f.validation.APICall()
 }
