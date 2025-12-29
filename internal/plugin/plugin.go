@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protoplugin"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -26,7 +26,7 @@ import (
 )
 
 type execution struct {
-	Kind   types.Kind
+	Kind   spec.Kind
 	Path   string
 	Prefix string
 	Files  embed.FS
@@ -121,7 +121,7 @@ func buildExecutions(cfg *settings.Settings) []execution {
 	var executions []execution
 	if cfg.Templates.API {
 		executions = append(executions, execution{
-			Kind:   types.KindAPI,
+			Kind:   spec.KindAPI,
 			Path:   cfg.Templates.APIPath,
 			Prefix: "api",
 			Files:  api_tpl_files.Files,
@@ -129,7 +129,7 @@ func buildExecutions(cfg *settings.Settings) []execution {
 	}
 	if cfg.Templates.Test {
 		executions = append(executions, execution{
-			Kind:   types.KindTest,
+			Kind:   spec.KindTest,
 			Path:   cfg.Templates.TestPath,
 			Prefix: "testing",
 			Files:  test_tpl_files.Files,

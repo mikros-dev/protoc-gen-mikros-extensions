@@ -1,4 +1,4 @@
-package types
+package spec
 
 import (
 	"strings"
@@ -19,20 +19,22 @@ const (
 // Validator is a behavior that the templates' contexts and addons must implement
 // to validate their execution.
 type Validator interface {
-	GetTemplateValidator(name Name, ctx interface{}) (ValidateForExecution, bool)
+	GetTemplateValidator(name Name, ctx interface{}) (ExecutionFunc, bool)
 }
 
-// ValidateForExecution is a function that must return true if the template
+// ExecutionFunc is a function that must return true if the template
 // should be executed.
-type ValidateForExecution func() bool
+type ExecutionFunc func() bool
 
-// HelperAPI gives the API available for all templates to be used.
-func HelperAPI() map[string]interface{} {
+// DefaultFuncMap gives the API available for all templates to be used.
+func DefaultFuncMap() map[string]interface{} {
 	return template.FuncMap{
 		"toLowerCamelCase": strcase.LowerCamelCase,
 		"firstLower": func(s string) string {
-			c := s[0]
-			return strings.ToLower(string(c))
+			if len(s) == 0 {
+				return ""
+			}
+			return strings.ToLower(s[:1] + s[1:])
 		},
 		"toSnake":     strcase.SnakeCase,
 		"toCamelCase": strcase.UpperCamelCase,

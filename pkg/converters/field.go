@@ -165,55 +165,83 @@ func (f *Field) OutboundType(isPointer bool) string {
 }
 
 func (f *Field) convertFromWireType(isPointer, testMode bool, mode conversionMode) string {
-	if mode == wireToOutbound && f.fieldExtensions != nil && f.fieldExtensions.GetOutbound() != nil {
-		if t := f.fieldExtensions.GetOutbound().GetCustomType(); t != "" {
-			return t
-		}
+	if mode == wireToOutbound && f.fieldExtensions.GetOutbound().GetCustomType() != "" {
+		return f.fieldExtensions.GetOutbound().GetCustomType()
 	}
 
-	if f.proto.IsEnum() {
-		return optional("string", f.isArray, isPointer)
+	// Handle Built-in Proto Types
+	if t, ok := f.getBuiltInType(isPointer); ok {
+		return t
 	}
 
-	if f.proto.IsProtoStruct() {
-		return optional("map[string]interface{}", f.isArray, false)
-	}
-
-	if f.proto.IsTimestamp() {
-		return optional("time.Time", f.isArray, isPointer)
-	}
-
-	if f.proto.IsProtoValue() {
-		return "interface{}"
-	}
-
+	// Handle Complex Types
 	if f.proto.IsMap() {
 		key, value := f.getMapKeyValueTypes(testMode, mode)
 		return fmt.Sprintf("map[%s]%s", key, value)
 	}
 
-	// Handle fields from other modules
-	if module, name, ok := f.handleOtherModuleField(f.goType); ok {
-		prefix := ""
-		if module != f.proto.ModuleName() || testMode {
-			prefix = fmt.Sprintf("%s.", module)
-		}
-
-		suffix := f.msg.WireToDomain(name)
-		if mode == wireToOutbound {
-			suffix = f.msg.WireOutputToOutbound(name)
-		}
-
-		t := fmt.Sprintf("%s%s", prefix, suffix)
-		return optional(t, f.isArray, isPointer)
+	// Handle External/Cross-Module Types
+	if t, ok := f.getExternalModuleType(isPointer, testMode, mode); ok {
+		return t
 	}
 
-	// Handle outbound specific types
+	// Default
+	baseType := f.goType
 	if mode == wireToOutbound {
-		return optional(f.convertFromWireTypeToOutbound(), f.isArray, isPointer)
+		baseType = f.convertFromWireTypeToOutbound()
 	}
 
-	return optional(f.goType, f.isArray, isPointer)
+	return optional(baseType, f.isArray, isPointer)
+}
+
+func (f *Field) getBuiltInType(isPointer bool) (string, bool) {
+	switch {
+	case f.proto.IsEnum():
+		return optional("string", f.isArray, isPointer), true
+	case f.proto.IsProtoStruct():
+		return optional("map[string]interface{}", f.isArray, false), true
+	case f.proto.IsTimestamp():
+		return optional("time.Time", f.isArray, isPointer), true
+	case f.proto.IsProtoValue():
+		return "interface{}", true
+	}
+
+	return "", false
+}
+
+func (f *Field) getExternalModuleType(isPointer, testMode bool, mode conversionMode) (string, bool) {
+	module, name, ok := f.handleOtherModuleField(f.goType)
+	if !ok {
+		return "", false
+	}
+
+	prefix := ""
+	if module != f.proto.ModuleName() || testMode {
+		prefix = fmt.Sprintf("%s.", module)
+	}
+
+	suffix := f.msg.WireToDomain(name)
+	if mode == wireToOutbound {
+		suffix = f.msg.WireOutputToOutbound(name)
+	}
+
+	return optional(prefix+suffix, f.isArray, isPointer), true
+}
+
+func optional(outType string, isArray, isPointer bool) string {
+	if isPointer {
+		return array("*"+outType, isArray)
+	}
+
+	return array(outType, isArray)
+}
+
+func array(outType string, isArray bool) string {
+	if isArray {
+		return "[]" + outType
+	}
+
+	return outType
 }
 
 func (f *Field) convertFromWireTypeToOutbound() string {
@@ -254,22 +282,6 @@ func (f *Field) getMapKeyValueTypes(testMode bool, mode conversionMode) (string,
 	}
 
 	return key, value
-}
-
-func array(outType string, isArray bool) string {
-	if isArray {
-		return "[]" + outType
-	}
-
-	return outType
-}
-
-func optional(outType string, isArray, isPointer bool) string {
-	if isPointer {
-		return array("*"+outType, isArray)
-	}
-
-	return array(outType, isArray)
 }
 
 func (f *Field) handleOtherModuleField(fieldType string) (string, string, bool) {

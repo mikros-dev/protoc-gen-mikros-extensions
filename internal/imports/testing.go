@@ -6,9 +6,19 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
-func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import {
+// Testing represents the 'testing/testing.tmpl' importer
+type Testing struct{}
+
+// Name returns the template name.
+func (t *Testing) Name() spec.Name {
+	return spec.NewName("testing", "testing")
+}
+
+// Load returns a slice of imports for the template.
+func (t *Testing) Load(ctx *Context, cfg *settings.Settings) []*Import {
 	var (
 		importTestingRule = false
 		imports           = map[string]*Import{
@@ -22,11 +32,11 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 		for _, f := range message.Fields {
 			var (
 				binding   = f.TestingBinding
-				call      = buildTestingCall(cfg, f.TestingCall)
+				call      = t.buildTestingCall(cfg, f.TestingCall)
 				fieldType = f.DomainType
 			)
 
-			if hasTestingOption(f) {
+			if t.hasTestingOption(f) {
 				importTestingRule = true
 			}
 
@@ -34,30 +44,30 @@ func loadTestingTemplateImports(ctx *Context, cfg *settings.Settings) []*Import 
 			addConvertersIfNeeded(imports, cfg, binding)
 			addTimeIfNeeded(imports, f)
 
-			if handled := handleFromStringCall(imports, call, ctx); handled {
+			if handled := t.handleFromStringCall(imports, call, ctx); handled {
 				continue
 			}
 
-			addModuleIfNeededFromZeroValue(imports, call, f.ProtoField, ctx)
+			t.addModuleIfNeededFromZeroValue(imports, call, f.ProtoField, ctx)
 		}
 	}
 
-	addTestingRuleImportIfNeeded(imports, importTestingRule, cfg)
+	t.addTestingRuleImportIfNeeded(imports, importTestingRule, cfg)
 
 	return toSlice(imports)
 }
 
-func buildTestingCall(cfg *settings.Settings, testingCall string) string {
+func (t *Testing) buildTestingCall(cfg *settings.Settings, testingCall string) string {
 	cfgCall := cfg.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr) + "("
 	return strings.TrimPrefix(testingCall, cfgCall)
 }
 
-func hasTestingOption(f *Field) bool {
+func (t *Testing) hasTestingOption(f *Field) bool {
 	options := mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto)
 	return options != nil && options.GetTesting() != nil
 }
 
-func handleFromStringCall(imports map[string]*Import, call string, ctx *Context) bool {
+func (t *Testing) handleFromStringCall(imports map[string]*Import, call string, ctx *Context) bool {
 	if strings.Contains(call, "FromString") {
 		module := strings.Split(call, ".")[0]
 		imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
@@ -67,13 +77,18 @@ func handleFromStringCall(imports map[string]*Import, call string, ctx *Context)
 	return false
 }
 
-func addModuleIfNeededFromZeroValue(imports map[string]*Import, call string, field *protobuf.Field, ctx *Context) {
-	if module, ok := getModuleFromZeroValueCall(call, field); ok {
+func (t *Testing) addModuleIfNeededFromZeroValue(
+	imports map[string]*Import,
+	call string,
+	field *protobuf.Field,
+	ctx *Context,
+) {
+	if module, ok := t.getModuleFromZeroValueCall(call, field); ok {
 		imports[module] = importAnotherModule(module, ctx.ModuleName, ctx.FullPath)
 	}
 }
 
-func getModuleFromZeroValueCall(call string, field *protobuf.Field) (string, bool) {
+func (t *Testing) getModuleFromZeroValueCall(call string, field *protobuf.Field) (string, bool) {
 	if !strings.Contains(call, "zeroValue") || field.IsTimestamp() || field.IsMap() {
 		return "", false
 	}
@@ -99,7 +114,11 @@ func stripNonAlpha(s string) string {
 	return result.String()
 }
 
-func addTestingRuleImportIfNeeded(imports map[string]*Import, importTestingRule bool, cfg *settings.Settings) {
+func (t *Testing) addTestingRuleImportIfNeeded(
+	imports map[string]*Import,
+	importTestingRule bool,
+	cfg *settings.Settings,
+) {
 	if importTestingRule && cfg.Testing != nil && cfg.Testing.PackageImport != nil {
 		imports[cfg.Testing.PackageImport.Name] = &Import{
 			Name:  cfg.Testing.PackageImport.Name,

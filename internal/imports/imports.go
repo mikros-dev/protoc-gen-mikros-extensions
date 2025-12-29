@@ -8,7 +8,7 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
 // Context represents the context template information specific for imports.
@@ -67,22 +67,41 @@ type Import struct {
 	Name  string
 }
 
+// Importer represents the API that an internal template file must implement to
+// be able to load its imports.
+type Importer interface {
+	// Name must return the template name.
+	Name() spec.Name
+
+	// Load must return a slice of imports for the template.
+	Load(ctx *Context, cfg *settings.Settings) []*Import
+}
+
 // LoadTemplateImports loads the imports for the templates.
-func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[tpl_types.Name][]*Import {
-	return map[tpl_types.Name][]*Import{
-		tpl_types.NewName("api", "domain"):          loadDomainTemplateImports(ctx, cfg),
-		tpl_types.NewName("api", "enum"):            loadEnumTemplateImports(),
-		tpl_types.NewName("api", "custom_api"):      loadCustomAPITemplateImports(ctx),
-		tpl_types.NewName("api", "http_server"):     loadHTTPServerTemplateImports(),
-		tpl_types.NewName("api", "routes"):          loadRoutesTemplateImports(ctx),
-		tpl_types.NewName("api", "wire"):            loadWireTemplateImports(ctx, cfg),
-		tpl_types.NewName("api", "wire_input"):      loadWireInputTemplateImports(ctx, cfg),
-		tpl_types.NewName("api", "outbound"):        loadOutboundTemplateImports(ctx, cfg),
-		tpl_types.NewName("api", "common"):          loadCommonTemplateImports(ctx),
-		tpl_types.NewName("api", "validation"):      loadValidationTemplateImports(ctx, cfg),
-		tpl_types.NewName("testing", "testing"):     loadTestingTemplateImports(ctx, cfg),
-		tpl_types.NewName("testing", "http_server"): loadTestingHttpServerTemplateImports(ctx),
+func LoadTemplateImports(ctx *Context, cfg *settings.Settings) map[spec.Name][]*Import {
+	var (
+		generatedImports = make(map[spec.Name][]*Import)
+		templates        = []Importer{
+			&Domain{},
+			&Enum{},
+			&CustomAPI{},
+			&HTTPServer{},
+			&Routes{},
+			&Wire{},
+			&WireInput{},
+			&Outbound{},
+			&Common{},
+			&Validation{},
+			&Testing{},
+			&TestingHTTPServer{},
+		}
+	)
+
+	for _, tpl := range templates {
+		generatedImports[tpl.Name()] = tpl.Load(ctx, cfg)
 	}
+
+	return generatedImports
 }
 
 func toSlice(ipt map[string]*Import) []*Import {

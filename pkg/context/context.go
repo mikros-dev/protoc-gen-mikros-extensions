@@ -8,7 +8,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
 // Context represents the main context used inside the plugin template files.
@@ -20,7 +20,7 @@ type Context struct {
 	Package    *protobuf.Protobuf
 
 	messages []*Message
-	imports  map[types.Name][]*templateImport
+	imports  map[spec.Name][]*templateImport
 	addons   map[string]*addon.Addon
 	settings *settings.Settings
 }
@@ -79,14 +79,14 @@ func BuildContext(opt BuildContextOptions) (*Context, error) {
 
 // GetTemplateImports returns the imports for the given template name.
 func (c *Context) GetTemplateImports(name string) []*templateImport {
-	return c.imports[types.Name(name)]
+	return c.imports[spec.Name(name)]
 }
 
 // GetAddonTemplateImports returns the imports for the given addon template name.
 func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*templateImport {
 	if a, ok := c.addons[addonName]; ok {
 		var (
-			ipt          = a.Addon().GetTemplateImports(types.Name(tplName), c, c.settings)
+			ipt          = a.Addon().GetTemplateImports(spec.Name(tplName), c, c.settings)
 			addonImports = make([]*templateImport, len(ipt))
 		)
 
@@ -106,7 +106,7 @@ func (c *Context) GetAddonTemplateImports(addonName, tplName string) []*template
 // HasImportFor returns true if the given template has an import for the given
 // name.
 func (c *Context) HasImportFor(name string) bool {
-	d, ok := c.imports[types.Name(name)]
+	d, ok := c.imports[spec.Name(name)]
 	return ok && len(d) > 0
 }
 
@@ -114,7 +114,7 @@ func (c *Context) HasImportFor(name string) bool {
 // template name.
 func (c *Context) HasAddonImportFor(addonName, tplName string) bool {
 	if a, ok := c.addons[addonName]; ok {
-		return len(a.Addon().GetTemplateImports(types.Name(tplName), c, c.settings)) > 0
+		return len(a.Addon().GetTemplateImports(spec.Name(tplName), c, c.settings)) > 0
 	}
 
 	return false
@@ -186,42 +186,42 @@ func (c *Context) CustomAPIExtensions() []*Message {
 }
 
 // GetTemplateValidator returns the validator for the given template name.
-func (c *Context) GetTemplateValidator(name types.Name, _ interface{}) (types.ValidateForExecution, bool) {
-	validators := map[types.Name]types.ValidateForExecution{
-		types.NewName("api", "domain"): func() bool {
+func (c *Context) GetTemplateValidator(name spec.Name, _ interface{}) (spec.ExecutionFunc, bool) {
+	validators := map[spec.Name]spec.ExecutionFunc{
+		spec.NewName("api", "domain"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
-		types.NewName("api", "enum"): func() bool {
+		spec.NewName("api", "enum"): func() bool {
 			return len(c.Enums) > 0
 		},
-		types.NewName("api", "custom_api"): func() bool {
+		spec.NewName("api", "custom_api"): func() bool {
 			return len(c.CustomAPIExtensions()) > 0
 		},
-		types.NewName("api", "http_server"): func() bool {
+		spec.NewName("api", "http_server"): func() bool {
 			return c.IsHTTPService()
 		},
-		types.NewName("api", "routes"): func() bool {
+		spec.NewName("api", "routes"): func() bool {
 			return c.IsHTTPService()
 		},
-		types.NewName("api", "outbound"): func() bool {
+		spec.NewName("api", "outbound"): func() bool {
 			return c.IsHTTPService() || len(c.OutboundMessages()) > 0
 		},
-		types.NewName("api", "wire"): func() bool {
+		spec.NewName("api", "wire"): func() bool {
 			return len(c.DomainMessages()) > 0
 		},
-		types.NewName("api", "wire_input"): func() bool {
+		spec.NewName("api", "wire_input"): func() bool {
 			return len(c.WireInputMessages()) > 0
 		},
-		types.NewName("api", "common"): func() bool {
+		spec.NewName("api", "common"): func() bool {
 			return c.UseCommonConverters() || c.OutboundHasBitflagField()
 		},
-		types.NewName("api", "validation"): func() bool {
+		spec.NewName("api", "validation"): func() bool {
 			return c.HasValidatableMessage()
 		},
-		types.NewName("testing", "testing"): func() bool {
+		spec.NewName("testing", "testing"): func() bool {
 			return len(c.DomainMessages()) > 0 && c.settings.Templates.Test
 		},
-		types.NewName("testing", "http_server"): func() bool {
+		spec.NewName("testing", "http_server"): func() bool {
 			return c.IsHTTPService() && c.settings.Templates.Test
 		},
 	}

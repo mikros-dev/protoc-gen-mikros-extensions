@@ -8,7 +8,7 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
 func loadDomainImprove(msg *context.Message) *proto.DomainImprove {
@@ -50,17 +50,17 @@ func (d *DomainImproveAddon) GetContext(ctx interface{}) interface{} {
 	return addonCtx
 }
 
-func (d *DomainImproveAddon) GetTemplateImports(_ types.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
+func (d *DomainImproveAddon) GetTemplateImports(_ spec.Name, _ interface{}, _ *settings.Settings) []*addon.Import {
 	// Does not have imports
 	return nil
 }
 
-func (d *DomainImproveAddon) GetTemplateValidator(name types.Name, ctx interface{}) (types.ValidateForExecution, bool) {
+func (d *DomainImproveAddon) GetTemplateValidator(name spec.Name, ctx interface{}) (spec.ExecutionFunc, bool) {
 	c := ctx.(*context.Context)
 	pc := c.AddonContext(addonName).(*Context)
 
-	validators := map[types.Name]types.ValidateForExecution{
-		types.NewName(addonName, "domain_improve"): func() bool {
+	validators := map[spec.Name]spec.ExecutionFunc{
+		spec.NewName(addonName, "domain_improve"): func() bool {
 			for _, msg := range c.DomainMessages() {
 				if pc.HasImproveDomainCall(msg) {
 					return true
@@ -75,8 +75,8 @@ func (d *DomainImproveAddon) GetTemplateValidator(name types.Name, ctx interface
 	return v, ok
 }
 
-func (d *DomainImproveAddon) Kind() types.Kind {
-	return types.KindAPI
+func (d *DomainImproveAddon) Kind() spec.Kind {
+	return spec.KindAPI
 }
 
 func (d *DomainImproveAddon) Templates() embed.FS {

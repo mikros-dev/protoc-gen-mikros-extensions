@@ -3,7 +3,7 @@ package context
 import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/imports"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	tpl_types "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
 type templateImport struct {
@@ -11,10 +11,10 @@ type templateImport struct {
 	Name  string
 }
 
-func loadImports(ctx *Context, cfg *settings.Settings) map[tpl_types.Name][]*templateImport {
+func loadImports(ctx *Context, cfg *settings.Settings) map[spec.Name][]*templateImport {
 	var (
 		tplImports = imports.LoadTemplateImports(toImportsContext(ctx), cfg)
-		ctxImport  = make(map[tpl_types.Name][]*templateImport)
+		ctxImport  = make(map[spec.Name][]*templateImport)
 	)
 
 	for k, ipt := range tplImports {
@@ -40,41 +40,6 @@ func toImportsContext(ctx *Context) *imports.Context {
 		wireExtensions []*imports.Message
 		wireInput      []*imports.Message
 	)
-
-	fieldToImportField := func(f *Field) *imports.Field {
-		return &imports.Field{
-			IsArray:                        f.IsArray,
-			IsProtobufTimestamp:            f.ProtoField.IsTimestamp(),
-			IsOutboundBitflag:              f.IsOutboundBitflag(),
-			IsMessage:                      f.IsMessageFromOtherPackage() || f.ProtoField.IsMessageFromPackage(),
-			OutboundHide:                   f.OutboundHide(),
-			ConversionDomainToWire:         f.ConvertDomainTypeToWireType(),
-			ConversionWireToDomain:         f.ConvertWireTypeToDomainType(),
-			ConversionWireOutputToOutbound: f.ConvertWireOutputToOutbound("r"),
-			DomainType:                     f.DomainType(),
-			WireType:                       f.WireType(),
-			OutboundType:                   f.OutboundType(),
-			TestingBinding:                 f.TestingValueBinding(),
-			TestingCall:                    f.TestingValueCall(),
-			ValidationCall:                 f.ValidationCall(),
-			ProtoField:                     f.ProtoField,
-		}
-	}
-
-	messageToImportMessage := func(m *Message) *imports.Message {
-		var fields []*imports.Field
-		for _, f := range m.Fields {
-			fields = append(fields, fieldToImportField(f))
-		}
-
-		return &imports.Message{
-			ValidationNeedsCustomRuleOptions: m.ValidationNeedsCustomRuleOptions(),
-			IsWireInputKind:                  m.IsWireInputKind(),
-			Receiver:                         m.GetReceiverName(),
-			Fields:                           fields,
-			ProtoMessage:                     m.ProtoMessage,
-		}
-	}
 
 	for _, m := range ctx.Methods {
 		methods = append(methods, &imports.Method{
@@ -147,6 +112,7 @@ func messageToImportMessage(m *Message) *imports.Message {
 
 	return &imports.Message{
 		ValidationNeedsCustomRuleOptions: m.ValidationNeedsCustomRuleOptions(),
+		IsWireInputKind:                  m.IsWireInputKind(),
 		Receiver:                         m.GetReceiverName(),
 		Fields:                           fields,
 		ProtoMessage:                     m.ProtoMessage,

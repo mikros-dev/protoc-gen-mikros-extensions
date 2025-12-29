@@ -10,7 +10,7 @@ import (
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/types"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 	"github.com/stoewer/go-strcase"
 	"google.golang.org/protobuf/compiler/protogen"
 
@@ -44,7 +44,7 @@ type Options struct {
 	// for a template only if it is declared. Otherwise, the template will be
 	// ignored.
 	StrictValidators bool
-	Kind             types.Kind
+	Kind             spec.Kind
 	Path             string
 	FilesPrefix      string `validate:"required"`
 	Plugin           *protogen.Plugin
@@ -58,7 +58,7 @@ type Options struct {
 // object manipulated inside the template file, must implement.
 type Context interface {
 	Extension() string
-	types.Validator
+	spec.Validator
 }
 
 // Load loads the templates from the given options.
@@ -132,13 +132,13 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 		}
 
 		basename := filenameWithoutExtension(t.Name())
-		helperAPI := types.HelperAPI()
+		helperAPI := spec.DefaultFuncMap()
 		for k, v := range api {
 			helperAPI[k] = v
 		}
 
 		helperAPI["templateName"] = func() string {
-			return types.NewName(prefix, basename).String()
+			return spec.NewName(prefix, basename).String()
 		}
 
 		// Specific addons APIs
@@ -159,7 +159,7 @@ func loadTemplates(files embed.FS, prefix string, api map[string]interface{}, ad
 	return infos, nil
 }
 
-func canUseAddon(tplKind, addonKind types.Kind) bool {
+func canUseAddon(tplKind, addonKind spec.Kind) bool {
 	return tplKind == addonKind
 }
 
@@ -225,7 +225,7 @@ func (t *Templates) shouldSkipTemplate(tpl *Info) (bool, error) {
 		tplValidatorProvider = tpl.addon.Addon().GetTemplateValidator
 	}
 
-	validatorFn, ok := tplValidatorProvider(types.NewName(prefix, tpl.name), t.context)
+	validatorFn, ok := tplValidatorProvider(spec.NewName(prefix, tpl.name), t.context)
 	if !ok && t.strictValidators {
 		// The validator should not be executed in this case. Since we don't
 		// have one for this template, we can skip it.

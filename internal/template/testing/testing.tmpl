@@ -18,7 +18,7 @@ func NewRandom{{.DomainName}}(custom ...map[string]interface{}) *{{$packageName}
     res := &{{$packageName}}.{{.DomainName}}{}
 
     {{range .Fields}}
-    if v, ok := getCustom("{{$prefix}}.{{.JsonName}}", custom...); ok {
+    if v, ok := getCustom("{{$prefix}}.{{.JSONName}}", custom...); ok {
         {{- if and .IsPointer (not .IsProtoOptional)}}
         if v != nil {
         {{- end}}
