@@ -8,7 +8,7 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/testing"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -36,7 +36,7 @@ type Field struct {
 	ProtoField               *protobuf.Field
 
 	moduleName string
-	converter  *converters.Field
+	converter  *mapping.Field
 	testing    *testing.Field
 	extensions *mikros_extensions.MikrosFieldExtensions
 }
@@ -48,21 +48,21 @@ type loadFieldOptions struct {
 	Field            *protobuf.Field
 	Message          *protobuf.Message
 	Endpoint         *Endpoint
-	MessageConverter *converters.Message
+	MessageConverter *mapping.Message
 	Settings         *settings.Settings
 }
 
 func loadField(opt loadFieldOptions) (*Field, error) {
 	var (
 		isArray = opt.Field.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		goType  = converters.ProtoTypeToGoType(
+		goType  = mapping.ProtoTypeToGoType(
 			opt.Field.Schema.Desc.Kind(),
 			opt.Field.Proto.GetTypeName(),
 			opt.ModuleName,
 		)
 	)
 
-	converter, err := converters.NewField(converters.FieldOptions{
+	converter, err := mapping.NewField(mapping.FieldOptions{
 		IsHTTPService: opt.IsHTTPService,
 		Receiver:      opt.Receiver,
 		ProtoField:    opt.Field,

@@ -4,7 +4,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -130,7 +130,7 @@ func (c *Context) DomainMessages() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
 		// Every wire message will have Domain equivalents
-		if m.Type == converters.WireMessage && m.DomainExport() {
+		if m.Type == mapping.Wire && m.DomainExport() {
 			messages = append(messages, m)
 		}
 	}
@@ -142,7 +142,7 @@ func (c *Context) DomainMessages() []*Message {
 func (c *Context) WireInputMessages() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
-		isWireInput := m.Type == converters.WireInputMessage || manualExportToWireInput(m)
+		isWireInput := m.Type == mapping.WireInput || manualExportToWireInput(m)
 		if isWireInput && m.DomainExport() {
 			messages = append(messages, m)
 		}
@@ -282,7 +282,7 @@ func (c *Context) HasValidatableMessage() bool {
 func (c *Context) ValidatableMessages() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
-		if m.HasValidatableField() || m.Type == converters.WireInputMessage {
+		if m.HasValidatableField() || m.Type == mapping.WireInput {
 			messages = append(messages, m)
 		}
 	}

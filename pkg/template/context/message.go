@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -17,12 +17,12 @@ type Message struct {
 	DomainName   string
 	WireName     string
 	OutboundName string
-	Type         converters.MessageKind
+	Type         mapping.MessageKind
 	Fields       []*Field
 	ProtoMessage *protobuf.Message
 
 	isHTTPService bool
-	converter     *converters.Message
+	converter     *mapping.Message
 	extensions    *mikros_extensions.MikrosMessageExtensions
 }
 
@@ -44,7 +44,7 @@ func loadMessages(pkg *protobuf.Protobuf, opt loadMessagesOptions) ([]*Message, 
 		var (
 			fields    = make([]*Field, len(m.Fields))
 			endpoint  = getEndpointFromMessage(m.Name, pkg)
-			converter = converters.NewMessage(converters.MessageOptions{
+			converter = mapping.NewMessage(mapping.MessageOptions{
 				Settings: opt.Settings,
 			})
 		)
@@ -139,7 +139,7 @@ func (m *Message) BindableFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return field.IsBindable()
 	}
-	if templateName == "outbound" {
+	if templateName == "api:outbound" {
 		filter = func(field *Field) bool {
 			return field.IsBindable() && !field.OutboundHide()
 		}
@@ -182,7 +182,7 @@ func (m *Message) DomainExport() bool {
 // template.
 func (m *Message) OutboundExport() bool {
 	// Response messages from HTTP services always have outbound enabled
-	if m.Type == converters.WireOutputMessage && m.isHTTPService {
+	if m.Type == mapping.WireOutput && m.isHTTPService {
 		return true
 	}
 	if m.extensions != nil {
@@ -334,7 +334,7 @@ func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 
 // IsWireInputKind returns true if the message is a wire input message.
 func (m *Message) IsWireInputKind() bool {
-	return m.Type == converters.WireInputMessage
+	return m.Type == mapping.WireInput
 }
 
 // ValidatableFields returns the fields that are validatable.

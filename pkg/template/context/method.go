@@ -7,7 +7,7 @@ import (
 
 	"github.com/stoewer/go-strcase"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -63,7 +63,7 @@ func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Sett
 		)
 
 		index := slices.IndexFunc(messages, func(m *Message) bool {
-			return m.Name == method.RequestType.Name && m.Type == converters.WireInputMessage
+			return m.Name == method.RequestType.Name && m.Type == mapping.WireInput
 		})
 		if index != -1 {
 			msg = messages[index]

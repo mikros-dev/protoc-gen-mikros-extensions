@@ -1,6 +1,8 @@
-package converters
+package mapping
 
 import (
+	"strings"
+
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -9,37 +11,40 @@ func ProtoTypeToGoType(protobufType protoreflect.Kind, messageType, moduleName s
 	switch protobufType {
 	case protoreflect.BoolKind:
 		return "bool"
-
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
 		return "int32"
-
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
 		return "uint32"
-
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
 		return "int64"
-
 	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
 		return "uint64"
-
 	case protoreflect.FloatKind:
 		return "float32"
-
 	case protoreflect.DoubleKind:
 		return "float64"
-
 	case protoreflect.StringKind:
 		return "string"
-
 	case protoreflect.BytesKind:
 		return "[]byte"
-
 	case protoreflect.MessageKind:
 		return messageType
-
 	case protoreflect.EnumKind:
 		return TrimPackageName(messageType, moduleName)
 	}
 
 	return ""
+}
+
+// TrimPackageName trims the package name from the given name.
+func TrimPackageName(name, packageName string) string {
+	if name == "" {
+		return ""
+	}
+
+	return strings.TrimPrefix(name, "."+packageName+".")
+}
+
+func ProtoKindToGoType(kind protoreflect.Kind) string {
+	return ProtoTypeToGoType(kind, "", "")
 }

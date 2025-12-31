@@ -1,4 +1,4 @@
-package converters
+package mapping
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ type Field struct {
 	goName            string
 	receiver          string
 	msg               *Message
-	db                *Database
+	db                TagGenerator
 	fieldExtensions   *mikros_extensions.MikrosFieldExtensions
 	messageExtensions *mikros_extensions.MikrosMessageExtensions
 	proto             *protobuf.Field
@@ -86,7 +86,7 @@ func NewField(options FieldOptions) (*Field, error) {
 		}
 
 		field.validation = call
-		field.db = databaseFromString(options.Settings.Database.Kind, fieldExtensions)
+		field.db = NewTagGenerator(options.Settings.Database.Kind, fieldExtensions)
 	}
 
 	return field, nil
@@ -100,7 +100,7 @@ func (f *Field) WireType(isPointer bool) string {
 	}
 
 	if f.proto.IsTimestamp() {
-		return optional("ts.Timestamp", f.isArray, isPointer)
+		return formatType("ts.Timestamp", f.isArray, isPointer)
 	}
 
 	// Handle fields from other modules
@@ -111,15 +111,15 @@ func (f *Field) WireType(isPointer bool) string {
 		}
 
 		t := fmt.Sprintf("%s%s", prefix, name)
-		return optional(t, f.isArray, isPointer)
+		return formatType(t, f.isArray, isPointer)
 	}
 
-	return optional(f.goType, f.isArray, isPointer)
+	return formatType(f.goType, f.isArray, isPointer)
 }
 
 func (f *Field) getMapKeyValueTypesForWire() (string, string, protoreflect.FieldDescriptor) {
 	var (
-		key   = f.proto.Schema.Desc.MapKey().Kind().String()
+//		key   = f.proto.Schema.Desc.MapKey().Kind().String()
 		v     = f.proto.Schema.Desc.MapValue()
 		value = ProtoTypeToGoType(v.Kind(), "", "")
 	)
@@ -145,7 +145,7 @@ func (f *Field) getMapKeyValueTypesForWire() (string, string, protoreflect.Field
 		}
 	}
 
-	return key, value, v
+	return ProtoKindToGoType(f.proto.Schema.Desc.MapKey().Kind()), value, v
 }
 
 // DomainType returns the current field type for the domain.
@@ -191,17 +191,17 @@ func (f *Field) convertFromWireType(isPointer, testMode bool, mode conversionMod
 		baseType = f.convertFromWireTypeToOutbound()
 	}
 
-	return optional(baseType, f.isArray, isPointer)
+	return formatType(baseType, f.isArray, isPointer)
 }
 
 func (f *Field) getBuiltInType(isPointer bool) (string, bool) {
 	switch {
 	case f.proto.IsEnum():
-		return optional("string", f.isArray, isPointer), true
+		return formatType("string", f.isArray, isPointer), true
 	case f.proto.IsProtoStruct():
-		return optional("map[string]interface{}", f.isArray, false), true
+		return formatType("map[string]interface{}", f.isArray, false), true
 	case f.proto.IsTimestamp():
-		return optional("time.Time", f.isArray, isPointer), true
+		return formatType("time.Time", f.isArray, isPointer), true
 	case f.proto.IsProtoValue():
 		return "interface{}", true
 	}
@@ -225,23 +225,20 @@ func (f *Field) getExternalModuleType(isPointer, testMode bool, mode conversionM
 		suffix = f.msg.WireOutputToOutbound(name)
 	}
 
-	return optional(prefix+suffix, f.isArray, isPointer), true
+	return formatType(prefix+suffix, f.isArray, isPointer), true
 }
 
-func optional(outType string, isArray, isPointer bool) string {
-	if isPointer {
-		return array("*"+outType, isArray)
+func formatType(outType string, isArray, isPointer bool) string {
+	ptr := ""
+	if isPointer && !strings.HasPrefix(outType, "*") {
+		ptr = "*"
 	}
 
-	return array(outType, isArray)
-}
-
-func array(outType string, isArray bool) string {
 	if isArray {
-		return "[]" + outType
+		return "[]" + ptr + outType
 	}
 
-	return outType
+	return ptr + outType
 }
 
 func (f *Field) convertFromWireTypeToOutbound() string {
@@ -258,7 +255,7 @@ func (f *Field) convertFromWireTypeToOutbound() string {
 
 func (f *Field) getMapKeyValueTypes(testMode bool, mode conversionMode) (string, string) {
 	var (
-		key   = f.proto.Schema.Desc.MapKey().Kind().String()
+//		key   = f.proto.Schema.Desc.MapKey().Kind().String()
 		v     = f.proto.Schema.Desc.MapValue()
 		value = ProtoTypeToGoType(v.Kind(), "", "")
 	)
@@ -281,7 +278,7 @@ func (f *Field) getMapKeyValueTypes(testMode bool, mode conversionMode) (string,
 		value = "string"
 	}
 
-	return key, value
+	return ProtoKindToGoType(f.proto.Schema.Desc.MapKey().Kind()), value
 }
 
 func (f *Field) handleOtherModuleField(fieldType string) (string, string, bool) {
@@ -347,7 +344,7 @@ func (f *Field) DomainTag() string {
 		}
 	}
 
-	tag := fmt.Sprintf("`json:\"%s%s\" %s", fieldName, jsonTag, f.db.Tag(fieldName))
+	tag := fmt.Sprintf("`json:\"%s%s\" %s", fieldName, jsonTag, f.db.GenerateTag(fieldName))
 	if domain != nil {
 		for _, st := range domain.GetStructTag() {
 			tag += fmt.Sprintf(` %s:"%s"`, st.GetName(), st.GetValue())
@@ -774,4 +771,8 @@ func (f *Field) ValidationCall() string {
 	}
 
 	return f.validation.APICall()
+}
+
+func inboundOutboundCamelCase(s string) string {
+	return strcase.LowerCamelCase(s)
 }

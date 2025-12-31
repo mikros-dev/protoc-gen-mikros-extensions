@@ -10,12 +10,12 @@ import (
 	"text/template"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 	"github.com/stoewer/go-strcase"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
 // Templates is an object that holds information related to a group of

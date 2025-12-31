@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
@@ -19,7 +19,7 @@ type Field struct {
 	goType         string
 	proto          *protobuf.Field
 	settings       *settings.Settings
-	fieldConverter *converters.Field
+	fieldConverter *mapping.Field
 }
 
 // NewFieldOptions represents the options used to create a new field for testing
@@ -29,7 +29,7 @@ type NewFieldOptions struct {
 	GoType         string
 	ProtoField     *protobuf.Field
 	Settings       *settings.Settings
-	FieldConverter *converters.Field
+	FieldConverter *mapping.Field
 }
 
 // NewField creates a new field for testing templates.
