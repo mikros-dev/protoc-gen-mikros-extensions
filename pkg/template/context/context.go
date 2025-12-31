@@ -5,8 +5,8 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
@@ -152,7 +152,7 @@ func (c *Context) WireInputMessages() []*Message {
 }
 
 func manualExportToWireInput(m *Message) bool {
-	if ext := mikros_extensions.LoadMessageExtensions(m.ProtoMessage.Proto); ext != nil {
+	if ext := extensions.LoadMessageExtensions(m.ProtoMessage.Proto); ext != nil {
 		if wireInput := ext.GetWireInput(); wireInput != nil {
 			return wireInput.GetExport()
 		}

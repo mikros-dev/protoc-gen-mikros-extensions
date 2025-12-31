@@ -5,11 +5,11 @@ import (
 
 	"github.com/stoewer/go-strcase"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
 type mongoGenerator struct {
-	defs *mikros_extensions.MikrosFieldExtensions
+	defs *extensions.MikrosFieldExtensions
 }
 
 func (g *mongoGenerator) fieldName(name string) string {

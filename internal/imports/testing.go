@@ -3,8 +3,8 @@ package imports
 import (
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
@@ -63,7 +63,7 @@ func (t *Testing) buildTestingCall(cfg *settings.Settings, testingCall string) s
 }
 
 func (t *Testing) hasTestingOption(f *Field) bool {
-	options := mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto)
+	options := extensions.LoadFieldExtensions(f.ProtoField.Proto)
 	return options != nil && options.GetTesting() != nil
 }
 

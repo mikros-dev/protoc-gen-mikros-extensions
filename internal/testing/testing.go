@@ -8,8 +8,8 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
@@ -130,7 +130,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 }
 
 func (f *Field) customValueInitCall() (string, bool) {
-	options := mikros_extensions.LoadFieldExtensions(f.proto.Proto)
+	options := extensions.LoadFieldExtensions(f.proto.Proto)
 	if options == nil || options.GetTesting() == nil {
 		return "", false
 	}

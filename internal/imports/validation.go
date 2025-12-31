@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
@@ -40,8 +40,8 @@ func (v *Validation) Load(ctx *Context, cfg *settings.Settings) []*Import {
 
 func (v *Validation) processField(ctx *Context, cfg *settings.Settings, f *Field, imports map[string]*Import) {
 	var (
-		fieldExtensions = mikros_extensions.LoadFieldExtensions(f.ProtoField.Proto)
-		validation      *mikros_extensions.FieldValidateOptions
+		fieldExtensions = extensions.LoadFieldExtensions(f.ProtoField.Proto)
+		validation      *extensions.FieldValidateOptions
 	)
 
 	if fieldExtensions != nil {
@@ -71,9 +71,9 @@ func (v *Validation) processField(ctx *Context, cfg *settings.Settings, f *Field
 
 func (v *Validation) addRegexForValidationTemplate(
 	imports map[string]*Import,
-	validation *mikros_extensions.FieldValidateOptions,
+	validation *extensions.FieldValidateOptions,
 ) bool {
-	if validation.GetRule() == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
+	if validation.GetRule() == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
 		imports["regex"] = packages["regex"]
 		return true
 	}

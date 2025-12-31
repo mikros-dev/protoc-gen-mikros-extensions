@@ -3,11 +3,11 @@ package mapping
 import (
 	"fmt"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
 type gormGenerator struct {
-	defs *mikros_extensions.MikrosFieldExtensions
+	defs *extensions.MikrosFieldExtensions
 }
 
 // GenerateTag generates a struct tag for the given field name.
@@ -20,7 +20,7 @@ func (g *gormGenerator) GenerateTag(_ string) string {
 	return buildGormTag(db)
 }
 
-func buildGormTag(db *mikros_extensions.FieldDatabaseOptions) string {
+func buildGormTag(db *extensions.FieldDatabaseOptions) string {
 	var (
 		tag   string
 		flags = []struct {

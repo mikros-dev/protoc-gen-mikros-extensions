@@ -3,8 +3,8 @@ package context
 import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
 // Enum represents an enumeration with metadata and entries to be used inside
@@ -35,7 +35,7 @@ func loadEnums(pkg *protobuf.Protobuf) []*Enum {
 			ProtoEnum: e,
 		}
 
-		if enumExtensions := mikros_extensions.LoadEnumExtensions(e.Proto); enumExtensions != nil {
+		if enumExtensions := extensions.LoadEnumExtensions(e.Proto); enumExtensions != nil {
 			if decodingOptions := enumExtensions.GetApi(); decodingOptions != nil {
 				enum.IsBitflagKind = decodingOptions.GetBitflag()
 				enum.IsErrorCode = decodingOptions.GetErrorCode()
@@ -54,7 +54,7 @@ func loadEnumEntries(enum *descriptor.EnumDescriptorProto) []*EnumEntry {
 	for _, protoEntry := range enum.GetValue() {
 		var (
 			name string
-			defs = mikros_extensions.LoadEnumValueExtensions(protoEntry)
+			defs = extensions.LoadEnumValueExtensions(protoEntry)
 		)
 
 		if defs != nil {

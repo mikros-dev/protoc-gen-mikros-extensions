@@ -1,7 +1,7 @@
 package imports
 
 import (
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
@@ -19,7 +19,7 @@ func (c *CustomAPI) Load(ctx *Context, _ *settings.Settings) []*Import {
 	imports := make(map[string]*Import)
 
 	for _, m := range ctx.WireExtensions {
-		ext := mikros_extensions.LoadMessageExtensions(m.ProtoMessage.Proto)
+		ext := extensions.LoadMessageExtensions(m.ProtoMessage.Proto)
 		if ext == nil {
 			continue
 		}

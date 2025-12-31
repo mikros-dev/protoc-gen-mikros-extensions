@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
@@ -23,7 +23,7 @@ type Message struct {
 
 	isHTTPService bool
 	converter     *mapping.Message
-	extensions    *mikros_extensions.MikrosMessageExtensions
+	extensions    *extensions.MikrosMessageExtensions
 }
 
 type loadMessagesOptions struct {
@@ -77,7 +77,7 @@ func loadMessages(pkg *protobuf.Protobuf, opt loadMessagesOptions) ([]*Message, 
 			ProtoMessage:  m,
 			isHTTPService: pkg.Service != nil && pkg.Service.IsHTTP(),
 			converter:     converter,
-			extensions:    mikros_extensions.LoadMessageExtensions(m.Proto),
+			extensions:    extensions.LoadMessageExtensions(m.Proto),
 		}
 	}
 
@@ -312,15 +312,15 @@ func (m *Message) HasValidatableField() bool {
 // rule options.
 func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 	for _, field := range m.Fields {
-		ext := mikros_extensions.LoadFieldExtensions(field.ProtoField.Proto)
+		ext := extensions.LoadFieldExtensions(field.ProtoField.Proto)
 		if ext == nil {
 			continue
 		}
 
 		if validation := ext.GetValidate(); validation != nil {
-			nonCustomRules := []mikros_extensions.FieldValidatorRule{
-				mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX,
-				mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED,
+			nonCustomRules := []extensions.FieldValidatorRule{
+				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX,
+				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED,
 			}
 
 			if !slices.Contains(nonCustomRules, validation.GetRule()) {

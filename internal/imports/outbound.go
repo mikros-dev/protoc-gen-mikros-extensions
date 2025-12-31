@@ -3,8 +3,8 @@ package imports
 import (
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
@@ -104,7 +104,7 @@ func (o *Outbound) processField(
 }
 
 func fieldHasCustomImport(field *protobuf.Field) *Import {
-	if ext := mikros_extensions.LoadFieldExtensions(field.Proto); ext != nil {
+	if ext := extensions.LoadFieldExtensions(field.Proto); ext != nil {
 		if outbound := ext.GetOutbound(); outbound != nil {
 			if ipt := outbound.GetCustomImport(); ipt != nil {
 				return &Import{

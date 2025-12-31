@@ -45,6 +45,8 @@ func TrimPackageName(name, packageName string) string {
 	return strings.TrimPrefix(name, "."+packageName+".")
 }
 
+// ProtoKindToGoType converts a protobuf kind to its corresponding Go type as a
+// string.
 func ProtoKindToGoType(kind protoreflect.Kind) string {
 	return ProtoTypeToGoType(kind, "", "")
 }

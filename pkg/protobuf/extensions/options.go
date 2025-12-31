@@ -1,4 +1,4 @@
-package mikros_extensions
+package extensions
 
 import (
 	"regexp"

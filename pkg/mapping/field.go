@@ -9,8 +9,8 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/validation"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
@@ -30,8 +30,8 @@ type Field struct {
 	receiver          string
 	msg               *Message
 	db                TagGenerator
-	fieldExtensions   *mikros_extensions.MikrosFieldExtensions
-	messageExtensions *mikros_extensions.MikrosMessageExtensions
+	fieldExtensions   *extensions.MikrosFieldExtensions
+	messageExtensions *extensions.MikrosMessageExtensions
 	proto             *protobuf.Field
 	settings          *settings.Settings
 	validation        *validation.Call
@@ -50,7 +50,7 @@ type FieldOptions struct {
 // NewField creates a new field converter.
 func NewField(options FieldOptions) (*Field, error) {
 	var (
-		fieldExtensions = mikros_extensions.LoadFieldExtensions(options.ProtoField.Proto)
+		fieldExtensions = extensions.LoadFieldExtensions(options.ProtoField.Proto)
 		isArray         = options.ProtoField.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 	)
 
@@ -66,7 +66,7 @@ func NewField(options FieldOptions) (*Field, error) {
 		receiver:          options.Receiver,
 		msg:               options.Message,
 		fieldExtensions:   fieldExtensions,
-		messageExtensions: mikros_extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
+		messageExtensions: extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
 		proto:             options.ProtoField,
 		settings:          options.Settings,
 	}
@@ -119,7 +119,7 @@ func (f *Field) WireType(isPointer bool) string {
 
 func (f *Field) getMapKeyValueTypesForWire() (string, string, protoreflect.FieldDescriptor) {
 	var (
-//		key   = f.proto.Schema.Desc.MapKey().Kind().String()
+		//		key   = f.proto.Schema.Desc.MapKey().Kind().String()
 		v     = f.proto.Schema.Desc.MapValue()
 		value = ProtoTypeToGoType(v.Kind(), "", "")
 	)
@@ -255,7 +255,7 @@ func (f *Field) convertFromWireTypeToOutbound() string {
 
 func (f *Field) getMapKeyValueTypes(testMode bool, mode conversionMode) (string, string) {
 	var (
-//		key   = f.proto.Schema.Desc.MapKey().Kind().String()
+		//		key   = f.proto.Schema.Desc.MapKey().Kind().String()
 		v     = f.proto.Schema.Desc.MapValue()
 		value = ProtoTypeToGoType(v.Kind(), "", "")
 	)
@@ -321,14 +321,14 @@ func (f *Field) DomainName() string {
 // and naming conventions. It also adds the database struct tag if available.
 func (f *Field) DomainTag() string {
 	var (
-		domain    *mikros_extensions.FieldDomainOptions
+		domain    *extensions.FieldDomainOptions
 		fieldName = strcase.SnakeCase(f.DomainName())
 		jsonTag   = ",omitempty"
 	)
 
 	if f.messageExtensions != nil {
 		if messageDomain := f.messageExtensions.GetDomain(); messageDomain != nil {
-			if messageDomain.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageDomain.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = strcase.LowerCamelCase(f.DomainName())
 			}
 		}
@@ -377,7 +377,7 @@ func (f *Field) InboundName() string {
 	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageInbound := f.messageExtensions.GetInbound(); messageInbound != nil {
-			if messageInbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageInbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}
@@ -390,7 +390,7 @@ func (f *Field) InboundName() string {
 // domain name and outbound configuration options.
 func (f *Field) OutboundTag() string {
 	var (
-		outbound *mikros_extensions.FieldOutboundOptions
+		outbound *extensions.FieldOutboundOptions
 		name     = f.DomainName()
 		jsonTag  = ",omitempty"
 	)
@@ -412,7 +412,7 @@ func (f *Field) OutboundTag() string {
 	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
-			if messageOutbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}
@@ -453,7 +453,7 @@ func (f *Field) OutboundJSONTagFieldName() string {
 	fieldName := strcase.SnakeCase(name)
 	if f.messageExtensions != nil {
 		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
-			if messageOutbound.GetNamingMode() == mikros_extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
 				fieldName = inboundOutboundCamelCase(name)
 			}
 		}

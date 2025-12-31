@@ -7,8 +7,8 @@ import (
 
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
@@ -19,7 +19,7 @@ type CallOptions struct {
 	ProtoName string
 	Receiver  string
 	ProtoType string
-	Options   *mikros_extensions.MikrosFieldExtensions
+	Options   *extensions.MikrosFieldExtensions
 	Settings  *settings.Settings
 	Message   *protobuf.Message
 }
@@ -126,7 +126,7 @@ func buildDiveCall(options *CallOptions) (string, error) {
 	return strings.Join(diveParts, ", "), nil
 }
 
-func buildConstraints(opts *mikros_extensions.FieldValidateOptions) []string {
+func buildConstraints(opts *extensions.FieldValidateOptions) []string {
 	var constraints []string
 	if opts.GetMaxLength() > 0 {
 		constraints = append(constraints, fmt.Sprintf("validation.Length(1, %d)", opts.GetMaxLength()))
@@ -184,7 +184,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 		rule              = validationOptions.GetRule()
 	)
 
-	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED {
+	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED {
 		return call, nil
 	}
 
@@ -192,7 +192,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 		call += ", "
 	}
 
-	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
+	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX {
 		args := validationOptions.GetRuleArgs()
 		if len(args) == 0 {
 			return "", errors.New("no arguments specified for regex rule")
@@ -203,7 +203,7 @@ func handleRule(options *CallOptions, call string) (string, error) {
 	}
 
 	ruleSettings, err := options.Settings.GetValidationRule(rule)
-	if rule == mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_CUSTOM {
+	if rule == extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_CUSTOM {
 		ruleSettings, err = options.Settings.GetValidationCustomRule(validationOptions.GetCustomRule())
 	}
 	if err != nil {

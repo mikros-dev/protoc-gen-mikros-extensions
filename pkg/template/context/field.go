@@ -9,8 +9,8 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/testing"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
@@ -38,7 +38,7 @@ type Field struct {
 	moduleName string
 	converter  *mapping.Field
 	testing    *testing.Field
-	extensions *mikros_extensions.MikrosFieldExtensions
+	extensions *extensions.MikrosFieldExtensions
 }
 
 type loadFieldOptions struct {
@@ -102,7 +102,7 @@ func loadField(opt loadFieldOptions) (*Field, error) {
 			Settings:       opt.Settings,
 			FieldConverter: converter,
 		}),
-		extensions: mikros_extensions.LoadFieldExtensions(opt.Field.Proto),
+		extensions: extensions.LoadFieldExtensions(opt.Field.Proto),
 	}
 	if err := field.Validate(); err != nil {
 		return nil, err
