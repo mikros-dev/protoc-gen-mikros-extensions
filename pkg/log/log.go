@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+const (
+	prefix = "[mikros-extensions] "
+)
+
 // Logger defines the interface for plugin logging.
 type Logger interface {
 	Printf(format string, v ...any)
@@ -29,11 +33,12 @@ type diagnosticLogger struct {
 }
 
 func (d diagnosticLogger) Printf(format string, v ...any) {
-	_, _ = fmt.Fprintf(d.writer, format, v...)
+	_, _ = fmt.Fprintf(d.writer, prefix+format, v...)
 }
 
 func (d diagnosticLogger) Println(v ...any) {
-	_, _ = fmt.Fprintln(d.writer, v...)
+	s := fmt.Sprintln(v...)
+	_, _ = fmt.Fprint(d.writer, prefix+s)
 }
 
 // New returns a Logger. If verbose is false, it returns a logger that does
