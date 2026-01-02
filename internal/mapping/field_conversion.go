@@ -85,9 +85,9 @@ func (f *FieldConversion) enumWireType() string {
 		prefix string
 	)
 
-	// If the enum is from another package we need to add the module name
+	// If the enum is from another package, we need to add the module name
 	// as its prefix.
-	module, n, ok := f.handleOtherModuleField(f.goType)
+	module, n, ok := handleOtherModuleField(f.goType, f.proto)
 	if ok {
 		prefix = ""
 		if module != f.proto.ModuleName() {
@@ -148,7 +148,7 @@ func (f *FieldConversion) DomainTypeToWireType() string {
 func (f *FieldConversion) DomainTypeToArrayWireType(receiver string, wireInput bool) string {
 	if f.proto.IsEnum() {
 		name := TrimPackageName(f.goType, f.proto.ModuleName())
-		if module, n, ok := f.handleOtherModuleField(f.goType); ok {
+		if module, n, ok := handleOtherModuleField(f.goType, f.proto); ok {
 			prefix := ""
 			if module != f.proto.ModuleName() {
 				prefix = fmt.Sprintf("%s.", module)
@@ -176,28 +176,6 @@ func (f *FieldConversion) DomainTypeToArrayWireType(receiver string, wireInput b
 	return receiver
 }
 
-func (f *FieldConversion) handleOtherModuleField(fieldType string) (string, string, bool) {
-	if f.hasModuleAsPrefix(fieldType) {
-		parts := strings.Split(fieldType, ".")
-		if len(parts) < 2 {
-			// Something is wrong here
-			return "", "", false
-		}
-
-		return parts[len(parts)-2], parts[len(parts)-1], true
-	}
-
-	return "", "", false
-}
-
-func (f *FieldConversion) hasModuleAsPrefix(fieldType string) bool {
-	return strings.Contains(fieldType, ".") &&
-		!f.proto.IsProtoStruct() &&
-		!f.proto.IsTimestamp() &&
-		!f.proto.IsProtoValue() &&
-		!f.proto.IsProtobufWrapper()
-}
-
 // WireTypeToArrayDomainType converts a wire type to its corresponding array
 // domain type based on the proto field type.
 func (f *FieldConversion) WireTypeToArrayDomainType(receiver string) string {
@@ -219,7 +197,7 @@ func (f *FieldConversion) WireTypeToArrayDomainType(receiver string) string {
 // DomainTypeToMapWireType converts a domain type to its corresponding map wire
 // type representation.
 func (f *FieldConversion) DomainTypeToMapWireType(receiver string, wireInput bool) string {
-	_, value, valueKind := f.getMapKeyValueTypesForWire()
+	_, value, valueKind := getMapKeyValueTypesForWire(f.proto)
 
 	if valueKind.Kind() == protoreflect.EnumKind {
 		return fmt.Sprintf("%[1]s.FromString(%[1]s(0), %s)", value, receiver)
@@ -244,7 +222,7 @@ func (f *FieldConversion) DomainTypeToMapWireType(receiver string, wireInput boo
 // WireTypeToMapDomainType converts a wire type representation to its corresponding
 // domain type representation.
 func (f *FieldConversion) WireTypeToMapDomainType(receiver string) string {
-	_, value, valueKind := f.getMapKeyValueTypesForWire()
+	_, value, valueKind := getMapKeyValueTypesForWire(f.proto)
 
 	if valueKind.Kind() == protoreflect.EnumKind {
 		return fmt.Sprintf("%v.ValueWithoutPrefix()", receiver)
@@ -259,36 +237,6 @@ func (f *FieldConversion) WireTypeToMapDomainType(receiver string) string {
 	}
 
 	return receiver
-}
-
-func (f *FieldConversion) getMapKeyValueTypesForWire() (string, string, protoreflect.FieldDescriptor) {
-	var (
-		v     = f.proto.Schema.Desc.MapValue()
-		value = ProtoTypeToGoType(v.Kind(), "", "")
-	)
-
-	if v.Kind() == protoreflect.MessageKind {
-		name := string(v.Message().Name())
-		if name == "Timestamp" {
-			name = "ts.Timestamp"
-		}
-
-		parts := strings.Split(string(v.Message().FullName()), ".")
-		value = "*" + name
-		if parts[1] != f.proto.ModuleName() {
-			value = fmt.Sprintf("*%s.%s", parts[1], v.Message().Name())
-		}
-	}
-
-	if v.Kind() == protoreflect.EnumKind {
-		parts := strings.Split(string(v.Enum().FullName()), ".")
-		value = parts[len(parts)-1]
-		if parts[1] != f.proto.ModuleName() {
-			value = fmt.Sprintf("%s.%s", parts[1], v.Enum().Name())
-		}
-	}
-
-	return ProtoKindToGoType(f.proto.Schema.Desc.MapKey().Kind()), value, v
 }
 
 // WireOutputToOutbound converts the field's value from its internal representation

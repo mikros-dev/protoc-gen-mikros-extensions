@@ -18,7 +18,7 @@ type CallOptions struct {
 	IsMessage bool
 	ProtoName string
 	Receiver  string
-	ProtoType string
+	WireType  string
 	Options   *extensions.MikrosFieldExtensions
 	Settings  *settings.Settings
 	Message   *protobuf.Message
@@ -120,7 +120,7 @@ func buildDiveCall(options *CallOptions) (string, error) {
 		diveParts = append(diveParts, "validation.Each(")
 	}
 	if options.IsMessage {
-		diveParts = append(diveParts, fmt.Sprintf("validation.By(%vValidator(options...)", options.ProtoType))
+		diveParts = append(diveParts, fmt.Sprintf("validation.By(%vValidator(options...)", options.WireType))
 	}
 
 	return strings.Join(diveParts, ", "), nil

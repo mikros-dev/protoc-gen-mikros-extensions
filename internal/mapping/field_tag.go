@@ -7,8 +7,6 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
-// TODO: Remove 'Tag' from function names
-
 // FieldTagOptions are the options for building FieldTag objects.
 type FieldTagOptions struct {
 	DatabaseKind    string

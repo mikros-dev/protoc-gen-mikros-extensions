@@ -2,7 +2,9 @@ package mapping
 
 import (
 	"fmt"
+	"strings"
 
+	"google.golang.org/protobuf/reflect/protoreflect"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/validation"
@@ -110,7 +112,7 @@ func newValidationCall(
 		IsMessage: options.ProtoField.IsMessage(),
 		ProtoName: options.ProtoField.Name,
 		Receiver:  options.Receiver,
-		ProtoType: ft.WireType(false),
+		WireType:  ft.Type(false),
 		Options:   ext,
 		Settings:  options.Settings,
 		Message:   options.ProtoMessage,
@@ -119,27 +121,27 @@ func newValidationCall(
 
 // WireType returns the current field type corresponding to the wire type.
 func (f *Field) WireType(isPointer bool) string {
-	return f.fieldType.WireType(isPointer)
+	return f.fieldType.Type(isPointer)
 }
 
 // DomainType returns the current field type for the domain.
 func (f *Field) DomainType(isPointer bool) string {
-	return f.fieldType.DomainType(isPointer)
+	return f.fieldType.Domain(isPointer)
 }
 
 // DomainTypeForTest returns the current field type for testing templates for
 // the domain.
 func (f *Field) DomainTypeForTest(isPointer bool) string {
-	return f.fieldType.DomainTypeForTest(isPointer)
+	return f.fieldType.DomainForTesting(isPointer)
 }
 
 // OutboundType returns the current field type for the outbound response.
 func (f *Field) OutboundType(isPointer bool) string {
-	return f.fieldType.OutboundType(isPointer)
+	return f.fieldType.Outbound(isPointer)
 }
 
 // DomainName returns the domain name associated with the field. It is formatted
-// in UpperCamelCase if annotations is available, or the Go name.
+// in UpperCamelCase if annotations are available, or the Go name.
 func (f *Field) DomainName() string {
 	return f.naming.DomainName()
 }
@@ -265,4 +267,56 @@ func (f *Field) ValidationCall() string {
 	}
 
 	return f.validation.APICall()
+}
+
+func getMapKeyValueTypesForWire(field *protobuf.Field) (string, string, protoreflect.FieldDescriptor) {
+	var (
+		v     = field.Schema.Desc.MapValue()
+		value = ProtoTypeToGoType(v.Kind(), "", "")
+	)
+
+	if v.Kind() == protoreflect.MessageKind {
+		name := string(v.Message().Name())
+		if name == "Timestamp" {
+			name = "ts.Timestamp"
+		}
+
+		parts := strings.Split(string(v.Message().FullName()), ".")
+		value = "*" + name
+		if parts[1] != field.ModuleName() {
+			value = fmt.Sprintf("*%s.%s", parts[1], v.Message().Name())
+		}
+	}
+
+	if v.Kind() == protoreflect.EnumKind {
+		parts := strings.Split(string(v.Enum().FullName()), ".")
+		value = parts[len(parts)-1]
+		if parts[1] != field.ModuleName() {
+			value = fmt.Sprintf("%s.%s", parts[1], v.Enum().Name())
+		}
+	}
+
+	return ProtoKindToGoType(field.Schema.Desc.MapKey().Kind()), value, v
+}
+
+func handleOtherModuleField(fieldType string, field *protobuf.Field) (string, string, bool) {
+	if hasModuleAsPrefix(fieldType, field) {
+		parts := strings.Split(fieldType, ".")
+		if len(parts) < 2 {
+			// Something is wrong here
+			return "", "", false
+		}
+
+		return parts[len(parts)-2], parts[len(parts)-1], true
+	}
+
+	return "", "", false
+}
+
+func hasModuleAsPrefix(fieldType string, field *protobuf.Field) bool {
+	return strings.Contains(fieldType, ".") &&
+		!field.IsProtoStruct() &&
+		!field.IsTimestamp() &&
+		!field.IsProtoValue() &&
+		!field.IsProtobufWrapper()
 }

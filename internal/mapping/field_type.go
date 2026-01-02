@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"google.golang.org/protobuf/reflect/protoreflect"
+
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
-
-// TODO: Remove 'Type' from function names
 
 type conversionMode int
 
@@ -46,10 +45,10 @@ func newFieldType(options *FieldTypeOptions) *FieldType {
 	}
 }
 
-// WireType returns the wire type for the field.
-func (f *FieldType) WireType(isPointer bool) string {
+// Type returns the wire type for the field.
+func (f *FieldType) Type(isPointer bool) string {
 	if f.proto.IsMap() {
-		key, value, _ := f.getMapKeyValueTypesForWire()
+		key, value, _ := getMapKeyValueTypesForWire(f.proto)
 		return fmt.Sprintf("map[%s]%s", key, value)
 	}
 
@@ -58,7 +57,7 @@ func (f *FieldType) WireType(isPointer bool) string {
 	}
 
 	// Handle fields from other modules
-	if module, name, ok := f.handleOtherModuleField(f.goType); ok {
+	if module, name, ok := handleOtherModuleField(f.goType, f.proto); ok {
 		prefix := ""
 		if module != f.proto.ModuleName() {
 			prefix = fmt.Sprintf("%s.", module)
@@ -73,74 +72,22 @@ func (f *FieldType) WireType(isPointer bool) string {
 	return formatType(f.goType, f.isArray, isPointer)
 }
 
-func (f *FieldType) getMapKeyValueTypesForWire() (string, string, protoreflect.FieldDescriptor) {
-	var (
-		v     = f.proto.Schema.Desc.MapValue()
-		value = ProtoTypeToGoType(v.Kind(), "", "")
-	)
-
-	if v.Kind() == protoreflect.MessageKind {
-		name := string(v.Message().Name())
-		if name == "Timestamp" {
-			name = "ts.Timestamp"
-		}
-
-		parts := strings.Split(string(v.Message().FullName()), ".")
-		value = "*" + name
-		if parts[1] != f.proto.ModuleName() {
-			value = fmt.Sprintf("*%s.%s", parts[1], v.Message().Name())
-		}
-	}
-
-	if v.Kind() == protoreflect.EnumKind {
-		parts := strings.Split(string(v.Enum().FullName()), ".")
-		value = parts[len(parts)-1]
-		if parts[1] != f.proto.ModuleName() {
-			value = fmt.Sprintf("%s.%s", parts[1], v.Enum().Name())
-		}
-	}
-
-	return ProtoKindToGoType(f.proto.Schema.Desc.MapKey().Kind()), value, v
+// Domain returns the domain type for the field.
+func (f *FieldType) Domain(isPointer bool) string {
+	return f.convertTo(wireToDomain, isPointer, false)
 }
 
-func (f *FieldType) handleOtherModuleField(fieldType string) (string, string, bool) {
-	if f.hasModuleAsPrefix(fieldType) {
-		parts := strings.Split(fieldType, ".")
-		if len(parts) < 2 {
-			// Something is wrong here
-			return "", "", false
-		}
-
-		return parts[len(parts)-2], parts[len(parts)-1], true
-	}
-
-	return "", "", false
+// DomainForTesting returns the domain type for the field for testing purposes.
+func (f *FieldType) DomainForTesting(isPointer bool) string {
+	return f.convertTo(wireToDomain, isPointer, true)
 }
 
-func (f *FieldType) hasModuleAsPrefix(fieldType string) bool {
-	return strings.Contains(fieldType, ".") &&
-		!f.proto.IsProtoStruct() &&
-		!f.proto.IsTimestamp() &&
-		!f.proto.IsProtoValue() &&
-		!f.proto.IsProtobufWrapper()
+// Outbound returns the outbound type for the field.
+func (f *FieldType) Outbound(isPointer bool) string {
+	return f.convertTo(wireToOutbound, isPointer, false)
 }
 
-// DomainType returns the domain type for the field.
-func (f *FieldType) DomainType(isPointer bool) string {
-	return f.convertFromWireType(isPointer, false, wireToDomain)
-}
-
-// DomainTypeForTest returns the domain type for the field for testing purposes.
-func (f *FieldType) DomainTypeForTest(isPointer bool) string {
-	return f.convertFromWireType(isPointer, true, wireToDomain)
-}
-
-// OutboundType returns the outbound type for the field.
-func (f *FieldType) OutboundType(isPointer bool) string {
-	return f.convertFromWireType(isPointer, false, wireToOutbound)
-}
-
-func (f *FieldType) convertFromWireType(isPointer, testMode bool, mode conversionMode) string {
+func (f *FieldType) convertTo(mode conversionMode, isPointer, testMode bool) string {
 	if f.extensions != nil && mode == wireToOutbound {
 		if t := f.extensions.GetOutbound().GetCustomType(); t != "" {
 			return t
@@ -199,7 +146,7 @@ func (f *FieldType) getMapKeyValueTypes(testMode bool, mode conversionMode) (str
 			valueType = f.msg.WireOutputToOutbound(string(v.Message().Name()))
 		}
 
-		module, _, ok := f.handleOtherModuleField(string(v.Message().FullName()))
+		module, _, ok := handleOtherModuleField(string(v.Message().FullName()), f.proto)
 		if ok && (module != f.proto.ModuleName() || testMode) {
 			valueType = fmt.Sprintf("%s.%s", module, valueType)
 		}
@@ -215,7 +162,7 @@ func (f *FieldType) getMapKeyValueTypes(testMode bool, mode conversionMode) (str
 }
 
 func (f *FieldType) getExternalModuleType(isPointer, testMode bool, mode conversionMode) (string, bool) {
-	module, name, ok := f.handleOtherModuleField(f.goType)
+	module, name, ok := handleOtherModuleField(f.goType, f.proto)
 	if !ok {
 		return "", false
 	}
