@@ -5,10 +5,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+)
+
+const (
+	outboundTemplateName = "api:outbound"
 )
 
 // Message represents a message to be used inside templates by its context.
@@ -20,9 +24,9 @@ type Message struct {
 	Type         mapping.MessageKind
 	Fields       []*Field
 	ProtoMessage *protobuf.Message
+	Mapping      *mapping.Message
 
 	isHTTPService bool
-	converter     *mapping.Message
 	extensions    *extensions.MikrosMessageExtensions
 }
 
@@ -51,14 +55,14 @@ func loadMessages(pkg *protobuf.Protobuf, opt loadMessagesOptions) ([]*Message, 
 
 		for i, f := range m.Fields {
 			field, err := loadField(loadFieldOptions{
-				IsHTTPService:    isHTTPService,
-				ModuleName:       pkg.ModuleName,
-				Receiver:         getReceiver(m.Name),
-				Field:            f,
-				Message:          m,
-				Endpoint:         endpoint,
-				MessageConverter: converter,
-				Settings:         opt.Settings,
+				IsHTTPService:  isHTTPService,
+				ModuleName:     pkg.ModuleName,
+				Receiver:       getReceiver(m.Name),
+				Field:          f,
+				Message:        m,
+				Endpoint:       endpoint,
+				MessageMapping: converter,
+				Settings:       opt.Settings,
 			})
 			if err != nil {
 				return nil, err
@@ -76,7 +80,7 @@ func loadMessages(pkg *protobuf.Protobuf, opt loadMessagesOptions) ([]*Message, 
 			Fields:        fields,
 			ProtoMessage:  m,
 			isHTTPService: pkg.Service != nil && pkg.Service.IsHTTP(),
-			converter:     converter,
+			Mapping:       converter,
 			extensions:    extensions.LoadMessageExtensions(m.Proto),
 		}
 	}
@@ -139,7 +143,7 @@ func (m *Message) BindableFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return field.IsBindable()
 	}
-	if templateName == "api:outbound" {
+	if templateName == outboundTemplateName {
 		filter = func(field *Field) bool {
 			return field.IsBindable() && !field.OutboundHide()
 		}
@@ -269,7 +273,7 @@ func (m *Message) GetFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return true
 	}
-	if templateName == "api:outbound" {
+	if templateName == outboundTemplateName {
 		filter = func(field *Field) bool {
 			return !field.OutboundHide()
 		}
