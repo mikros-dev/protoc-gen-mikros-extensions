@@ -1,6 +1,7 @@
 package context
 
 import (
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
@@ -27,14 +28,19 @@ type Context struct {
 
 // BuildContextOptions represents the options used to build the context.
 type BuildContextOptions struct {
-	PluginName string
-	Settings   *settings.Settings
-	Plugin     *protogen.Plugin
+	PluginName string             `validate:"required"`
+	Settings   *settings.Settings `validate:"required"`
+	Plugin     *protogen.Plugin   `validate:"required"`
 	Addons     []*addon.Addon
 }
 
 // BuildContext builds the context from the protobuf file(s).
 func BuildContext(opt BuildContextOptions) (*Context, error) {
+	validate := validator.New()
+	if err := validate.Struct(opt); err != nil {
+		return nil, err
+	}
+
 	// Handle the protobuf file(s)
 	pkg, err := protobuf.Parse(protobuf.ParseOptions{
 		Plugin: opt.Plugin,

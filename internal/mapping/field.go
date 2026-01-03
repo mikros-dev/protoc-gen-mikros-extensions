@@ -38,7 +38,7 @@ type FieldOptions struct {
 // NewField creates a new field converter.
 func NewField(options FieldOptions) (*Field, error) {
 	var (
-		fieldExtensions = extensions.LoadFieldExtensions(options.ProtoField.Proto)
+		fieldExtensions = loadFieldExtensions(options.ProtoField)
 		isArray         = options.ProtoField.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
 		goName          = options.ProtoField.Schema.GoName
 		goType          = ProtoTypeToGoType(
@@ -59,7 +59,7 @@ func NewField(options FieldOptions) (*Field, error) {
 	fieldNaming := newFieldNaming(&FieldNameOptions{
 		GoName:            goName,
 		FieldExtensions:   fieldExtensions,
-		MessageExtensions: extensions.LoadMessageExtensions(options.ProtoMessage.Proto),
+		MessageExtensions: loadMessageExtensions(options.ProtoMessage),
 	})
 
 	call, err := newValidationCall(options, isArray, fieldType, fieldExtensions)
@@ -78,8 +78,12 @@ func NewField(options FieldOptions) (*Field, error) {
 		proto:         options.ProtoField,
 		validation:    call,
 		tag: newFieldTag(&FieldTagOptions{
-			DatabaseKind:    databaseKind,
-			FieldExtensions: fieldExtensions,
+			DatabaseKind:      databaseKind,
+			DomainName:        fieldNaming.Domain(),
+			OutboundName:      fieldNaming.Outbound(),
+			InboundName:       fieldNaming.Inbound(),
+			FieldExtensions:   fieldExtensions,
+			MessageExtensions: loadMessageExtensions(options.ProtoMessage),
 		}),
 		naming:    fieldNaming,
 		fieldType: fieldType,
@@ -97,6 +101,30 @@ func NewField(options FieldOptions) (*Field, error) {
 	return field, nil
 }
 
+func loadFieldExtensions(proto *protobuf.Field) *extensions.MikrosFieldExtensions {
+	ext := extensions.LoadFieldExtensions(proto.Proto)
+	if ext == nil {
+		// We return an empty struct here so we don't need to always check for
+		// nil. But its sub-messages will be nil as well, so they must be
+		// validated.
+		return &extensions.MikrosFieldExtensions{}
+	}
+
+	return ext
+}
+
+func loadMessageExtensions(proto *protobuf.Message) *extensions.MikrosMessageExtensions {
+	ext := extensions.LoadMessageExtensions(proto.Proto)
+	if ext == nil {
+		// We return an empty struct here so we don't need to always check for
+		// nil. But its sub-messages will be nil as well, so they must be
+		// validated.
+		return &extensions.MikrosMessageExtensions{}
+	}
+
+	return ext
+}
+
 func newValidationCall(
 	options FieldOptions,
 	isArray bool,
@@ -112,127 +140,31 @@ func newValidationCall(
 		IsMessage: options.ProtoField.IsMessage(),
 		ProtoName: options.ProtoField.Name,
 		Receiver:  options.Receiver,
-		WireType:  ft.Type(false),
+		WireType:  ft.Wire(false),
 		Options:   ext,
 		Settings:  options.Settings,
 		Message:   options.ProtoMessage,
 	})
 }
 
-// WireType returns the current field type corresponding to the wire type.
-func (f *Field) WireType(isPointer bool) string {
-	return f.fieldType.Type(isPointer)
+// Types returns the field type converter.
+func (f *Field) Types() *FieldType {
+	return f.fieldType
 }
 
-// DomainType returns the current field type for the domain.
-func (f *Field) DomainType(isPointer bool) string {
-	return f.fieldType.Domain(isPointer)
+// Tags returns the field tag converter.
+func (f *Field) Tags() *FieldTag {
+	return f.tag
 }
 
-// DomainTypeForTest returns the current field type for testing templates for
-// the domain.
-func (f *Field) DomainTypeForTest(isPointer bool) string {
-	return f.fieldType.DomainForTesting(isPointer)
+// Naming returns the field naming converter.
+func (f *Field) Naming() *FieldNaming {
+	return f.naming
 }
 
-// OutboundType returns the current field type for the outbound response.
-func (f *Field) OutboundType(isPointer bool) string {
-	return f.fieldType.Outbound(isPointer)
-}
-
-// DomainName returns the domain name associated with the field. It is formatted
-// in UpperCamelCase if annotations are available, or the Go name.
-func (f *Field) DomainName() string {
-	return f.naming.DomainName()
-}
-
-// DomainTag generates the struct tag string for the field based on its domain
-// and naming conventions. It also adds the database struct tag if available.
-func (f *Field) DomainTag() string {
-	return f.tag.DomainTag(f.naming.ResolveDomainNameForTag(f.naming.DomainName()))
-}
-
-// InboundTag generates and returns the struct tag string for the inbound
-// structure.
-func (f *Field) InboundTag() string {
-	return f.tag.InboundTag(f.naming.InboundName())
-}
-
-// InboundName returns the inbound name of the field, defaulting to snake_case
-// unless overwritten by specific extensions.
-func (f *Field) InboundName() string {
-	return f.naming.InboundName()
-}
-
-// OutboundTag generates the outbound struct tag for the field based on its
-// domain name and outbound configuration options.
-func (f *Field) OutboundTag() string {
-	return f.tag.OutboundTag(f.naming.ResolveOutboundNameForTag(f.naming.OutboundName()))
-}
-
-// OutboundName returns the outbound field name.
-func (f *Field) OutboundName() string {
-	return f.naming.OutboundName()
-}
-
-// OutboundJSONTagFieldName generates and returns the outbound JSON tag name
-// for the field.
-func (f *Field) OutboundJSONTagFieldName() string {
-	return f.naming.OutboundJSONTagFieldName()
-}
-
-// ConvertToWireType converts the field to its wire-compatible type based on
-// protobuf schema and field settings.
-func (f *Field) ConvertToWireType(wireInput bool) string {
-	return f.conversion.ToWireType(wireInput)
-}
-
-// ConvertDomainTypeToWireType converts the domain type into its wire-protocol
-// representation.
-func (f *Field) ConvertDomainTypeToWireType() string {
-	return f.conversion.DomainTypeToWireType()
-}
-
-// ConvertDomainTypeToArrayWireType converts the domain-specific representation to
-// its array wire format as a string.
-func (f *Field) ConvertDomainTypeToArrayWireType(receiver string, wireInput bool) string {
-	return f.conversion.DomainTypeToArrayWireType(receiver, wireInput)
-}
-
-// ConvertWireTypeToArrayDomainType converts a wire type into a
-// domain-specific representation for array fields.
-func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
-	return f.conversion.WireTypeToArrayDomainType(receiver)
-}
-
-// ConvertDomainTypeToMapWireType converts a domain type to its corresponding
-// map wire type representation.
-func (f *Field) ConvertDomainTypeToMapWireType(receiver string, wireInput bool) string {
-	return f.conversion.DomainTypeToMapWireType(receiver, wireInput)
-}
-
-// ConvertWireTypeToMapDomainType converts a wire type value into the corresponding
-// map domain type representation.
-func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
-	return f.conversion.WireTypeToMapDomainType(receiver)
-}
-
-// ConvertWireOutputToOutbound converts the field's wire format output into the
-// outbound.
-func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
-	return f.conversion.WireOutputToOutbound(receiver)
-}
-
-// ConvertWireOutputToMapOutbound converts the field wire output to its map
-// outbound representation.
-func (f *Field) ConvertWireOutputToMapOutbound(receiver string) string {
-	return f.conversion.WireOutputToMapOutbound(receiver)
-}
-
-// ConvertWireOutputToArrayOutbound converts the field wire format output into
-// an appropriate outbound array representation.
-func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
-	return f.conversion.WireOutputToArrayOutbound(receiver)
+// Conversion returns the field conversion converter.
+func (f *Field) Conversion() *FieldConversion {
+	return f.conversion
 }
 
 // ValidationName constructs and returns the validation call name for the
@@ -243,7 +175,7 @@ func (f *Field) ValidationName(receiver string) string {
 		address = "&"
 	}
 
-	return fmt.Sprintf("%s%s.%s", address, receiver, f.naming.GoName)
+	return fmt.Sprintf("%s%s.%s", address, receiver, f.naming.GoName())
 }
 
 func (f *Field) needsAddressNotation() bool {

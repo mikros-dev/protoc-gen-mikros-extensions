@@ -13,104 +13,52 @@ type FieldNameOptions struct {
 }
 
 type FieldNaming struct {
-	GoName            string
-	extensions        *extensions.MikrosFieldExtensions
-	messageExtensions *extensions.MikrosMessageExtensions
+	goName            string
+	domainName        string
+	outboundName      string
+	inboundName       string
 }
 
 func newFieldNaming(options *FieldNameOptions) *FieldNaming {
 	return &FieldNaming{
-		GoName:            options.GoName,
-		extensions:        options.FieldExtensions,
-		messageExtensions: options.MessageExtensions,
+		goName:            options.GoName,
+		domainName:        buildDomainName(options.GoName, options.FieldExtensions),
+		outboundName:      buildOutboundName(options.GoName),
+		inboundName:       buildInboundName(options.GoName, options.FieldExtensions, options.MessageExtensions),
 	}
 }
 
-func (f *FieldNaming) DomainName() string {
-	if f.extensions != nil {
-		if domain := f.extensions.GetDomain(); domain != nil {
-			if n := domain.GetName(); n != "" {
-				return strcase.UpperCamelCase(n)
-			}
+func buildDomainName(goName string, ext *extensions.MikrosFieldExtensions) string {
+	if domain := ext.GetDomain(); domain != nil {
+		if n := domain.GetName(); n != "" {
+			return strcase.UpperCamelCase(n)
 		}
 	}
 
-	return f.GoName
+	return goName
 }
 
-func (f *FieldNaming) ResolveDomainNameForTag(fieldName string) string {
-	// The default is snake_case
-	fieldName = strcase.SnakeCase(fieldName)
-
-	if f.messageExtensions != nil {
-		if messageDomain := f.messageExtensions.GetDomain(); messageDomain != nil {
-			if messageDomain.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-				fieldName = strcase.LowerCamelCase(fieldName)
-			}
-		}
-	}
-
-	return fieldName
+func buildOutboundName(goName string) string {
+	return goName
 }
 
-func (f *FieldNaming) OutboundName() string {
-	return f.GoName
-}
-
-func (f *FieldNaming) ResolveOutboundNameForTag(fieldName string) string {
-	fieldName = strcase.SnakeCase(fieldName)
-
-	if f.messageExtensions != nil {
-		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
-			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-				fieldName = inboundOutboundCamelCase(fieldName)
-			}
-		}
-	}
-
-	return fieldName
-}
-
-func (f *FieldNaming) OutboundJSONTagFieldName() string {
-	name := f.DomainName()
-	if f.extensions != nil {
-		if outbound := f.extensions.GetOutbound(); outbound != nil {
-			if n := outbound.GetName(); n != "" {
-				name = n
-			}
+func buildInboundName(
+	goName string,
+	ext *extensions.MikrosFieldExtensions,
+	msgExt *extensions.MikrosMessageExtensions,
+) string {
+	name := goName
+	if inbound := ext.GetInbound(); inbound != nil {
+		if n := inbound.GetName(); n != "" {
+			name = n
 		}
 	}
 
 	// The default is snake_case
 	fieldName := strcase.SnakeCase(name)
-	if f.messageExtensions != nil {
-		if messageOutbound := f.messageExtensions.GetOutbound(); messageOutbound != nil {
-			if messageOutbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-				fieldName = inboundOutboundCamelCase(name)
-			}
-		}
-	}
-
-	return fieldName
-}
-
-func (f *FieldNaming) InboundName() string {
-	name := f.DomainName()
-	if f.extensions != nil {
-		if inbound := f.extensions.GetInbound(); inbound != nil {
-			if n := inbound.GetName(); n != "" {
-				name = n
-			}
-		}
-	}
-
-	// The default is snake_case
-	fieldName := strcase.SnakeCase(name)
-	if f.messageExtensions != nil {
-		if messageInbound := f.messageExtensions.GetInbound(); messageInbound != nil {
-			if messageInbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
-				fieldName = inboundOutboundCamelCase(name)
-			}
+	if messageInbound := msgExt.GetInbound(); messageInbound != nil {
+		if messageInbound.GetNamingMode() == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+			fieldName = inboundOutboundCamelCase(name)
 		}
 	}
 
@@ -119,4 +67,20 @@ func (f *FieldNaming) InboundName() string {
 
 func inboundOutboundCamelCase(s string) string {
 	return strcase.LowerCamelCase(s)
+}
+
+func (f *FieldNaming) GoName() string {
+	return f.goName
+}
+
+func (f *FieldNaming) Domain() string {
+	return f.domainName
+}
+
+func (f *FieldNaming) Outbound() string {
+	return f.outboundName
+}
+
+func (f *FieldNaming) Inbound() string {
+	return f.inboundName
 }

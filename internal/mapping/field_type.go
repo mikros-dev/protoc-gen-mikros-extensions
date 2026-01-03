@@ -45,8 +45,8 @@ func newFieldType(options *FieldTypeOptions) *FieldType {
 	}
 }
 
-// Type returns the wire type for the field.
-func (f *FieldType) Type(isPointer bool) string {
+// Wire returns the wire type for the field.
+func (f *FieldType) Wire(isPointer bool) string {
 	if f.proto.IsMap() {
 		key, value, _ := getMapKeyValueTypesForWire(f.proto)
 		return fmt.Sprintf("map[%s]%s", key, value)
@@ -88,8 +88,8 @@ func (f *FieldType) Outbound(isPointer bool) string {
 }
 
 func (f *FieldType) convertTo(mode conversionMode, isPointer, testMode bool) string {
-	if f.extensions != nil && mode == wireToOutbound {
-		if t := f.extensions.GetOutbound().GetCustomType(); t != "" {
+	if outbound := f.extensions.GetOutbound(); outbound != nil && mode == wireToOutbound {
+		if t := outbound.GetCustomType(); t != "" {
 			return t
 		}
 	}
@@ -194,14 +194,12 @@ func formatType(outType string, isArray, isPointer bool) string {
 }
 
 func (f *FieldType) convertFromWireTypeToOutbound() string {
-	if f.extensions != nil {
-		if outbound := f.extensions.GetOutbound(); outbound != nil {
-			// bitflag fields usually are declared as an unsigned integer, allowing
-			// each one of its bits to be set to different information. Thus, the
-			// outbound type should be a slice of strings like an enum list.
-			if outbound.GetBitflag() != nil {
-				return "[]string"
-			}
+	if outbound := f.extensions.GetOutbound(); outbound != nil {
+		// bitflag fields usually are declared as an unsigned integer, allowing
+		// each one of its bits to be set to different information. Thus, the
+		// outbound type should be a slice of strings like an enum list.
+		if outbound.GetBitflag() != nil {
+			return "[]string"
 		}
 	}
 

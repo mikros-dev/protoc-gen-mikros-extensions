@@ -59,7 +59,7 @@ func (f *Field) BindingValue(isPointer bool) string {
 	}
 
 	if f.proto.IsMap() || f.isArray || f.proto.IsMessage() {
-		outputType := f.mapping.DomainTypeForTest(isPointer)
+		outputType := f.mapping.Types().DomainForTesting(isPointer)
 		return fmt.Sprintf("v.(%v)", outputType)
 	}
 
@@ -92,7 +92,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 		return fmt.Sprintf(
 			"zeroValue(res.%s).Interface().(%s)",
 			f.proto.GoName,
-			f.mapping.DomainTypeForTest(isPointer),
+			f.mapping.Types().DomainForTesting(isPointer),
 		)
 	}
 
@@ -123,7 +123,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 	value := "0"
 	if f.proto.IsOptional() {
 		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
-		value = fmt.Sprintf("%s(%s(%s))", call, f.mapping.DomainTypeForTest(false), value)
+		value = fmt.Sprintf("%s(%s(%s))", call, f.mapping.Types().DomainForTesting(false), value)
 	}
 
 	return value

@@ -235,7 +235,7 @@ func checkImportNeededFromFieldType(fieldType string) (string, bool) {
 	fieldType = strings.TrimPrefix(fieldType, "*")
 	parts := strings.Split(fieldType, ".")
 
-	// fieldType must have two parts here 'module.Type' to require another
+	// fieldType must have two parts here 'module.Wire' to require another
 	// module to be imported
 	if len(parts) == 2 {
 		return parts[0], true

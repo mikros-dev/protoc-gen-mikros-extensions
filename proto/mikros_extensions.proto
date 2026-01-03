@@ -79,10 +79,10 @@ message MikrosFieldExtensions {
 message FieldDomainOptions {
   optional string name = 1;
   optional bool allow_empty = 2;
-  repeated FieldDomainStructTag struct_tag = 3;
+  repeated FieldStructTag struct_tag = 3;
 }
 
-message FieldDomainStructTag {
+message FieldStructTag {
   required string name = 1;
   required string value = 2;
 }
@@ -106,7 +106,7 @@ message FieldOutboundOptions {
   optional bool hide = 2;
   optional OutboundBitflagField bitflag = 3;
   optional bool allow_empty = 4;
-  repeated FieldDomainStructTag struct_tag = 5;
+  repeated FieldStructTag struct_tag = 5;
   optional bool custom_bind = 6;
   optional string custom_type = 7;
   optional MikrosCustomImport custom_import = 8;

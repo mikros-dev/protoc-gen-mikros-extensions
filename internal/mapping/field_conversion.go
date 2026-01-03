@@ -55,28 +55,28 @@ func (f *FieldConversion) ToWireType(wireInput bool) string {
 
 	if f.proto.IsProtoValue() {
 		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToProtoValue)
-		return fmt.Sprintf("%s(%s.%s)", call, f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("%s(%s.%s)", call, f.messageReceiver, f.naming.Domain())
 	}
 
 	if f.proto.IsTimestamp() {
 		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallTimeToProto)
-		return fmt.Sprintf("%s(%s.%s)", call, f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("%s(%s.%s)", call, f.messageReceiver, f.naming.Domain())
 	}
 
 	if f.proto.IsProtoStruct() {
 		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallMapToStruct)
-		return fmt.Sprintf("%s(%s.%s)", call, f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("%s(%s.%s)", call, f.messageReceiver, f.naming.Domain())
 	}
 
 	if f.proto.IsMessage() {
 		if wireInput {
-			return fmt.Sprintf("%s.%s.IntoWireInput()", f.messageReceiver, f.naming.DomainName())
+			return fmt.Sprintf("%s.%s.IntoWireInput()", f.messageReceiver, f.naming.Domain())
 		}
 
-		return fmt.Sprintf("%s.%s.IntoWire()", f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("%s.%s.IntoWire()", f.messageReceiver, f.naming.Domain())
 	}
 
-	return fmt.Sprintf("%s.%s", f.messageReceiver, f.naming.DomainName())
+	return fmt.Sprintf("%s.%s", f.messageReceiver, f.naming.Domain())
 }
 
 func (f *FieldConversion) enumWireType() string {
@@ -116,7 +116,7 @@ func (f *FieldConversion) enumWireType() string {
 // wire format type representation.
 func (f *FieldConversion) DomainTypeToWireType() string {
 	if f.proto.IsEnum() {
-		call := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", f.messageReceiver, f.naming.DomainName())
+		call := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", f.messageReceiver, f.naming.Domain())
 		if f.proto.IsOptional() {
 			call = fmt.Sprintf("toPtr(%s)", call)
 		}
@@ -125,22 +125,22 @@ func (f *FieldConversion) DomainTypeToWireType() string {
 	}
 
 	if f.proto.IsProtoValue() {
-		return fmt.Sprintf("toDomainInterface(%s.%s)", f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("toDomainInterface(%s.%s)", f.messageReceiver, f.naming.Domain())
 	}
 
 	if f.proto.IsTimestamp() {
-		return fmt.Sprintf("toDomainTime(%s.%s)", f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("toDomainTime(%s.%s)", f.messageReceiver, f.naming.Domain())
 	}
 
 	if f.proto.IsProtoStruct() {
-		return fmt.Sprintf("toDomainMap(%s.%s)", f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("toDomainMap(%s.%s)", f.messageReceiver, f.naming.Domain())
 	}
 
 	if f.proto.IsMessage() {
-		return fmt.Sprintf("%s.%s.IntoDomain()", f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("%s.%s.IntoDomain()", f.messageReceiver, f.naming.Domain())
 	}
 
-	return fmt.Sprintf("%s.%s", f.messageReceiver, f.naming.DomainName())
+	return fmt.Sprintf("%s.%s", f.messageReceiver, f.naming.Domain())
 }
 
 // DomainTypeToArrayWireType converts a domain type to its array wire type
@@ -270,7 +270,7 @@ func (f *FieldConversion) WireOutputToOutbound(receiver string) string {
 
 	if f.proto.IsTimestamp() {
 		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallProtoToTimePtr)
-		return fmt.Sprintf("%s(%s.%s)", call, f.messageReceiver, f.naming.DomainName())
+		return fmt.Sprintf("%s(%s.%s)", call, f.messageReceiver, f.naming.Domain())
 	}
 
 	if f.proto.IsProtoStruct() {

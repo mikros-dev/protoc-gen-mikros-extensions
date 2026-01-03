@@ -4,42 +4,73 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/stoewer/go-strcase"
+
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
 // FieldTagOptions are the options for building FieldTag objects.
 type FieldTagOptions struct {
-	DatabaseKind    string
-	FieldExtensions *extensions.MikrosFieldExtensions
+	DatabaseKind      string
+	DomainName        string
+	OutboundName      string
+	InboundName       string
+	FieldExtensions   *extensions.MikrosFieldExtensions
+	MessageExtensions *extensions.MikrosMessageExtensions
 }
 
 // FieldTag is the mechanism that allows building and retrieving struct tags from
 // a Field for different scenarios.
 type FieldTag struct {
-	extensions *extensions.MikrosFieldExtensions
-	db         TagGenerator
+	domainTag         string
+	outboundTag       string
+	outboundFieldName string
+	inboundTag        string
 }
 
 func newFieldTag(options *FieldTagOptions) *FieldTag {
+	var (
+		db               = NewTagGenerator(options.DatabaseKind, options.FieldExtensions)
+		domainNameMode   = extensions.NamingMode_NAMING_MODE_SNAKE_CASE
+		outboundNameMode = extensions.NamingMode_NAMING_MODE_SNAKE_CASE
+	)
+
+	if messageDomain := options.MessageExtensions.GetDomain(); messageDomain != nil {
+		domainNameMode = messageDomain.GetNamingMode()
+	}
+	if messageOutbound := options.MessageExtensions.GetOutbound(); messageOutbound != nil {
+		outboundNameMode = messageOutbound.GetNamingMode()
+	}
+
+	var (
+		domainName   = resolveNameForTag(options.DomainName, domainNameMode)
+		outboundName = resolveNameForTag(options.OutboundName, outboundNameMode)
+	)
+
 	return &FieldTag{
-		extensions: options.FieldExtensions,
-		db:         NewTagGenerator(options.DatabaseKind, options.FieldExtensions),
+		domainTag:         buildDomainTag(domainName, options.FieldExtensions, db),
+		outboundTag:       buildOutboundTag(outboundName, options.FieldExtensions),
+		outboundFieldName: outboundName,
+		inboundTag:        buildInboundTag(options.InboundName),
 	}
 }
 
-// DomainTag returns the domain tag for the field.
-func (f *FieldTag) DomainTag(fieldName string) string {
-	var (
-		domain *extensions.FieldDomainOptions
-		tags   []*extensions.FieldDomainStructTag
-		tag    = "omitempty"
-	)
-
-	if f.extensions != nil {
-		domain = f.extensions.GetDomain()
+func resolveNameForTag(fieldName string, mode extensions.NamingMode) string {
+	fieldName = strcase.SnakeCase(fieldName)
+	if mode == extensions.NamingMode_NAMING_MODE_CAMEL_CASE {
+		fieldName = strcase.LowerCamelCase(fieldName)
 	}
 
-	if domain != nil {
+	return fieldName
+}
+
+func buildDomainTag(fieldName string, ext *extensions.MikrosFieldExtensions, db TagGenerator) string {
+	var (
+		tags []*extensions.FieldStructTag
+		tag  = "omitempty"
+	)
+
+	if domain := ext.GetDomain(); domain != nil {
 		tags = domain.GetStructTag()
 
 		if domain.GetAllowEmpty() {
@@ -47,21 +78,16 @@ func (f *FieldTag) DomainTag(fieldName string) string {
 		}
 	}
 
-	return f.buildTag(fieldName, tag, f.db.GenerateTag(fieldName), tags)
+	return buildTag(fieldName, tag, db.GenerateTag(fieldName), tags)
 }
 
-// OutboundTag returns the outbound tag for the field.
-func (f *FieldTag) OutboundTag(fieldName string) string {
+func buildOutboundTag(fieldName string, ext *extensions.MikrosFieldExtensions) string {
 	var (
-		outbound *extensions.FieldOutboundOptions
-		tags     []*extensions.FieldDomainStructTag
-		tag      = "omitempty"
+		tags []*extensions.FieldStructTag
+		tag  = "omitempty"
 	)
 
-	if f.extensions != nil {
-		outbound = f.extensions.GetOutbound()
-	}
-	if outbound != nil {
+	if outbound := ext.GetOutbound(); outbound != nil {
 		tags = outbound.GetStructTag()
 
 		if outbound.GetAllowEmpty() {
@@ -69,16 +95,20 @@ func (f *FieldTag) OutboundTag(fieldName string) string {
 		}
 	}
 
-	return f.buildTag(fieldName, tag, "", tags)
+	return buildTag(fieldName, tag, "", tags)
 }
 
-func (f *FieldTag) buildTag(fieldName, tag, dbTab string, structTags []*extensions.FieldDomainStructTag) string {
+func buildInboundTag(fieldName string) string {
+	return buildTag(fieldName, "", "", nil)
+}
+
+func buildTag(fieldName, tag, dbTag string, structTags []*extensions.FieldStructTag) string {
 	// Build the base tags
 	tags := []string{
 		fmt.Sprintf("json:%q", fieldName+prefixComma(tag)),
 	}
-	if dbTab != "" {
-		tags = append(tags, dbTab)
+	if dbTag != "" {
+		tags = append(tags, dbTag)
 	}
 
 	// Append custom tags from extensions
@@ -108,7 +138,22 @@ func filterEmpty(ss []string) []string {
 	return out
 }
 
-// InboundTag returns the inbound tag for the field.
-func (f *FieldTag) InboundTag(fieldName string) string {
-	return fmt.Sprintf("`json:\"%s\"`", fieldName)
+// Domain returns the domain tag for the field.
+func (f *FieldTag) Domain() string {
+	return f.domainTag
+}
+
+// Outbound returns the outbound tag for the field.
+func (f *FieldTag) Outbound() string {
+	return f.outboundTag
+}
+
+// OutboundTagFieldName returns the tag outbound field name for the field.
+func (f *FieldTag) OutboundTagFieldName() string {
+	return f.outboundFieldName
+}
+
+// Inbound returns the inbound tag for the field.
+func (f *FieldTag) Inbound() string {
+	return f.inboundTag
 }

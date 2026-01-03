@@ -84,12 +84,12 @@ func loadField(opt loadFieldOptions) (*Field, error) {
 		GoName:                   opt.Field.Schema.GoName,
 		JSONName:                 strings.ToLower(strcase.SnakeCase(opt.Field.Proto.GetJsonName())),
 		ProtoName:                opt.Field.Proto.GetName(),
-		DomainName:               fieldMapping.DomainName(),
-		DomainTag:                fieldMapping.DomainTag(),
-		InboundTag:               fieldMapping.InboundTag(),
-		OutboundName:             fieldMapping.OutboundName(),
-		OutboundTag:              fieldMapping.OutboundTag(),
-		OutboundJSONTagFieldName: fieldMapping.OutboundJSONTagFieldName(),
+		DomainName:               fieldMapping.Naming().Domain(),
+		DomainTag:                fieldMapping.Tags().Domain(),
+		InboundTag:               fieldMapping.Tags().Inbound(),
+		OutboundName:             fieldMapping.Naming().Outbound(),
+		OutboundTag:              fieldMapping.Tags().Outbound(),
+		OutboundJSONTagFieldName: fieldMapping.Tags().OutboundTagFieldName(),
 		MessageReceiver:          opt.Receiver,
 		Location:                 getFieldLocation(opt.Field.Proto, opt.Endpoint),
 		ProtoField:               opt.Field,
@@ -193,87 +193,87 @@ func (f *Field) IsMessageFromOtherPackage() bool {
 
 // DomainType returns the domain type of the field.
 func (f *Field) DomainType() string {
-	return f.Mapping.DomainType(f.IsPointer())
+	return f.Mapping.Types().Domain(f.IsPointer())
 }
 
 // ConvertDomainTypeToWireType converts the domain type to the wire type.
 func (f *Field) ConvertDomainTypeToWireType() string {
-	return f.Mapping.ConvertToWireType(false)
+	return f.Mapping.Conversion().ToWireType(false)
 }
 
 // ConvertDomainTypeToWireInputType converts the domain type to the wire input
 // type.
 func (f *Field) ConvertDomainTypeToWireInputType() string {
-	return f.Mapping.ConvertToWireType(true)
+	return f.Mapping.Conversion().ToWireType(true)
 }
 
 // WireType returns the wire type of the field.
 func (f *Field) WireType() string {
-	return f.Mapping.WireType(f.IsPointer())
+	return f.Mapping.Types().Wire(f.IsPointer())
 }
 
 // ConvertWireTypeToDomainType converts the wire type to the domain type.
 func (f *Field) ConvertWireTypeToDomainType() string {
-	return f.Mapping.ConvertDomainTypeToWireType()
+	return f.Mapping.Conversion().DomainTypeToWireType()
 }
 
 // OutboundType returns the outbound type of the field.
 func (f *Field) OutboundType() string {
-	return f.Mapping.OutboundType(f.IsPointer())
+	return f.Mapping.Types().Outbound(f.IsPointer())
 }
 
 // ConvertDomainTypeToArrayWireType converts a domain type to its corresponding
 // wire type.
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string) string {
-	return f.Mapping.ConvertDomainTypeToArrayWireType(receiver, false)
+	return f.Mapping.Conversion().DomainTypeToArrayWireType(receiver, false)
 }
 
 // ConvertWireTypeToArrayDomainType converts a wire type to its corresponding
 // domain type.
 func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
-	return f.Mapping.ConvertWireTypeToArrayDomainType(receiver)
+	return f.Mapping.Conversion().WireTypeToArrayDomainType(receiver)
 }
 
 // ConvertDomainTypeToArrayWireInputType converts the domain type to an array
 // wire input type.
 func (f *Field) ConvertDomainTypeToArrayWireInputType(receiver string) string {
-	return f.Mapping.ConvertDomainTypeToArrayWireType(receiver, true)
+	return f.Mapping.Conversion().DomainTypeToArrayWireType(receiver, true)
 }
 
 // ConvertDomainTypeToMapWireType converts a domain type to its corresponding
 // map wire type representation.
 func (f *Field) ConvertDomainTypeToMapWireType(receiver string) string {
-	return f.Mapping.ConvertDomainTypeToMapWireType(receiver, false)
+	return f.Mapping.Conversion().DomainTypeToMapWireType(receiver, false)
 }
 
 // ConvertDomainTypeToMapWireInputType converts the domain type into its
 // corresponding map wire input type.
 func (f *Field) ConvertDomainTypeToMapWireInputType(receiver string) string {
-	return f.Mapping.ConvertDomainTypeToMapWireType(receiver, true)
+	return f.Mapping.Conversion().DomainTypeToMapWireType(receiver, true)
 }
 
 // ConvertWireTypeToMapDomainType converts a wire type to its corresponding map
 // domain type representation.
 func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
-	return f.Mapping.ConvertWireTypeToMapDomainType(receiver)
+	return f.Mapping.Conversion().WireTypeToMapDomainType(receiver)
 }
 
 // ConvertWireOutputToOutbound converts a wire output to its corresponding
 // outbound representation.
 func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
-	return f.Mapping.ConvertWireOutputToOutbound(receiver)
+	return f.Mapping.Conversion().WireOutputToOutbound(receiver)
 }
 
 // ConvertWireOutputToMapOutbound converts the wire output to its corresponding
 // map outbound representation.
 func (f *Field) ConvertWireOutputToMapOutbound(receiver string) string {
-	return f.Mapping.ConvertWireOutputToMapOutbound(receiver)
+	return f.Mapping.Conversion().WireOutputToMapOutbound(receiver)
 }
 
 // ConvertWireOutputToArrayOutbound convertes the wire output representation of
 // a field into its array outbound form.
 func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
-	return f.Mapping.ConvertWireOutputToArrayOutbound(receiver)
+	return f.Mapping.Conversion().WireOutputToArrayOutbound(receiver)
 }
 
 // OutboundHide returns true if the field should be hidden from the outbound
