@@ -7,11 +7,11 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
-	context2 "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/context"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
-func loadDomainImprove(msg *context2.Message) *proto.DomainImprove {
+func loadDomainImprove(msg *context.Message) *proto.DomainImprove {
 	if extensions.HasExtension(msg.ProtoMessage.Proto.GetOptions(), proto.E_Improve.TypeDescriptor()) {
 		var domainImprove proto.DomainImprove
 		if err := extensions.RetrieveExtension(msg.ProtoMessage.Proto.GetOptions(), proto.E_Improve.TypeDescriptor(), &domainImprove); err != nil {
@@ -28,10 +28,10 @@ func loadDomainImprove(msg *context2.Message) *proto.DomainImprove {
 var templateFiles embed.FS
 
 type Context struct {
-	domainMessages []*context2.Message
+	domainMessages []*context.Message
 }
 
-func (c *Context) HasImproveDomainCall(msg *context2.Message) bool {
+func (c *Context) HasImproveDomainCall(msg *context.Message) bool {
 	if d := loadDomainImprove(msg); d != nil {
 		return d.GetNewApi()
 	}
@@ -42,7 +42,7 @@ func (c *Context) HasImproveDomainCall(msg *context2.Message) bool {
 type DomainImproveAddon struct{}
 
 func (d *DomainImproveAddon) GetContext(ctx interface{}) interface{} {
-	c := ctx.(*context2.Context)
+	c := ctx.(*context.Context)
 	addonCtx := &Context{
 		domainMessages: c.DomainMessages(),
 	}
@@ -56,7 +56,7 @@ func (d *DomainImproveAddon) GetTemplateImports(_ spec.Name, _ interface{}, _ *s
 }
 
 func (d *DomainImproveAddon) GetTemplateValidator(name spec.Name, ctx interface{}) (spec.ExecutionFunc, bool) {
-	c := ctx.(*context2.Context)
+	c := ctx.(*context.Context)
 	pc := c.AddonContext(addonName).(*Context)
 
 	validators := map[spec.Name]spec.ExecutionFunc{
