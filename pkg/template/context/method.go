@@ -7,7 +7,7 @@ import (
 
 	"github.com/stoewer/go-strcase"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/mapping"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"

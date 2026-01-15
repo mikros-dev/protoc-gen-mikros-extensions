@@ -13,18 +13,18 @@ type FieldNameOptions struct {
 }
 
 type FieldNaming struct {
-	goName            string
-	domainName        string
-	outboundName      string
-	inboundName       string
+	goName       string
+	domainName   string
+	outboundName string
+	inboundName  string
 }
 
 func newFieldNaming(options *FieldNameOptions) *FieldNaming {
 	return &FieldNaming{
-		goName:            options.GoName,
-		domainName:        buildDomainName(options.GoName, options.FieldExtensions),
-		outboundName:      buildOutboundName(options.GoName),
-		inboundName:       buildInboundName(options.GoName, options.FieldExtensions, options.MessageExtensions),
+		goName:       options.GoName,
+		domainName:   buildDomainName(options.GoName, options.FieldExtensions),
+		outboundName: buildOutboundName(options.GoName),
+		inboundName:  buildInboundName(options.GoName, options.FieldExtensions, options.MessageExtensions),
 	}
 }
 

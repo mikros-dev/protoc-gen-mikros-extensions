@@ -73,7 +73,9 @@ func handleProtogenPlugin(ctx context.Context, plugin *protogen.Plugin, pluginAr
 	}
 
 	// Initializes our output system
-	logger := log.New(cfg.Debug)
+	logger := log.New(log.LoggerOptions{
+		Verbose: cfg.Debug,
+	})
 	ctx = ctxpkg.WithLogger(ctx, logger)
 
 	// Build the context and execute templates
