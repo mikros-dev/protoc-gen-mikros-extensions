@@ -15,18 +15,16 @@ import (
 // FieldConversion.
 type FieldConversionOptions struct {
 	MessageReceiver string
-	GoName          string
-	GoType          string
 	Protobuf        *protobuf.Field
 	Settings        *settings.Settings
 	FieldExtensions *extensions.MikrosFieldExtensions
 	FieldNaming     *FieldNaming
+	FieldType       *FieldType
 }
 
 // FieldConversion represents the conversion logic for a field.
 type FieldConversion struct {
 	messageReceiver string
-	goName          string
 	goType          string
 	proto           *protobuf.Field
 	settings        *settings.Settings
@@ -34,11 +32,11 @@ type FieldConversion struct {
 	naming          *FieldNaming
 }
 
-func newFieldConversion(options *FieldConversionOptions) *FieldConversion {
+// NewFieldConversion creates a new FieldConversion instance.
+func NewFieldConversion(options *FieldConversionOptions) *FieldConversion {
 	return &FieldConversion{
 		messageReceiver: options.MessageReceiver,
-		goName:          options.GoName,
-		goType:          options.GoType,
+		goType:          options.FieldType.GoType(),
 		proto:           options.Protobuf,
 		settings:        options.Settings,
 		extensions:      options.FieldExtensions,
@@ -97,7 +95,7 @@ func (f *FieldConversion) enumWireType() string {
 		name = fmt.Sprintf("%s%s", prefix, n)
 	}
 
-	arg := fmt.Sprintf("%s.%s", f.messageReceiver, f.goName)
+	arg := fmt.Sprintf("%s.%s", f.messageReceiver, f.naming.GoName())
 	if f.proto.IsOptional() {
 		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToValue)
 		arg = fmt.Sprintf("%s(%s)", call, arg)
@@ -249,12 +247,13 @@ func (f *FieldConversion) WireOutputToOutbound(receiver string) string {
 				prefix    = outbound.GetBitflag().GetPrefix()
 			)
 
-			return fmt.Sprintf("currentEnumValues(%s.%s, %s_name, \"%s\")", receiver, f.goName, valuesVar, prefix)
+			return fmt.Sprintf("currentEnumValues(%s.%s, %s_name, \"%s\")",
+				receiver, f.naming.GoName(), valuesVar, prefix)
 		}
 	}
 
 	if f.proto.IsEnum() {
-		conversionCall := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", receiver, f.goName)
+		conversionCall := fmt.Sprintf("%s.%s.ValueWithoutPrefix()", receiver, f.naming.GoName())
 
 		if f.proto.IsOptional() {
 			call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
@@ -265,7 +264,7 @@ func (f *FieldConversion) WireOutputToOutbound(receiver string) string {
 	}
 
 	if f.proto.IsProtoValue() {
-		return fmt.Sprintf("%s.%s.AsInterface()", receiver, f.goName)
+		return fmt.Sprintf("%s.%s.AsInterface()", receiver, f.naming.GoName())
 	}
 
 	if f.proto.IsTimestamp() {
@@ -274,16 +273,18 @@ func (f *FieldConversion) WireOutputToOutbound(receiver string) string {
 	}
 
 	if f.proto.IsProtoStruct() {
-		return fmt.Sprintf("%s.%s.AsMap()", receiver, f.goName)
+		return fmt.Sprintf("%s.%s.AsMap()", receiver, f.naming.GoName())
 	}
 
 	if f.proto.IsMessage() {
-		return fmt.Sprintf("%s.%s.IntoOutboundOrNil()", receiver, f.goName)
+		return fmt.Sprintf("%s.%s.IntoOutboundOrNil()", receiver, f.naming.GoName())
 	}
 
-	return fmt.Sprintf("%s.%s", receiver, f.goName)
+	return fmt.Sprintf("%s.%s", receiver, f.naming.GoName())
 }
 
+// WireOutputToMapOutbound converts the field's value from its internal representation
+// to an outbound-friendly format for map fields.
 func (f *FieldConversion) WireOutputToMapOutbound(receiver string) string {
 	v := f.proto.Schema.Desc.MapValue()
 
@@ -298,6 +299,8 @@ func (f *FieldConversion) WireOutputToMapOutbound(receiver string) string {
 	return receiver
 }
 
+// WireOutputToArrayOutbound converts the field's value from its internal representation
+// to an outbound-friendly format for array fields.
 func (f *FieldConversion) WireOutputToArrayOutbound(receiver string) string {
 	if f.proto.IsEnum() {
 		return fmt.Sprintf("%s.ValueWithoutPrefix()", receiver)

@@ -3,15 +3,18 @@ package mapping
 import (
 	"github.com/stoewer/go-strcase"
 
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
+// FieldNameOptions represents the options for field naming.
 type FieldNameOptions struct {
-	GoName            string
+	ProtoField        *protobuf.Field
 	FieldExtensions   *extensions.MikrosFieldExtensions
 	MessageExtensions *extensions.MikrosMessageExtensions
 }
 
+// FieldNaming represents the naming logic for a field.
 type FieldNaming struct {
 	goName       string
 	domainName   string
@@ -19,12 +22,17 @@ type FieldNaming struct {
 	inboundName  string
 }
 
-func newFieldNaming(options *FieldNameOptions) *FieldNaming {
+// NewFieldNaming returns a new FieldNaming instance.
+func NewFieldNaming(options *FieldNameOptions) *FieldNaming {
+	var (
+		goName = options.ProtoField.Schema.GoName
+	)
+
 	return &FieldNaming{
-		goName:       options.GoName,
-		domainName:   buildDomainName(options.GoName, options.FieldExtensions),
-		outboundName: buildOutboundName(options.GoName),
-		inboundName:  buildInboundName(options.GoName, options.FieldExtensions, options.MessageExtensions),
+		goName:       goName,
+		domainName:   buildDomainName(goName, options.FieldExtensions),
+		outboundName: buildOutboundName(goName),
+		inboundName:  buildInboundName(goName, options.FieldExtensions, options.MessageExtensions),
 	}
 }
 
@@ -69,18 +77,22 @@ func inboundOutboundCamelCase(s string) string {
 	return strcase.LowerCamelCase(s)
 }
 
+// GoName returns the Go name of the field.
 func (f *FieldNaming) GoName() string {
 	return f.goName
 }
 
+// Domain returns the domain name of the field.
 func (f *FieldNaming) Domain() string {
 	return f.domainName
 }
 
+// Outbound returns the outbound name of the field.
 func (f *FieldNaming) Outbound() string {
 	return f.outboundName
 }
 
+// Inbound returns the inbound name of the field.
 func (f *FieldNaming) Inbound() string {
 	return f.inboundName
 }

@@ -96,11 +96,11 @@ func loadField(opt loadFieldOptions) (*Field, error) {
 		moduleName:               opt.ModuleName,
 		Mapping:                  fieldMapping,
 		testing: testing.NewField(&testing.NewFieldOptions{
-			IsArray:      isArray,
-			GoType:       goType,
-			ProtoField:   opt.Field,
-			Settings:     opt.Settings,
-			FieldMapping: fieldMapping,
+			IsArray:    isArray,
+			GoType:     goType,
+			ProtoField: opt.Field,
+			Settings:   opt.Settings,
+			FieldType:  fieldMapping.Types(),
 		}),
 		extensions: extensions.LoadFieldExtensions(opt.Field.Proto),
 	}
@@ -299,12 +299,12 @@ func (f *Field) IsValidatable() bool {
 
 // ValidationName returns the validation call name for the field.
 func (f *Field) ValidationName(receiver string) string {
-	return f.Mapping.ValidationName(receiver)
+	return f.Mapping.Validation().CallFunctionName(receiver)
 }
 
 // ValidationCall returns the validation call for the field, name and arguments.
 func (f *Field) ValidationCall() string {
-	return f.Mapping.ValidationCall()
+	return f.Mapping.Validation().Call()
 }
 
 // TestingValueBinding returns the binding value for the field for the testing

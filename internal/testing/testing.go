@@ -13,13 +13,13 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-// Field represents a field for testing templates.
+// Field represents a field for the testing templates.
 type Field struct {
 	isArray  bool
 	goType   string
 	proto    *protobuf.Field
 	settings *settings.Settings
-	mapping  *mapping.Field
+	mapping  *mapping.FieldType
 }
 
 // NewFieldOptions represents the options used to create a new field for testing
@@ -28,8 +28,8 @@ type NewFieldOptions struct {
 	IsArray      bool
 	GoType       string
 	ProtoField   *protobuf.Field
-	Settings     *settings.Settings
-	FieldMapping *mapping.Field
+	Settings  *settings.Settings
+	FieldType *mapping.FieldType
 }
 
 // NewField creates a new field for testing templates.
@@ -39,7 +39,7 @@ func NewField(options *NewFieldOptions) *Field {
 		goType:   options.GoType,
 		proto:    options.ProtoField,
 		settings: options.Settings,
-		mapping:  options.FieldMapping,
+		mapping:  options.FieldType,
 	}
 }
 
@@ -59,7 +59,7 @@ func (f *Field) BindingValue(isPointer bool) string {
 	}
 
 	if f.proto.IsMap() || f.isArray || f.proto.IsMessage() {
-		outputType := f.mapping.Types().DomainForTesting(isPointer)
+		outputType := f.mapping.DomainForTesting(isPointer)
 		return fmt.Sprintf("v.(%v)", outputType)
 	}
 
@@ -92,7 +92,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 		return fmt.Sprintf(
 			"zeroValue(res.%s).Interface().(%s)",
 			f.proto.GoName,
-			f.mapping.Types().DomainForTesting(isPointer),
+			f.mapping.DomainForTesting(isPointer),
 		)
 	}
 
@@ -123,7 +123,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 	value := "0"
 	if f.proto.IsOptional() {
 		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
-		value = fmt.Sprintf("%s(%s(%s))", call, f.mapping.Types().DomainForTesting(false), value)
+		value = fmt.Sprintf("%s(%s(%s))", call, f.mapping.DomainForTesting(false), value)
 	}
 
 	return value

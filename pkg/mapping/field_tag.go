@@ -12,10 +12,8 @@ import (
 // FieldTagOptions are the options for building FieldTag objects.
 type FieldTagOptions struct {
 	DatabaseKind      string
-	DomainName        string
-	OutboundName      string
-	InboundName       string
 	FieldExtensions   *extensions.MikrosFieldExtensions
+	FieldNaming       *FieldNaming
 	MessageExtensions *extensions.MikrosMessageExtensions
 }
 
@@ -28,7 +26,8 @@ type FieldTag struct {
 	inboundTag        string
 }
 
-func newFieldTag(options *FieldTagOptions) *FieldTag {
+// NewFieldTag returns a new FieldTag instance.
+func NewFieldTag(options *FieldTagOptions) *FieldTag {
 	var (
 		db               = NewTagGenerator(options.DatabaseKind, options.FieldExtensions)
 		domainNameMode   = extensions.NamingMode_NAMING_MODE_SNAKE_CASE
@@ -43,15 +42,15 @@ func newFieldTag(options *FieldTagOptions) *FieldTag {
 	}
 
 	var (
-		domainName   = resolveNameForTag(options.DomainName, domainNameMode)
-		outboundName = resolveNameForTag(options.OutboundName, outboundNameMode)
+		domainName   = resolveNameForTag(options.FieldNaming.Domain(), domainNameMode)
+		outboundName = resolveNameForTag(options.FieldNaming.Outbound(), outboundNameMode)
 	)
 
 	return &FieldTag{
 		domainTag:         buildDomainTag(domainName, options.FieldExtensions, db),
 		outboundTag:       buildOutboundTag(outboundName, options.FieldExtensions),
 		outboundFieldName: outboundName,
-		inboundTag:        buildInboundTag(options.InboundName),
+		inboundTag:        buildInboundTag(options.FieldNaming.Inbound()),
 	}
 }
 

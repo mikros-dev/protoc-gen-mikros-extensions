@@ -17,11 +17,11 @@ const (
 	wireToOutbound
 )
 
+// FieldTypeOptions represents the options for FieldType.
 type FieldTypeOptions struct {
-	IsArray         bool
-	GoType          string
 	Message         *Message
-	Protobuf        *protobuf.Field
+	ProtoField      *protobuf.Field
+	ProtoMessage    *protobuf.Message
 	FieldExtensions *extensions.MikrosFieldExtensions
 }
 
@@ -35,14 +35,24 @@ type FieldType struct {
 	extensions *extensions.MikrosFieldExtensions
 }
 
-func newFieldType(options *FieldTypeOptions) *FieldType {
+// NewFieldType creates a new FieldType instance.
+func NewFieldType(options *FieldTypeOptions) *FieldType {
 	return &FieldType{
-		isArray:    options.IsArray,
-		goType:     options.GoType,
+		isArray: options.ProtoField.IsArray(),
+		goType: ProtoTypeToGoType(
+			options.ProtoField.Schema.Desc.Kind(),
+			options.ProtoField.Proto.GetTypeName(),
+			options.ProtoMessage.ModuleName,
+		),
 		msg:        options.Message,
-		proto:      options.Protobuf,
+		proto:      options.ProtoField,
 		extensions: options.FieldExtensions,
 	}
+}
+
+// GoType returns the Go type for the field.
+func (f *FieldType) GoType() string {
+	return f.goType
 }
 
 // Wire returns the wire type for the field.
