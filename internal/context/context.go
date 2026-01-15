@@ -24,5 +24,7 @@ func LoggerFromContext(ctx context.Context) log.Logger {
 		return logger
 	}
 
-	return log.New(false)
+	return log.New(log.LoggerOptions{
+		Verbose: false,
+	})
 }
