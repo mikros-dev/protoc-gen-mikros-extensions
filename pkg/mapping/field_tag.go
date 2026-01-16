@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stoewer/go-strcase"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
@@ -11,14 +12,12 @@ import (
 
 // FieldTagOptions are the options for building FieldTag objects.
 type FieldTagOptions struct {
-	DatabaseKind      string
-	FieldExtensions   *extensions.MikrosFieldExtensions
-	FieldNaming       *FieldNaming
-	MessageExtensions *extensions.MikrosMessageExtensions
+	FieldNaming *FieldNaming `validate:"required"`
+	*FieldMappingContextOptions
 }
 
 // FieldTag is the mechanism that allows building and retrieving struct tags from
-// a Field for different scenarios.
+// a field for different scenarios.
 type FieldTag struct {
 	domainTag         string
 	outboundTag       string
@@ -27,17 +26,32 @@ type FieldTag struct {
 }
 
 // NewFieldTag returns a new FieldTag instance.
-func NewFieldTag(options *FieldTagOptions) *FieldTag {
+func NewFieldTag(options *FieldTagOptions) (*FieldTag, error) {
+	validate := options.Validate
+	if validate == nil {
+		validate = validator.New()
+	}
+	if err := validate.Struct(options); err != nil {
+		return nil, err
+	}
+
+	var databaseKind string
+	if options.Settings != nil {
+		databaseKind = options.Settings.Database.Kind
+	}
+
 	var (
-		db               = NewTagGenerator(options.DatabaseKind, options.FieldExtensions)
-		domainNameMode   = extensions.NamingMode_NAMING_MODE_SNAKE_CASE
-		outboundNameMode = extensions.NamingMode_NAMING_MODE_SNAKE_CASE
+		fieldExtensions   = loadFieldExtensions(options.ProtoField)
+		messageExtensions = loadMessageExtensions(options.ProtoMessage)
+		db                = NewTagGenerator(databaseKind, fieldExtensions)
+		domainNameMode    = extensions.NamingMode_NAMING_MODE_SNAKE_CASE
+		outboundNameMode  = extensions.NamingMode_NAMING_MODE_SNAKE_CASE
 	)
 
-	if messageDomain := options.MessageExtensions.GetDomain(); messageDomain != nil {
+	if messageDomain := messageExtensions.GetDomain(); messageDomain != nil {
 		domainNameMode = messageDomain.GetNamingMode()
 	}
-	if messageOutbound := options.MessageExtensions.GetOutbound(); messageOutbound != nil {
+	if messageOutbound := messageExtensions.GetOutbound(); messageOutbound != nil {
 		outboundNameMode = messageOutbound.GetNamingMode()
 	}
 
@@ -47,11 +61,11 @@ func NewFieldTag(options *FieldTagOptions) *FieldTag {
 	)
 
 	return &FieldTag{
-		domainTag:         buildDomainTag(domainName, options.FieldExtensions, db),
-		outboundTag:       buildOutboundTag(outboundName, options.FieldExtensions),
+		domainTag:         buildDomainTag(domainName, fieldExtensions, db),
+		outboundTag:       buildOutboundTag(outboundName, fieldExtensions),
 		outboundFieldName: outboundName,
 		inboundTag:        buildInboundTag(options.FieldNaming.Inbound()),
-	}
+	}, nil
 }
 
 func resolveNameForTag(fieldName string, mode extensions.NamingMode) string {

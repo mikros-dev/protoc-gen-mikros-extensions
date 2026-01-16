@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
@@ -11,90 +12,13 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-// Field is an object that gathers all supported field mapping operations in
-// a single one.
-type Field struct {
-	isArray       bool
-	isHTTPService bool
-	proto         *protobuf.Field
-	validation    *FieldValidation
-	tag           *FieldTag
-	naming        *FieldNaming
-	fieldType     *FieldType
-	conversion    *FieldConversion
-}
-
-// FieldOptions is the options used to create a new field.
-type FieldOptions struct {
-	IsHTTPService bool
-	Receiver      string
-	ProtoField    *protobuf.Field
-	Message       *Message
-	ProtoMessage  *protobuf.Message
-	Settings      *settings.Settings
-}
-
-// NewField creates a new field converter.
-func NewField(options FieldOptions) (*Field, error) {
-	var (
-		messageExtensions = loadMessageExtensions(options.ProtoMessage)
-		fieldExtensions   = loadFieldExtensions(options.ProtoField)
-		fieldType         = NewFieldType(&FieldTypeOptions{
-			Message:         options.Message,
-			ProtoField:      options.ProtoField,
-			ProtoMessage:    options.ProtoMessage,
-			FieldExtensions: fieldExtensions,
-		})
-
-		fieldNaming = NewFieldNaming(&FieldNameOptions{
-			ProtoField:        options.ProtoField,
-			FieldExtensions:   fieldExtensions,
-			MessageExtensions: messageExtensions,
-		})
-	)
-
-	v, err := NewFieldValidation(FieldValidationOptions{
-		IsHTTPService: options.IsHTTPService,
-		Receiver:      options.Receiver,
-		FieldNaming:   fieldNaming,
-		FieldType:     fieldType,
-		ProtoField:    options.ProtoField,
-		ProtoMessage:  options.ProtoMessage,
-		Settings:      options.Settings,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var databaseKind string
-	if options.Settings != nil {
-		databaseKind = options.Settings.Database.Kind
-	}
-
-	field := &Field{
-		isArray:       options.ProtoField.IsArray(),
-		isHTTPService: options.IsHTTPService,
-		proto:         options.ProtoField,
-		validation:    v,
-		tag: NewFieldTag(&FieldTagOptions{
-			DatabaseKind:      databaseKind,
-			FieldExtensions:   fieldExtensions,
-			FieldNaming:       fieldNaming,
-			MessageExtensions: messageExtensions,
-		}),
-		naming:    fieldNaming,
-		fieldType: fieldType,
-		conversion: NewFieldConversion(&FieldConversionOptions{
-			MessageReceiver: options.Receiver,
-			Protobuf:        options.ProtoField,
-			Settings:        options.Settings,
-			FieldExtensions: fieldExtensions,
-			FieldNaming:     fieldNaming,
-			FieldType:       fieldType,
-		}),
-	}
-
-	return field, nil
+// FieldMappingContextOptions represents common options for the different field
+// mappings.
+type FieldMappingContextOptions struct {
+	ProtoField   *protobuf.Field   `validate:"required"`
+	ProtoMessage *protobuf.Message `validate:"required"`
+	Settings     *settings.Settings
+	Validate     *validator.Validate
 }
 
 func loadFieldExtensions(proto *protobuf.Field) *extensions.MikrosFieldExtensions {
@@ -119,31 +43,6 @@ func loadMessageExtensions(proto *protobuf.Message) *extensions.MikrosMessageExt
 	}
 
 	return ext
-}
-
-// Types returns the field type converter.
-func (f *Field) Types() *FieldType {
-	return f.fieldType
-}
-
-// Tags returns the field tag converter.
-func (f *Field) Tags() *FieldTag {
-	return f.tag
-}
-
-// Naming returns the field naming converter.
-func (f *Field) Naming() *FieldNaming {
-	return f.naming
-}
-
-// Conversion returns the field conversion converter.
-func (f *Field) Conversion() *FieldConversion {
-	return f.conversion
-}
-
-// Validation returns the field validation converter.
-func (f *Field) Validation() *FieldValidation {
-	return f.validation
 }
 
 func getMapKeyValueTypesForWire(field *protobuf.Field) (string, string, protoreflect.FieldDescriptor) {

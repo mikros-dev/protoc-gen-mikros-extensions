@@ -3,22 +3,22 @@ package mapping
 import (
 	"fmt"
 
+	"github.com/go-playground/validator/v10"
+
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/validation"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
 // FieldValidationOptions represents the options used to create a new
 // FieldValidation.
 type FieldValidationOptions struct {
 	IsHTTPService bool
-	Receiver      string
-	FieldNaming   *FieldNaming
-	FieldType     *FieldType
-	ProtoField    *protobuf.Field
-	ProtoMessage  *protobuf.Message
-	Settings      *settings.Settings
+	Receiver      string       `validate:"required"`
+	FieldNaming   *FieldNaming `validate:"required"`
+	FieldType     *FieldType   `validate:"required"`
+
+	*FieldMappingContextOptions
 }
 
 // FieldValidation represents the validation logic for a field.
@@ -31,6 +31,14 @@ type FieldValidation struct {
 
 // NewFieldValidation creates a new FieldValidation instance.
 func NewFieldValidation(options FieldValidationOptions) (*FieldValidation, error) {
+	validate := options.Validate
+	if validate == nil {
+		validate = validator.New()
+	}
+	if err := validate.Struct(options); err != nil {
+		return nil, err
+	}
+
 	fieldExtensions := loadFieldExtensions(options.ProtoField)
 
 	call, err := newValidationCall(options, fieldExtensions)

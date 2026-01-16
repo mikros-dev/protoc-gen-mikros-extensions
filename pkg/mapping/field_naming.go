@@ -1,17 +1,15 @@
 package mapping
 
 import (
+	"github.com/go-playground/validator/v10"
 	"github.com/stoewer/go-strcase"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
-// FieldNameOptions represents the options for field naming.
-type FieldNameOptions struct {
-	ProtoField        *protobuf.Field
-	FieldExtensions   *extensions.MikrosFieldExtensions
-	MessageExtensions *extensions.MikrosMessageExtensions
+// FieldNamingOptions represents the options for field naming.
+type FieldNamingOptions struct {
+	*FieldMappingContextOptions
 }
 
 // FieldNaming represents the naming logic for a field.
@@ -23,17 +21,26 @@ type FieldNaming struct {
 }
 
 // NewFieldNaming returns a new FieldNaming instance.
-func NewFieldNaming(options *FieldNameOptions) *FieldNaming {
+func NewFieldNaming(options *FieldNamingOptions) (*FieldNaming, error) {
+	validate := options.Validate
+	if validate == nil {
+		validate = validator.New()
+	}
+	if err := validate.Struct(options); err != nil {
+		return nil, err
+	}
+
 	var (
 		goName = options.ProtoField.Schema.GoName
+		fieldExtensions = loadFieldExtensions(options.ProtoField)
 	)
 
 	return &FieldNaming{
 		goName:       goName,
-		domainName:   buildDomainName(goName, options.FieldExtensions),
+		domainName:   buildDomainName(goName, fieldExtensions),
 		outboundName: buildOutboundName(goName),
-		inboundName:  buildInboundName(goName, options.FieldExtensions, options.MessageExtensions),
-	}
+		inboundName:  buildInboundName(goName, fieldExtensions, loadMessageExtensions(options.ProtoMessage)),
+	}, nil
 }
 
 func buildDomainName(goName string, ext *extensions.MikrosFieldExtensions) string {

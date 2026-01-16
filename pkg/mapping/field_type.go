@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
@@ -19,10 +20,8 @@ const (
 
 // FieldTypeOptions represents the options for FieldType.
 type FieldTypeOptions struct {
-	Message         *Message
-	ProtoField      *protobuf.Field
-	ProtoMessage    *protobuf.Message
-	FieldExtensions *extensions.MikrosFieldExtensions
+	Message *Message `validate:"required"`
+	*FieldMappingContextOptions
 }
 
 // FieldType is the mechanism that allows getting the Field type for
@@ -36,7 +35,15 @@ type FieldType struct {
 }
 
 // NewFieldType creates a new FieldType instance.
-func NewFieldType(options *FieldTypeOptions) *FieldType {
+func NewFieldType(options *FieldTypeOptions) (*FieldType, error) {
+	validate := options.Validate
+	if validate == nil {
+		validate = validator.New()
+	}
+	if err := validate.Struct(options); err != nil {
+		return nil, err
+	}
+
 	return &FieldType{
 		isArray: options.ProtoField.IsArray(),
 		goType: ProtoTypeToGoType(
@@ -46,8 +53,8 @@ func NewFieldType(options *FieldTypeOptions) *FieldType {
 		),
 		msg:        options.Message,
 		proto:      options.ProtoField,
-		extensions: options.FieldExtensions,
-	}
+		extensions: loadFieldExtensions(options.ProtoField),
+	}, nil
 }
 
 // GoType returns the Go type for the field.

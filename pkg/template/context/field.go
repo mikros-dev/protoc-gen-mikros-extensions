@@ -34,7 +34,7 @@ type Field struct {
 	MessageReceiver          string
 	Location                 FieldLocation
 	ProtoField               *protobuf.Field
-	Mapping                  *mapping.Field
+	Mapping                  *FieldMapping
 
 	moduleName string
 	testing    *testing.Field
@@ -53,16 +53,7 @@ type loadFieldOptions struct {
 }
 
 func loadField(opt loadFieldOptions) (*Field, error) {
-	var (
-		isArray = opt.Field.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		goType  = mapping.ProtoTypeToGoType(
-			opt.Field.Schema.Desc.Kind(),
-			opt.Field.Proto.GetTypeName(),
-			opt.ModuleName,
-		)
-	)
-
-	fieldMapping, err := mapping.NewField(mapping.FieldOptions{
+	fieldMapping, err := newFieldMapping(&fieldMappingOptions{
 		IsHTTPService: opt.IsHTTPService,
 		Receiver:      opt.Receiver,
 		ProtoField:    opt.Field,
@@ -77,10 +68,10 @@ func loadField(opt loadFieldOptions) (*Field, error) {
 	field := &Field{
 		IsMessage:                opt.Field.IsMessage(),
 		IsMap:                    opt.Field.IsMap(),
-		IsArray:                  isArray,
+		IsArray:                  opt.Field.IsArray(),
 		IsProtoOptional:          opt.Field.Proto.GetProto3Optional(),
 		Type:                     opt.Field.Proto.GetType(),
-		GoType:                   goType,
+		GoType:                   fieldMapping.Types().GoType(),
 		GoName:                   opt.Field.Schema.GoName,
 		JSONName:                 strings.ToLower(strcase.SnakeCase(opt.Field.Proto.GetJsonName())),
 		ProtoName:                opt.Field.Proto.GetName(),
@@ -96,8 +87,8 @@ func loadField(opt loadFieldOptions) (*Field, error) {
 		moduleName:               opt.ModuleName,
 		Mapping:                  fieldMapping,
 		testing: testing.NewField(&testing.NewFieldOptions{
-			IsArray:    isArray,
-			GoType:     goType,
+			IsArray:    opt.Field.IsArray(),
+			GoType:     fieldMapping.Types().GoType(),
 			ProtoField: opt.Field,
 			Settings:   opt.Settings,
 			FieldType:  fieldMapping.Types(),
@@ -302,7 +293,7 @@ func (f *Field) ValidationName(receiver string) string {
 	return f.Mapping.Validation().CallFunctionName(receiver)
 }
 
-// ValidationCall returns the validation call for the field, name and arguments.
+// ValidationCall returns the validation call for the field, name, and arguments.
 func (f *Field) ValidationCall() string {
 	return f.Mapping.Validation().Call()
 }

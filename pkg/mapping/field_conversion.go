@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
@@ -14,12 +15,11 @@ import (
 // FieldConversionOptions represents the options used to create a new
 // FieldConversion.
 type FieldConversionOptions struct {
-	MessageReceiver string
-	Protobuf        *protobuf.Field
-	Settings        *settings.Settings
-	FieldExtensions *extensions.MikrosFieldExtensions
-	FieldNaming     *FieldNaming
-	FieldType       *FieldType
+	MessageReceiver string       `validate:"required"`
+	FieldNaming     *FieldNaming `validate:"required"`
+	FieldType       *FieldType   `validate:"required"`
+
+	*FieldMappingContextOptions
 }
 
 // FieldConversion represents the conversion logic for a field.
@@ -33,15 +33,23 @@ type FieldConversion struct {
 }
 
 // NewFieldConversion creates a new FieldConversion instance.
-func NewFieldConversion(options *FieldConversionOptions) *FieldConversion {
+func NewFieldConversion(options *FieldConversionOptions) (*FieldConversion, error) {
+	validate := options.Validate
+	if validate == nil {
+		validate = validator.New()
+	}
+	if err := validate.Struct(options); err != nil {
+		return nil, err
+	}
+
 	return &FieldConversion{
 		messageReceiver: options.MessageReceiver,
 		goType:          options.FieldType.GoType(),
-		proto:           options.Protobuf,
+		proto:           options.ProtoField,
 		settings:        options.Settings,
-		extensions:      options.FieldExtensions,
+		extensions:      loadFieldExtensions(options.ProtoField),
 		naming:          options.FieldNaming,
-	}
+	}, nil
 }
 
 // ToWireType converts a field's value to its corresponding wire type representation
