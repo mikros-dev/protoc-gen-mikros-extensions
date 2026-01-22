@@ -16,9 +16,9 @@ import (
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/args"
-	ctxpkg "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/context"
 	api_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/api"
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/ctxutil"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/log"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
@@ -76,7 +76,7 @@ func handleProtogenPlugin(ctx context.Context, plugin *protogen.Plugin, pluginAr
 	logger := log.New(log.LoggerOptions{
 		Verbose: cfg.Debug,
 	})
-	ctx = ctxpkg.WithLogger(ctx, logger)
+	ctx = ctxutil.WithLogger(ctx, logger)
 
 	// Build the context and execute templates
 	tplContext, err := tpl_context.BuildContext(tpl_context.BuildContextOptions{
@@ -150,7 +150,7 @@ func generateTemplates(
 	addons []*addon.Addon,
 	e execution,
 ) error {
-	logger := ctxpkg.LoggerFromContext(ctx)
+	logger := ctxutil.LoggerFromContext(ctx)
 	templates, err := template.Load(template.Options{
 		StrictValidators: true,
 		Kind:             e.Kind,

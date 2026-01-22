@@ -34,12 +34,12 @@ type diagnosticLogger struct {
 }
 
 func (d diagnosticLogger) Printf(format string, v ...any) {
-	_, _ = fmt.Fprintf(d.writer, prefix+format, v...)
+	_, _ = fmt.Fprintf(d.writer, d.prefix+" "+format, v...)
 }
 
 func (d diagnosticLogger) Println(v ...any) {
 	s := fmt.Sprintln(v...)
-	_, _ = fmt.Fprint(d.writer, d.prefix+s)
+	_, _ = fmt.Fprint(d.writer, d.prefix+" "+s)
 }
 
 // LoggerOptions defines the options for a Logger.
