@@ -23,9 +23,9 @@ type Field struct {
 	JSONName   string
 	GoName     string
 	TypeName   string
-	Type       descriptor.FieldDescriptorProto_Type
-	Schema     *protogen.Field
-	Proto      *descriptor.FieldDescriptorProto
+	Type       descriptor.FieldDescriptorProto_Type `validate:"-"`
+	Schema     *protogen.Field                      `validate:"-"`
+	Proto      *descriptor.FieldDescriptorProto     `validate:"-"`
 	moduleName string
 }
 

@@ -31,7 +31,7 @@ func NewFieldNaming(options *FieldNamingOptions) (*FieldNaming, error) {
 	}
 
 	var (
-		goName = options.ProtoField.Schema.GoName
+		goName          = options.ProtoField.Schema.GoName
 		fieldExtensions = loadFieldExtensions(options.ProtoField)
 	)
 
