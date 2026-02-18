@@ -21,24 +21,30 @@ type FieldMappingContextOptions struct {
 	Validate     *validator.Validate
 }
 
+// loadFieldExtensions must always return a non-nil value, even if the field
+// doesn't have any extensions.
 func loadFieldExtensions(proto *protobuf.Field) *extensions.MikrosFieldExtensions {
+	if proto == nil {
+		return &extensions.MikrosFieldExtensions{}
+	}
+
 	ext := extensions.LoadFieldExtensions(proto.Proto)
 	if ext == nil {
-		// We return an empty struct here so we don't need to always check for
-		// nil. But its sub-messages will be nil as well, so they must be
-		// validated.
 		return &extensions.MikrosFieldExtensions{}
 	}
 
 	return ext
 }
 
+// loadMessageExtensions must always return a non-nil value, even if the message
+// doesn't have any extensions.'
 func loadMessageExtensions(proto *protobuf.Message) *extensions.MikrosMessageExtensions {
+	if proto == nil {
+		return &extensions.MikrosMessageExtensions{}
+	}
+
 	ext := extensions.LoadMessageExtensions(proto.Proto)
 	if ext == nil {
-		// We return an empty struct here so we don't need to always check for
-		// nil. But its sub-messages will be nil as well, so they must be
-		// validated.
 		return &extensions.MikrosMessageExtensions{}
 	}
 
