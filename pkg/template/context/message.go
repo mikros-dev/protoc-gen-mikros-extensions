@@ -5,10 +5,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+)
+
+const (
+	outboundTemplateName = "api:outbound"
 )
 
 // Message represents a message to be used inside templates by its context.
@@ -17,13 +21,13 @@ type Message struct {
 	DomainName   string
 	WireName     string
 	OutboundName string
-	Type         converters.MessageKind
+	Type         mapping.MessageKind
 	Fields       []*Field
 	ProtoMessage *protobuf.Message
+	Mapping      *mapping.Message
 
 	isHTTPService bool
-	converter     *converters.Message
-	extensions    *mikros_extensions.MikrosMessageExtensions
+	extensions    *extensions.MikrosMessageExtensions
 }
 
 type loadMessagesOptions struct {
@@ -44,21 +48,21 @@ func loadMessages(pkg *protobuf.Protobuf, opt loadMessagesOptions) ([]*Message, 
 		var (
 			fields    = make([]*Field, len(m.Fields))
 			endpoint  = getEndpointFromMessage(m.Name, pkg)
-			converter = converters.NewMessage(converters.MessageOptions{
+			converter = mapping.NewMessage(mapping.MessageOptions{
 				Settings: opt.Settings,
 			})
 		)
 
 		for i, f := range m.Fields {
 			field, err := loadField(loadFieldOptions{
-				IsHTTPService:    isHTTPService,
-				ModuleName:       pkg.ModuleName,
-				Receiver:         getReceiver(m.Name),
-				Field:            f,
-				Message:          m,
-				Endpoint:         endpoint,
-				MessageConverter: converter,
-				Settings:         opt.Settings,
+				IsHTTPService:  isHTTPService,
+				ModuleName:     pkg.ModuleName,
+				Receiver:       getReceiver(m.Name),
+				Field:          f,
+				Message:        m,
+				Endpoint:       endpoint,
+				MessageMapping: converter,
+				Settings:       opt.Settings,
 			})
 			if err != nil {
 				return nil, err
@@ -76,8 +80,8 @@ func loadMessages(pkg *protobuf.Protobuf, opt loadMessagesOptions) ([]*Message, 
 			Fields:        fields,
 			ProtoMessage:  m,
 			isHTTPService: pkg.Service != nil && pkg.Service.IsHTTP(),
-			converter:     converter,
-			extensions:    mikros_extensions.LoadMessageExtensions(m.Proto),
+			Mapping:       converter,
+			extensions:    extensions.LoadMessageExtensions(m.Proto),
 		}
 	}
 
@@ -139,7 +143,7 @@ func (m *Message) BindableFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return field.IsBindable()
 	}
-	if templateName == "outbound" {
+	if templateName == outboundTemplateName {
 		filter = func(field *Field) bool {
 			return field.IsBindable() && !field.OutboundHide()
 		}
@@ -182,7 +186,7 @@ func (m *Message) DomainExport() bool {
 // template.
 func (m *Message) OutboundExport() bool {
 	// Response messages from HTTP services always have outbound enabled
-	if m.Type == converters.WireOutputMessage && m.isHTTPService {
+	if m.Type == mapping.WireOutput && m.isHTTPService {
 		return true
 	}
 	if m.extensions != nil {
@@ -269,7 +273,7 @@ func (m *Message) GetFields(templateName string) []*Field {
 	filter := func(field *Field) bool {
 		return true
 	}
-	if templateName == "api:outbound" {
+	if templateName == outboundTemplateName {
 		filter = func(field *Field) bool {
 			return !field.OutboundHide()
 		}
@@ -312,15 +316,15 @@ func (m *Message) HasValidatableField() bool {
 // rule options.
 func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 	for _, field := range m.Fields {
-		ext := mikros_extensions.LoadFieldExtensions(field.ProtoField.Proto)
+		ext := extensions.LoadFieldExtensions(field.ProtoField.Proto)
 		if ext == nil {
 			continue
 		}
 
 		if validation := ext.GetValidate(); validation != nil {
-			nonCustomRules := []mikros_extensions.FieldValidatorRule{
-				mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX,
-				mikros_extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED,
+			nonCustomRules := []extensions.FieldValidatorRule{
+				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_REGEX,
+				extensions.FieldValidatorRule_FIELD_VALIDATOR_RULE_UNSPECIFIED,
 			}
 
 			if !slices.Contains(nonCustomRules, validation.GetRule()) {
@@ -334,7 +338,7 @@ func (m *Message) ValidationNeedsCustomRuleOptions() bool {
 
 // IsWireInputKind returns true if the message is a wire input message.
 func (m *Message) IsWireInputKind() bool {
-	return m.Type == converters.WireInputMessage
+	return m.Type == mapping.WireInput
 }
 
 // ValidatableFields returns the fields that are validatable.

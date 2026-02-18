@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	internalMessageTypeParts = 4
+	minMessageNameParts = 2
 )
 
 // Field represents a field loaded from protobuf.
@@ -23,9 +23,9 @@ type Field struct {
 	JSONName   string
 	GoName     string
 	TypeName   string
-	Type       descriptor.FieldDescriptorProto_Type
-	Schema     *protogen.Field
-	Proto      *descriptor.FieldDescriptorProto
+	Type       descriptor.FieldDescriptorProto_Type `validate:"-"`
+	Schema     *protogen.Field                      `validate:"-"`
+	Proto      *descriptor.FieldDescriptorProto     `validate:"-"`
 	moduleName string
 }
 
@@ -121,7 +121,7 @@ func (f *Field) GetWrapperType() string {
 func (f *Field) MessagePackage() (string, string, bool) {
 	if f.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		parts := strings.Split(f.TypeName, ".")
-		if len(parts) == internalMessageTypeParts {
+		if len(parts) >= minMessageNameParts {
 			module := parts[len(parts)-2]
 			typeName := parts[len(parts)-1]
 			return module, typeName, f.moduleName == module
@@ -136,12 +136,12 @@ func (f *Field) IsEnum() bool {
 	return f.Type == descriptor.FieldDescriptorProto_TYPE_ENUM
 }
 
-// EnumPackage returns the enum package name, its name and a flag indicating if
+// EnumPackage returns the enum package name, its name, and a flag indicating if
 // it belongs to the current package or not.
 func (f *Field) EnumPackage() (string, string, bool) {
 	if f.IsEnum() {
 		parts := strings.Split(f.TypeName, ".")
-		if len(parts) == internalMessageTypeParts {
+		if len(parts) >= minMessageNameParts {
 			module := parts[len(parts)-2]
 			typeName := parts[len(parts)-1]
 			return module, typeName, f.moduleName == module
@@ -227,18 +227,17 @@ func (f *Field) MapValueTypeName() string {
 	}
 }
 
-// MapValuePackage extracts and returns the module name, type name and a flag
+// MapValuePackage extracts and returns the module name, type name, and a flag
 // indicating if the map value is in the current package.
 func (f *Field) MapValuePackage() (string, string, bool) {
 	if !f.IsMap() {
 		return "", "", false
 	}
 
+	// Notice that maps don't start with a leading dot  '.', that's why we're
+	// not removing from here.
 	parts := strings.Split(f.MapValueTypeName(), ".")
-
-	// Map types don't come with the leading dot '.', that's why we're
-	// subtracting one here.
-	if len(parts) != internalMessageTypeParts-1 {
+	if len(parts) != minMessageNameParts {
 		return "", "", false
 	}
 

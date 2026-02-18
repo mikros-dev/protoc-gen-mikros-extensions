@@ -7,39 +7,39 @@ import (
 	"google.golang.org/protobuf/compiler/protogen"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
-// Field represents a field for testing templates.
+// Field represents a field for the testing templates.
 type Field struct {
-	isArray        bool
-	goType         string
-	proto          *protobuf.Field
-	settings       *settings.Settings
-	fieldConverter *converters.Field
+	isArray  bool
+	goType   string
+	proto    *protobuf.Field
+	settings *settings.Settings
+	mapping  *mapping.FieldType
 }
 
 // NewFieldOptions represents the options used to create a new field for testing
 // templates.
 type NewFieldOptions struct {
-	IsArray        bool
-	GoType         string
-	ProtoField     *protobuf.Field
-	Settings       *settings.Settings
-	FieldConverter *converters.Field
+	IsArray      bool
+	GoType       string
+	ProtoField   *protobuf.Field
+	Settings  *settings.Settings
+	FieldType *mapping.FieldType
 }
 
 // NewField creates a new field for testing templates.
 func NewField(options *NewFieldOptions) *Field {
 	return &Field{
-		isArray:        options.IsArray,
-		goType:         options.GoType,
-		proto:          options.ProtoField,
-		settings:       options.Settings,
-		fieldConverter: options.FieldConverter,
+		isArray:  options.IsArray,
+		goType:   options.GoType,
+		proto:    options.ProtoField,
+		settings: options.Settings,
+		mapping:  options.FieldType,
 	}
 }
 
@@ -59,7 +59,7 @@ func (f *Field) BindingValue(isPointer bool) string {
 	}
 
 	if f.proto.IsMap() || f.isArray || f.proto.IsMessage() {
-		outputType := f.fieldConverter.DomainTypeForTest(isPointer)
+		outputType := f.mapping.DomainForTesting(isPointer)
 		return fmt.Sprintf("v.(%v)", outputType)
 	}
 
@@ -92,7 +92,7 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 		return fmt.Sprintf(
 			"zeroValue(res.%s).Interface().(%s)",
 			f.proto.GoName,
-			f.fieldConverter.DomainTypeForTest(isPointer),
+			f.mapping.DomainForTesting(isPointer),
 		)
 	}
 
@@ -123,14 +123,14 @@ func (f *Field) ValueInitCall(isPointer bool) string {
 	value := "0"
 	if f.proto.IsOptional() {
 		call := f.settings.GetCommonCall(settings.CommonAPIConverters, settings.CommonCallToPtr)
-		value = fmt.Sprintf("%s(%s(%s))", call, f.fieldConverter.DomainTypeForTest(false), value)
+		value = fmt.Sprintf("%s(%s(%s))", call, f.mapping.DomainForTesting(false), value)
 	}
 
 	return value
 }
 
 func (f *Field) customValueInitCall() (string, bool) {
-	options := mikros_extensions.LoadFieldExtensions(f.proto.Proto)
+	options := extensions.LoadFieldExtensions(f.proto.Proto)
 	if options == nil || options.GetTesting() == nil {
 		return "", false
 	}
@@ -138,6 +138,9 @@ func (f *Field) customValueInitCall() (string, bool) {
 	testing := options.GetTesting()
 	call, err := f.settings.GetTestingCustomRule(testing.GetCustomRule())
 	if err != nil {
+		return "", false
+	}
+	if call == nil {
 		return "", false
 	}
 

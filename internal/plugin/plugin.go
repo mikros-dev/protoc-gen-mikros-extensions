@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protoplugin"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -19,10 +18,12 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/args"
 	api_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/api"
 	test_tpl_files "github.com/mikros-dev/protoc-gen-mikros-extensions/internal/template/testing"
-	mcontext "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/output"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/ctxutil"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/log"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template"
+	tpl_context "github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/context"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
 type execution struct {
@@ -34,7 +35,7 @@ type execution struct {
 
 // Handle is the entrypoint of the plugin.
 func Handle(
-	_ context.Context,
+	ctx context.Context,
 	_ protoplugin.PluginEnv,
 	w protoplugin.ResponseWriter,
 	r protoplugin.Request,
@@ -49,7 +50,7 @@ func Handle(
 		return err
 	}
 
-	if err := handleProtogenPlugin(plugin, pluginArgs); err != nil {
+	if err := handleProtogenPlugin(ctx, plugin, pluginArgs); err != nil {
 		return err
 	}
 
@@ -65,17 +66,20 @@ func Handle(
 	return nil
 }
 
-func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error {
+func handleProtogenPlugin(ctx context.Context, plugin *protogen.Plugin, pluginArgs *args.Args) error {
 	cfg, addons, err := loadConfigAndAddons(pluginArgs)
 	if err != nil {
 		return err
 	}
 
 	// Initializes our output system
-	output.Enable(cfg.Debug)
+	logger := log.New(log.LoggerOptions{
+		Verbose: cfg.Debug,
+	})
+	ctx = ctxutil.WithLogger(ctx, logger)
 
 	// Build the context and execute templates
-	ctx, err := mcontext.BuildContext(mcontext.BuildContextOptions{
+	tplContext, err := tpl_context.BuildContext(tpl_context.BuildContextOptions{
 		PluginName: pluginArgs.GetPluginName(),
 		Settings:   cfg,
 		Plugin:     plugin,
@@ -84,11 +88,11 @@ func handleProtogenPlugin(plugin *protogen.Plugin, pluginArgs *args.Args) error 
 	if err != nil {
 		return fmt.Errorf("could not build templates context: %w", err)
 	}
-	output.Println("processing module:", ctx.ModuleName)
+	logger.Println("processing module:", tplContext.ModuleName)
 
 	executions := buildExecutions(cfg)
 	for _, execution := range executions {
-		if err := generateTemplates(plugin, ctx, addons, execution); err != nil {
+		if err := generateTemplates(ctx, plugin, tplContext, addons, execution); err != nil {
 			return fmt.Errorf("could not generate template: %w", err)
 		}
 	}
@@ -140,11 +144,13 @@ func buildExecutions(cfg *settings.Settings) []execution {
 }
 
 func generateTemplates(
+	ctx context.Context,
 	plugin *protogen.Plugin,
-	ctx *mcontext.Context,
+	tplContext *tpl_context.Context,
 	addons []*addon.Addon,
 	e execution,
 ) error {
+	logger := ctxutil.LoggerFromContext(ctx)
 	templates, err := template.Load(template.Options{
 		StrictValidators: true,
 		Kind:             e.Kind,
@@ -152,7 +158,7 @@ func generateTemplates(
 		FilesPrefix:      e.Prefix,
 		Plugin:           plugin,
 		Files:            e.Files,
-		Context:          ctx,
+		Context:          tplContext,
 		Addons:           addons,
 	})
 	if err != nil {
@@ -165,7 +171,7 @@ func generateTemplates(
 	}
 
 	for _, tpl := range generated {
-		output.Println("generating source file: ", tpl.Filename)
+		logger.Println("generating source file: ", tpl.Filename)
 
 		content := tpl.Data.String()
 		if err := isValidGoSource(content); err != nil {

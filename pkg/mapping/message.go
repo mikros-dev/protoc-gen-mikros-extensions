@@ -1,4 +1,4 @@
-package converters
+package mapping
 
 import (
 	"strings"
@@ -31,15 +31,20 @@ func (m *Message) WireName(name string) string {
 	}
 
 	suffix := m.settings.Suffix.Wire
-	if m.Kind(name) == WireInputMessage {
+	if m.Kind(name) == WireInput {
 		suffix = ""
 	}
 
 	return name + suffix
 }
 
-// WireToDomainMapValueType gets the message domain map value type.
+// WireToDomainMapValueType is a wrapper for domain mapping in map contexts.
 func (m *Message) WireToDomainMapValueType(name string) string {
+	return m.WireToDomain(name)
+}
+
+// WireToDomain resolves the Go type name for the Domain layer.
+func (m *Message) WireToDomain(name string) string {
 	if name == "Timestamp" {
 		return "time.Time"
 	}
@@ -50,26 +55,11 @@ func (m *Message) WireToDomainMapValueType(name string) string {
 
 	// Wire to Domain
 	old := m.settings.Suffix.Wire
-	if m.Kind(name) == WireInputMessage {
+	if m.Kind(name) == WireInput {
 		old = m.settings.Suffix.WireInput
 	}
 
-	return strings.ReplaceAll(name, old, m.settings.Suffix.Domain)
-}
-
-// WireToDomain gets the message domain type.
-func (m *Message) WireToDomain(name string) string {
-	if strings.HasSuffix(name, m.settings.Suffix.Domain) {
-		return name
-	}
-
-	// Wire to Domain
-	old := m.settings.Suffix.Wire
-	if m.Kind(name) == WireInputMessage {
-		old = m.settings.Suffix.WireInput
-	}
-
-	return strings.ReplaceAll(name, old, m.settings.Suffix.Domain)
+	return m.replaceSuffix(name, old, m.settings.Suffix.Domain)
 }
 
 // WireOutputToOutbound converts the message wire to the outbound type.
@@ -80,24 +70,32 @@ func (m *Message) WireOutputToOutbound(name string) string {
 
 	// WireOutput to Outbound
 	old := m.settings.Suffix.Wire
-	if m.Kind(name) == WireOutputMessage {
+	if m.Kind(name) == WireOutput {
 		old = m.settings.Suffix.WireOutput
 	}
 
-	return strings.ReplaceAll(name, old, m.settings.Suffix.Outbound)
+	return m.replaceSuffix(name, old, m.settings.Suffix.Outbound)
 }
 
-// Kind returns the message kind.
+// Kind identifies which architectural layer a message name belongs to based
+// on suffixes.
 func (m *Message) Kind(name string) MessageKind {
-	if strings.HasSuffix(name, m.settings.Suffix.Wire) {
-		return WireMessage
+	switch {
+	case strings.HasSuffix(name, m.settings.Suffix.Wire):
+		return Wire
+	case strings.HasSuffix(name, m.settings.Suffix.WireInput):
+		return WireInput
+	case strings.HasSuffix(name, m.settings.Suffix.WireOutput):
+		return WireOutput
+	default:
+		return UnknownMessageKind
 	}
-	if strings.HasSuffix(name, m.settings.Suffix.WireInput) {
-		return WireInputMessage
-	}
-	if strings.HasSuffix(name, m.settings.Suffix.WireOutput) {
-		return WireOutputMessage
+}
+
+func (m *Message) replaceSuffix(name, old, new string) string {
+	if old == "" {
+		return name + new
 	}
 
-	return UnknownMessageKind
+	return strings.ReplaceAll(name, old, new)
 }

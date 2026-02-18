@@ -34,6 +34,7 @@ custom.id.name = "v.ID"
 path = "addons"
 
 [testing]
-package_import.name = "github.com/rsfreitas/mikros-essentials/testing"
-custom.id.name = "entity.NewID"
+#package_import.name = "github.com/rsfreitas/mikros-essentials/testing"
+package_import.name = "strings"
+custom.id.name = "strings.TrimSpace"
 custom.id.args_required = true

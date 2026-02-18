@@ -8,9 +8,9 @@ import (
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/testing"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 )
 
@@ -34,39 +34,30 @@ type Field struct {
 	MessageReceiver          string
 	Location                 FieldLocation
 	ProtoField               *protobuf.Field
+	Mapping                  *FieldMapping
 
 	moduleName string
-	converter  *converters.Field
 	testing    *testing.Field
-	extensions *mikros_extensions.MikrosFieldExtensions
+	extensions *extensions.MikrosFieldExtensions
 }
 
 type loadFieldOptions struct {
-	IsHTTPService    bool
-	ModuleName       string
-	Receiver         string
-	Field            *protobuf.Field
-	Message          *protobuf.Message
-	Endpoint         *Endpoint
-	MessageConverter *converters.Message
-	Settings         *settings.Settings
+	IsHTTPService  bool
+	ModuleName     string
+	Receiver       string
+	Endpoint       *Endpoint
+	Field          *protobuf.Field
+	Message        *protobuf.Message
+	MessageMapping *mapping.Message
+	Settings       *settings.Settings
 }
 
 func loadField(opt loadFieldOptions) (*Field, error) {
-	var (
-		isArray = opt.Field.Proto.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED
-		goType  = converters.ProtoTypeToGoType(
-			opt.Field.Schema.Desc.Kind(),
-			opt.Field.Proto.GetTypeName(),
-			opt.ModuleName,
-		)
-	)
-
-	converter, err := converters.NewField(converters.FieldOptions{
+	fieldMapping, err := newFieldMapping(&fieldMappingOptions{
 		IsHTTPService: opt.IsHTTPService,
 		Receiver:      opt.Receiver,
 		ProtoField:    opt.Field,
-		Message:       opt.MessageConverter,
+		Message:       opt.MessageMapping,
 		ProtoMessage:  opt.Message,
 		Settings:      opt.Settings,
 	})
@@ -77,32 +68,32 @@ func loadField(opt loadFieldOptions) (*Field, error) {
 	field := &Field{
 		IsMessage:                opt.Field.IsMessage(),
 		IsMap:                    opt.Field.IsMap(),
-		IsArray:                  isArray,
+		IsArray:                  opt.Field.IsArray(),
 		IsProtoOptional:          opt.Field.Proto.GetProto3Optional(),
 		Type:                     opt.Field.Proto.GetType(),
-		GoType:                   goType,
+		GoType:                   fieldMapping.Types().GoType(),
 		GoName:                   opt.Field.Schema.GoName,
 		JSONName:                 strings.ToLower(strcase.SnakeCase(opt.Field.Proto.GetJsonName())),
 		ProtoName:                opt.Field.Proto.GetName(),
-		DomainName:               converter.DomainName(),
-		DomainTag:                converter.DomainTag(),
-		InboundTag:               converter.InboundTag(),
-		OutboundName:             converter.OutboundName(),
-		OutboundTag:              converter.OutboundTag(),
-		OutboundJSONTagFieldName: converter.OutboundJSONTagFieldName(),
+		DomainName:               fieldMapping.Naming().Domain(),
+		DomainTag:                fieldMapping.Tags().Domain(),
+		InboundTag:               fieldMapping.Tags().Inbound(),
+		OutboundName:             fieldMapping.Naming().Outbound(),
+		OutboundTag:              fieldMapping.Tags().Outbound(),
+		OutboundJSONTagFieldName: fieldMapping.Tags().OutboundTagFieldName(),
 		MessageReceiver:          opt.Receiver,
 		Location:                 getFieldLocation(opt.Field.Proto, opt.Endpoint),
 		ProtoField:               opt.Field,
 		moduleName:               opt.ModuleName,
-		converter:                converter,
+		Mapping:                  fieldMapping,
 		testing: testing.NewField(&testing.NewFieldOptions{
-			IsArray:        isArray,
-			GoType:         goType,
-			ProtoField:     opt.Field,
-			Settings:       opt.Settings,
-			FieldConverter: converter,
+			IsArray:    opt.Field.IsArray(),
+			GoType:     fieldMapping.Types().GoType(),
+			ProtoField: opt.Field,
+			Settings:   opt.Settings,
+			FieldType:  fieldMapping.Types(),
 		}),
-		extensions: mikros_extensions.LoadFieldExtensions(opt.Field.Proto),
+		extensions: extensions.LoadFieldExtensions(opt.Field.Proto),
 	}
 	if err := field.Validate(); err != nil {
 		return nil, err
@@ -193,87 +184,87 @@ func (f *Field) IsMessageFromOtherPackage() bool {
 
 // DomainType returns the domain type of the field.
 func (f *Field) DomainType() string {
-	return f.converter.DomainType(f.IsPointer())
+	return f.Mapping.Types().Domain(f.IsPointer())
 }
 
 // ConvertDomainTypeToWireType converts the domain type to the wire type.
 func (f *Field) ConvertDomainTypeToWireType() string {
-	return f.converter.ConvertToWireType(false)
+	return f.Mapping.Conversion().ToWireType(false)
 }
 
 // ConvertDomainTypeToWireInputType converts the domain type to the wire input
 // type.
 func (f *Field) ConvertDomainTypeToWireInputType() string {
-	return f.converter.ConvertToWireType(true)
+	return f.Mapping.Conversion().ToWireType(true)
 }
 
 // WireType returns the wire type of the field.
 func (f *Field) WireType() string {
-	return f.converter.WireType(f.IsPointer())
+	return f.Mapping.Types().Wire(f.IsPointer())
 }
 
 // ConvertWireTypeToDomainType converts the wire type to the domain type.
 func (f *Field) ConvertWireTypeToDomainType() string {
-	return f.converter.ConvertDomainTypeToWireType()
+	return f.Mapping.Conversion().DomainTypeToWireType()
 }
 
 // OutboundType returns the outbound type of the field.
 func (f *Field) OutboundType() string {
-	return f.converter.OutboundType(f.IsPointer())
+	return f.Mapping.Types().Outbound(f.IsPointer())
 }
 
 // ConvertDomainTypeToArrayWireType converts a domain type to its corresponding
 // wire type.
 func (f *Field) ConvertDomainTypeToArrayWireType(receiver string) string {
-	return f.converter.ConvertDomainTypeToArrayWireType(receiver, false)
+	return f.Mapping.Conversion().DomainTypeToArrayWireType(receiver, false)
 }
 
 // ConvertWireTypeToArrayDomainType converts a wire type to its corresponding
 // domain type.
 func (f *Field) ConvertWireTypeToArrayDomainType(receiver string) string {
-	return f.converter.ConvertWireTypeToArrayDomainType(receiver)
+	return f.Mapping.Conversion().WireTypeToArrayDomainType(receiver)
 }
 
 // ConvertDomainTypeToArrayWireInputType converts the domain type to an array
 // wire input type.
 func (f *Field) ConvertDomainTypeToArrayWireInputType(receiver string) string {
-	return f.converter.ConvertDomainTypeToArrayWireType(receiver, true)
+	return f.Mapping.Conversion().DomainTypeToArrayWireType(receiver, true)
 }
 
 // ConvertDomainTypeToMapWireType converts a domain type to its corresponding
 // map wire type representation.
 func (f *Field) ConvertDomainTypeToMapWireType(receiver string) string {
-	return f.converter.ConvertDomainTypeToMapWireType(receiver, false)
+	return f.Mapping.Conversion().DomainTypeToMapWireType(receiver, false)
 }
 
 // ConvertDomainTypeToMapWireInputType converts the domain type into its
 // corresponding map wire input type.
 func (f *Field) ConvertDomainTypeToMapWireInputType(receiver string) string {
-	return f.converter.ConvertDomainTypeToMapWireType(receiver, true)
+	return f.Mapping.Conversion().DomainTypeToMapWireType(receiver, true)
 }
 
 // ConvertWireTypeToMapDomainType converts a wire type to its corresponding map
 // domain type representation.
 func (f *Field) ConvertWireTypeToMapDomainType(receiver string) string {
-	return f.converter.ConvertWireTypeToMapDomainType(receiver)
+	return f.Mapping.Conversion().WireTypeToMapDomainType(receiver)
 }
 
 // ConvertWireOutputToOutbound converts a wire output to its corresponding
 // outbound representation.
 func (f *Field) ConvertWireOutputToOutbound(receiver string) string {
-	return f.converter.ConvertWireOutputToOutbound(receiver)
+	return f.Mapping.Conversion().WireOutputToOutbound(receiver)
 }
 
 // ConvertWireOutputToMapOutbound converts the wire output to its corresponding
 // map outbound representation.
 func (f *Field) ConvertWireOutputToMapOutbound(receiver string) string {
-	return f.converter.ConvertWireOutputToMapOutbound(receiver)
+	return f.Mapping.Conversion().WireOutputToMapOutbound(receiver)
 }
 
 // ConvertWireOutputToArrayOutbound convertes the wire output representation of
 // a field into its array outbound form.
 func (f *Field) ConvertWireOutputToArrayOutbound(receiver string) string {
-	return f.converter.ConvertWireOutputToArrayOutbound(receiver)
+	return f.Mapping.Conversion().WireOutputToArrayOutbound(receiver)
 }
 
 // OutboundHide returns true if the field should be hidden from the outbound
@@ -299,12 +290,12 @@ func (f *Field) IsValidatable() bool {
 
 // ValidationName returns the validation call name for the field.
 func (f *Field) ValidationName(receiver string) string {
-	return f.converter.ValidationName(receiver)
+	return f.Mapping.Validation().CallFunctionName(receiver)
 }
 
-// ValidationCall returns the validation call for the field, name and arguments.
+// ValidationCall returns the validation call for the field, name, and arguments.
 func (f *Field) ValidationCall() string {
-	return f.converter.ValidationCall()
+	return f.Mapping.Validation().Call()
 }
 
 // TestingValueBinding returns the binding value for the field for the testing

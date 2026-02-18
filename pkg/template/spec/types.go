@@ -34,7 +34,7 @@ func DefaultFuncMap() map[string]interface{} {
 			if len(s) == 0 {
 				return ""
 			}
-			return strings.ToLower(s[:1] + s[1:])
+			return strings.ToLower(s[:1])
 		},
 		"toSnake":     strcase.SnakeCase,
 		"toCamelCase": strcase.UpperCamelCase,

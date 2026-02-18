@@ -12,8 +12,8 @@ import (
 type Message struct {
 	Name       string
 	Fields     []*Field
-	Schema     *protogen.Message
-	Proto      *descriptor.DescriptorProto
+	Schema     *protogen.Message           `validate:"-"`
+	Proto      *descriptor.DescriptorProto `validate:"-"`
 	ModuleName string
 }
 

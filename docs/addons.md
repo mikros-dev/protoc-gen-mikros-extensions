@@ -50,4 +50,4 @@ can also be used inside addon templates.
 
 This structure provides access to everything declared inside the protobuf files:
 messages, RPCs, service, etc. If you want to know more about what is available,
-you can take a look directly in the [context](../pkg/context) package itself.
+you can take a look directly in the [context](../pkg/template/context) package itself.

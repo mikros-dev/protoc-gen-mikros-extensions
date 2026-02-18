@@ -1,12 +1,13 @@
 package context
 
 import (
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/protobuf/compiler/protogen"
 
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/internal/addon"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/converters"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mapping"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
@@ -27,14 +28,19 @@ type Context struct {
 
 // BuildContextOptions represents the options used to build the context.
 type BuildContextOptions struct {
-	PluginName string
-	Settings   *settings.Settings
-	Plugin     *protogen.Plugin
+	PluginName string             `validate:"required"`
+	Settings   *settings.Settings `validate:"required"`
+	Plugin     *protogen.Plugin   `validate:"required"`
 	Addons     []*addon.Addon
 }
 
 // BuildContext builds the context from the protobuf file(s).
 func BuildContext(opt BuildContextOptions) (*Context, error) {
+	validate := validator.New()
+	if err := validate.Struct(opt); err != nil {
+		return nil, err
+	}
+
 	// Handle the protobuf file(s)
 	pkg, err := protobuf.Parse(protobuf.ParseOptions{
 		Plugin: opt.Plugin,
@@ -130,7 +136,7 @@ func (c *Context) DomainMessages() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
 		// Every wire message will have Domain equivalents
-		if m.Type == converters.WireMessage && m.DomainExport() {
+		if m.Type == mapping.Wire && m.DomainExport() {
 			messages = append(messages, m)
 		}
 	}
@@ -142,7 +148,7 @@ func (c *Context) DomainMessages() []*Message {
 func (c *Context) WireInputMessages() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
-		isWireInput := m.Type == converters.WireInputMessage || manualExportToWireInput(m)
+		isWireInput := m.Type == mapping.WireInput || manualExportToWireInput(m)
 		if isWireInput && m.DomainExport() {
 			messages = append(messages, m)
 		}
@@ -152,7 +158,7 @@ func (c *Context) WireInputMessages() []*Message {
 }
 
 func manualExportToWireInput(m *Message) bool {
-	if ext := mikros_extensions.LoadMessageExtensions(m.ProtoMessage.Proto); ext != nil {
+	if ext := extensions.LoadMessageExtensions(m.ProtoMessage.Proto); ext != nil {
 		if wireInput := ext.GetWireInput(); wireInput != nil {
 			return wireInput.GetExport()
 		}
@@ -282,7 +288,7 @@ func (c *Context) HasValidatableMessage() bool {
 func (c *Context) ValidatableMessages() []*Message {
 	var messages []*Message
 	for _, m := range c.messages {
-		if m.HasValidatableField() || m.Type == converters.WireInputMessage {
+		if m.HasValidatableField() || m.Type == mapping.WireInput {
 			messages = append(messages, m)
 		}
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
 // Settings represents the settings loaded from the configuration file.
@@ -190,7 +190,7 @@ func (s *Settings) IsSupportedCustomValidationRule(ruleName string) error {
 
 // GetValidationRule retrieves the validation rule settings for the specified
 // rule.
-func (s *Settings) GetValidationRule(rule mikros_extensions.FieldValidatorRule) (*CustomCall, error) {
+func (s *Settings) GetValidationRule(rule extensions.FieldValidatorRule) (*CustomCall, error) {
 	if s.Validations != nil && s.Validations.Rule != nil {
 		name := strings.ToLower(strings.TrimPrefix(rule.String(), "FIELD_VALIDATOR_RULE_"))
 		if r, ok := s.Validations.Rule[name]; ok {

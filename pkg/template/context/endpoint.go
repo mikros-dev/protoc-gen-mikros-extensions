@@ -5,8 +5,8 @@ import (
 
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/mikros_extensions"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/protobuf/extensions"
 )
 
 // Endpoint represents an endpoint loaded from protobuf Google annotations.
@@ -15,11 +15,11 @@ type Endpoint struct {
 	Path           string
 	Method         string
 	Parameters     []string
-	HTTPExtensions *mikros_extensions.HttpMethodExtensions
+	HTTPExtensions *extensions.HttpMethodExtensions
 }
 
 func getEndpoint(method *protobuf.Method) *Endpoint {
-	googleHTTP := mikros_extensions.LoadGoogleAnnotations(method.Proto)
+	googleHTTP := extensions.LoadGoogleAnnotations(method.Proto)
 	if googleHTTP == nil {
 		return nil
 	}
@@ -28,14 +28,14 @@ func getEndpoint(method *protobuf.Method) *Endpoint {
 		Body: googleHTTP.GetBody(),
 	}
 
-	if endpoint, m := mikros_extensions.GetHTTPEndpoint(googleHTTP); endpoint != "" {
+	if endpoint, m := extensions.GetHTTPEndpoint(googleHTTP); endpoint != "" {
 		e.Path = endpoint
 		e.Method = m
-		e.Parameters = mikros_extensions.RetrieveParameters(endpoint)
-		e.Parameters = append(e.Parameters, mikros_extensions.RetrieveParametersFromAdditionalBindings(googleHTTP)...)
+		e.Parameters = extensions.RetrieveParameters(endpoint)
+		e.Parameters = append(e.Parameters, extensions.RetrieveParametersFromAdditionalBindings(googleHTTP)...)
 	}
 
-	m := mikros_extensions.LoadMethodExtensions(method.Proto)
+	m := extensions.LoadMethodExtensions(method.Proto)
 	if m != nil {
 		if op := m.GetHttp(); op != nil {
 			e.HTTPExtensions = op

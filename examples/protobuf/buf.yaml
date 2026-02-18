@@ -3,10 +3,10 @@ version: v2
 modules:
   - path: proto
   - path: addons
+  - path: plugins
 
 deps:
   - buf.build/googleapis/googleapis
-  - buf.build/mikros-dev/protoc-gen-mikros-extensions
 
 breaking:
   use:

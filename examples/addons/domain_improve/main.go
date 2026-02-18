@@ -6,8 +6,8 @@ import (
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/examples/addons/domain_improve/proto"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/addon/extensions"
-	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/settings"
+	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/context"
 	"github.com/mikros-dev/protoc-gen-mikros-extensions/pkg/template/spec"
 )
 
