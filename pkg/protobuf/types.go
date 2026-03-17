@@ -35,3 +35,11 @@ func protoName(s string) *ProtoName {
 func (n *ProtoName) String() string {
 	return n.Name
 }
+
+// Comment represents a comment in the form of leading and trailing comments
+// of a declared protobuf method or message.
+type Comment struct {
+	Leading string
+	Trailing string
+	LeadingDetached []string
+}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"google.golang.org/genproto/googleapis/api/annotations"
+	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	descriptor "google.golang.org/protobuf/types/descriptorpb"
 )
@@ -15,34 +16,37 @@ type Method struct {
 	ResponseType *ProtoName
 	HTTPMethod   string
 	Endpoint     string
+	Comment      Comment
 	Proto        *descriptor.MethodDescriptorProto
 }
 
-func parseMethod(method *descriptor.MethodDescriptorProto) *Method {
+func parseMethod(proto *descriptor.MethodDescriptorProto, schema *protogen.Method) *Method {
 	var (
 		httpMethod string
 		endpoint   string
 	)
 
-	if googleAPI := getGoogleHTTPAPIIfAny(method); googleAPI != nil {
+	if googleAPI := getGoogleHTTPAPIIfAny(proto); googleAPI != nil {
 		httpMethod, endpoint = getMethodAndEndpoint(googleAPI)
 	}
 
 	return &Method{
-		Name:         method.GetName(),
-		RequestType:  protoName(method.GetInputType()),
-		ResponseType: protoName(method.GetOutputType()),
+		Name:         proto.GetName(),
+		RequestType:  protoName(proto.GetInputType()),
+		ResponseType: protoName(proto.GetOutputType()),
 		HTTPMethod:   httpMethod,
 		Endpoint:     endpoint,
-		Proto:        method,
+		Comment:      parseMethodComment(schema),
+		Proto:        proto,
 	}
 }
 
 // getGoogleHTTPAPIIfAny gets the google.api.http extension of a method if exists.
 func getGoogleHTTPAPIIfAny(msg *descriptor.MethodDescriptorProto) *annotations.HttpRule {
 	if msg.Options != nil {
-		h := proto.GetExtension(msg.Options, annotations.E_Http)
-		return h.(*annotations.HttpRule)
+		if h := proto.GetExtension(msg.Options, annotations.E_Http); h != nil {
+			return h.(*annotations.HttpRule)
+		}
 	}
 
 	return nil
@@ -51,8 +55,10 @@ func getGoogleHTTPAPIIfAny(msg *descriptor.MethodDescriptorProto) *annotations.H
 // getMethodAndEndpoint translates a google.api.http notation of a request
 // type to our supported type.
 func getMethodAndEndpoint(rule *annotations.HttpRule) (string, string) {
-	method := ""
-	endpoint := ""
+	var (
+		method   = ""
+		endpoint = ""
+	)
 
 	switch rule.GetPattern().(type) {
 	case *annotations.HttpRule_Get:
@@ -77,6 +83,23 @@ func getMethodAndEndpoint(rule *annotations.HttpRule) (string, string) {
 	}
 
 	return method, endpoint
+}
+
+func parseMethodComment(method *protogen.Method) Comment {
+	if method == nil {
+		return Comment{}
+	}
+
+	detached := make([]string, 0, len(method.Comments.LeadingDetached))
+	for _, c := range method.Comments.LeadingDetached {
+		detached = append(detached, string(c))
+	}
+
+	return Comment{
+		Leading:         string(method.Comments.Leading),
+		Trailing:        string(method.Comments.Trailing),
+		LeadingDetached: detached,
+	}
 }
 
 // HasHTTPBody returns true if the method has a body.

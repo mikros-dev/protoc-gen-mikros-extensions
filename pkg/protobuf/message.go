@@ -15,6 +15,7 @@ type Message struct {
 	Schema     *protogen.Message           `validate:"-"`
 	Proto      *descriptor.DescriptorProto `validate:"-"`
 	ModuleName string
+	Comment    Comment
 }
 
 func (m *Message) String() string {
@@ -65,5 +66,23 @@ func parseMessage(proto *descriptor.DescriptorProto, schema *protogen.Message, m
 		Schema:     schema,
 		Proto:      proto,
 		ModuleName: moduleName,
+		Comment:    parseMessageComment(schema),
+	}
+}
+
+func parseMessageComment(message *protogen.Message) Comment {
+	if message == nil {
+		return Comment{}
+	}
+
+	detached := make([]string, 0, len(message.Comments.LeadingDetached))
+	for _, c := range message.Comments.LeadingDetached {
+		detached = append(detached, string(c))
+	}
+
+	return Comment{
+		Leading:         string(message.Comments.Leading),
+		Trailing:        string(message.Comments.Trailing),
+		LeadingDetached: detached,
 	}
 }
