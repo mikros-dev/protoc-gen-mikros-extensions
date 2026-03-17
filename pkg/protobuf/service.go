@@ -45,7 +45,12 @@ func parseService(options *parseServiceOptions) *Service {
 	)
 
 	for i, method := range service.GetMethod() {
-		methods[i] = parseMethod(method)
+		var protoMethod *protogen.Method
+		if api.Services[0].Methods != nil {
+			protoMethod = api.Services[0].Methods[i]
+		}
+
+		methods[i] = parseMethod(method, protoMethod)
 	}
 
 	return &Service{
