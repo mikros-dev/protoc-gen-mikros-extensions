@@ -40,9 +40,10 @@ type HTTPRule struct {
 
 // MethodField represents a field of a method.
 type MethodField struct {
-	GoName    string
-	ProtoName string
-	CastType  string
+	GoName     string
+	ProtoName  string
+	HeaderName string
+	CastType   string
 }
 
 func loadMethods(pkg *protobuf.Protobuf, messages []*Message, cfg *settings.Settings) ([]*Method, error) {
@@ -148,23 +149,45 @@ func getHeaderArguments(
 
 	if httpExtension := methodExtensions.GetHttp(); httpExtension != nil {
 		for _, header := range httpExtension.GetHeader() {
+			fieldName, headerName := parseHeaderBinding(header)
+			if fieldName == "" || headerName == "" {
+				return nil, fmt.Errorf("invalid header binding %q", header)
+			}
+
 			index := slices.IndexFunc(m.Fields, func(f *Field) bool {
-				return f.ProtoName == header
+				return normalizeHeaderFieldName(f.ProtoName) == fieldName
 			})
 			if index == -1 {
-				return nil, fmt.Errorf("header field '%s' not found inside message '%s' definition", header, m.Name)
+				return nil, fmt.Errorf("header field '%s' not found inside message '%s' definition", fieldName, m.Name)
 			}
 
 			field := m.Fields[index]
 			fields = append(fields, &MethodField{
-				GoName:    field.GoName,
-				ProtoName: field.ProtoName,
-				CastType:  field.GoType,
+				GoName:     field.GoName,
+				ProtoName:  field.ProtoName,
+				HeaderName: headerName,
+				CastType:   field.GoType,
 			})
 		}
 	}
 
 	return fields, nil
+}
+
+func parseHeaderBinding(header string) (string, string) {
+	fieldName, headerName, explicit := strings.Cut(header, "=")
+	if !explicit {
+		headerName = fieldName
+	}
+
+	return normalizeHeaderFieldName(fieldName), strings.TrimSpace(headerName)
+}
+
+func normalizeHeaderFieldName(name string) string {
+	name = strings.TrimSpace(name)
+	name = strings.ReplaceAll(name, "-", "_")
+
+	return strings.ToLower(name)
 }
 
 func getQueryArguments(
@@ -219,7 +242,10 @@ func getParametersToFilter(
 	}
 	if methodExtensions != nil {
 		if httpExtensions := methodExtensions.GetHttp(); httpExtensions != nil {
-			parameters = append(parameters, httpExtensions.GetHeader()...)
+			for _, header := range httpExtensions.GetHeader() {
+				fieldName, _ := parseHeaderBinding(header)
+				parameters = append(parameters, fieldName)
+			}
 		}
 	}
 

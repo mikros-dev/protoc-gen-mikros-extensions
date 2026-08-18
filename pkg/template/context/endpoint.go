@@ -79,8 +79,9 @@ func isEndpointParameter(name string, endpoint *Endpoint) bool {
 
 func isHeaderParameter(name string, endpoint *Endpoint) bool {
 	if endpoint != nil && endpoint.HTTPExtensions != nil {
-		for _, n := range endpoint.HTTPExtensions.GetHeader() {
-			if name == n {
+		for _, header := range endpoint.HTTPExtensions.GetHeader() {
+			fieldName, _ := parseHeaderBinding(header)
+			if normalizeHeaderFieldName(name) == fieldName {
 				return true
 			}
 		}
