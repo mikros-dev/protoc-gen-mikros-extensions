@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly" # Options: daily, weekly, monthly
+
+    # Define the group to combine all PRs into one
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
