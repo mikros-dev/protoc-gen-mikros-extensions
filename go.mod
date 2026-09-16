@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.2
 	github.com/BurntSushi/toml v1.6.0
 	github.com/bufbuild/protoplugin v0.0.0-20250218205857-750e09ce93e1
-	github.com/creasty/defaults v1.8.0
+	github.com/creasty/defaults v1.10.0
 	github.com/fatih/camelcase v1.0.0
 	github.com/go-playground/validator/v10 v10.30.4
 	github.com/stoewer/go-strcase v1.3.1
