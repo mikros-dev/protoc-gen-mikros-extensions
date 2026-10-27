@@ -16,10 +16,11 @@ func (h *HTTPServer) Name() spec.Name {
 // Load returns a slice of imports for the template.
 func (h *HTTPServer) Load(_ *Context, _ *settings.Settings) []*Import {
 	imports := map[string]*Import{
-		packages["context"].Name:         packages["context"],
-		packages["errors"].Name:          packages["errors"],
-		packages["fasthttp"].Name:        packages["fasthttp"],
-		packages["fasthttp-router"].Name: packages["fasthttp-router"],
+		packages["context"].Name:           packages["context"],
+		packages["errors"].Name:            packages["errors"],
+		packages["fasthttp"].Name:          packages["fasthttp"],
+		packages["fasthttp-router"].Name:   packages["fasthttp-router"],
+		packages["mikros-logger-api"].Name: packages["mikros-logger-api"],
 	}
 
 	return toSlice(imports)

@@ -27,9 +27,9 @@ type routesWrapper struct {
 // Logger is the internal server log interface that the service must have
 // implemented.
 type Logger interface {
-	Infof(ctx context.Context, msg string, attrs ...map[string]interface{})
-	Errorf(ctx context.Context, msg string, attrs ...map[string]interface{})
-	Debugf(ctx context.Context, msg string, attrs ...map[string]interface{})
+	Info(ctx context.Context, msg string, attrs ...logger_api.Attribute)
+	Error(ctx context.Context, msg string, attrs ...logger_api.Attribute)
+	Debug(ctx context.Context, msg string, attrs ...logger_api.Attribute)
 }
 
 // AuthHandler is the authentication handler supported by mikros, where

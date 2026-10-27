@@ -17,11 +17,11 @@ var (
 
 {{range .Methods}}
 func (w *routesWrapper) {{.Name}}(ctx *fasthttp.RequestCtx) {
-    requestAttributes := map[string]interface{}{
-        "request.endpoint": string(ctx.RequestURI()),
-        "request.method": string(ctx.Method()),
+    requestAttributes := []logger_api.Attribute{
+        logger.String("request.endpoint", string(ctx.RequestURI())),
+        logger.String("request.method", string(ctx.Method())),
     }
-    w.Logger.Infof(ctx, "request received", requestAttributes)
+    w.Logger.Info(ctx, "request received", requestAttributes...)
 
     {{if .HasAuth}}
     if w.AuthHandler != nil {
@@ -31,7 +31,7 @@ func (w *routesWrapper) {{.Name}}(ctx *fasthttp.RequestCtx) {
 
         if err := w.AuthHandler(ctx, handlers); err != nil {
             w.Response.ToError(ctx, err)
-            w.Logger.Errorf(ctx, "authentication error")
+            w.Logger.Error(ctx, "authentication error")
             return
         }
     }
@@ -43,18 +43,16 @@ func (w *routesWrapper) {{.Name}}(ctx *fasthttp.RequestCtx) {
     ctx.Request.Header.VisitAll(func(key, value []byte) {
         headers = append(headers, fmt.Sprintf("%s=%s", string(key), string(value)))
     })
-    w.Logger.Debugf(ctx, "request payload details", map[string]interface{}{
-        "request.endpoint": string(ctx.RequestURI()),
-        "request.method": string(ctx.Method()),
-        "request.headers": headers,
-        "request.payload": input,
-    })
+    w.Logger.Debug(ctx, "request payload details",
+        logger.String("request.endpoint", string(ctx.RequestURI())),
+        logger.String("request.method", string(ctx.Method())),
+        logger.Any("request.headers", headers),
+        logger.Any("request.payload", input),
+    )
 
     if err != nil {
         w.Response.ToError(ctx, err)
-        w.Logger.Errorf(ctx, "could not parse request input", map[string]interface{}{
-            "error": err.Error(),
-        })
+        w.Logger.Error(ctx, "could not parse request input", logger.Error(err))
 
         return
     }
@@ -62,14 +60,12 @@ func (w *routesWrapper) {{.Name}}(ctx *fasthttp.RequestCtx) {
     out, err := w.Handler.{{.Name}}(ctx, input)
     if err != nil {
         w.Response.ToError(ctx, err)
-        w.Logger.Errorf(ctx, "internal handler error", map[string]interface{}{
-            "error": err.Error(),
-        })
+        w.Logger.Error(ctx, "internal handler error", logger.Error(err))
 
         return
     }
 
-    w.Logger.Infof(ctx, "request successfully handled", requestAttributes)
+    w.Logger.Info(ctx, "request successfully handled", requestAttributes...)
     w.Response.ToSuccess(ctx, out)
 }
 

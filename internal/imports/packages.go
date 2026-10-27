@@ -43,6 +43,14 @@ var packages = map[string]*Import{
 	"fasthttp-router": {
 		Name: "github.com/fasthttp/router",
 	},
+	"mikros-logger-api": {
+		Name:  "github.com/mikros-dev/mikros/apis/features/logger",
+		Alias: "logger_api",
+	},
+	"mikros-logger": {
+		Name:  "github.com/mikros-dev/mikros/components/logger",
+		Alias: "logger",
+	},
 	"validation": {
 		Name: "github.com/go-ozzo/ozzo-validation/v4",
 	},
