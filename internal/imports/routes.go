@@ -16,8 +16,10 @@ func (r *Routes) Name() spec.Name {
 // Load returns a slice of imports for the template.
 func (r *Routes) Load(ctx *Context, _ *settings.Settings) []*Import {
 	imports := map[string]*Import{
-		packages["fasthttp"].Name: packages["fasthttp"],
-		packages["fmt"].Name:      packages["fmt"],
+		packages["fasthttp"].Name:          packages["fasthttp"],
+		packages["fmt"].Name:               packages["fmt"],
+		packages["mikros-logger"].Name:     packages["mikros-logger"],
+		packages["mikros-logger-api"].Name: packages["mikros-logger-api"],
 	}
 
 	for _, m := range ctx.Methods {

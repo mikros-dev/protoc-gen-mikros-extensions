@@ -5,13 +5,15 @@ package {{.ModuleName}}{{$packageName := .ModuleName}}
 import (
     "context"
     "github.com/mikros-dev/mikros"
-    definition_api "github.com/mikros-dev/mikros/apis/features/definition"
-    logger_api "github.com/mikros-dev/mikros/apis/features/logger"
 {{- range .GetTemplateImports templateName}}
     {{.Alias}} "{{.Name}}"
 {{- end}}
 )
 {{end}}
+
+type definition interface {
+    ServiceName() string
+}
 
 // NewHttpServer is a helper function for creating the HTTP server for
 // unit tests. One must ensure that this function is called after the
@@ -25,8 +27,8 @@ func NewHttpServer(svc *mikros.Service, handlers interface{}, response {{$packag
 
     var (
         ctx = context.TODO()
-        defs definition_api.DefinitionAPI
-        logger logger_api.LoggerAPI
+        defs definition
+        logger {{$packageName}}.Logger
     )
 
     // Get mikros features for the HTTP server we're going to initialize
