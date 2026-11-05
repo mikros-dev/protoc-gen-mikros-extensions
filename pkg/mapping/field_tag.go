@@ -56,7 +56,7 @@ func NewFieldTag(options *FieldTagOptions) (*FieldTag, error) {
 	}
 
 	var (
-		domainName   = resolveNameForTag(options.FieldNaming.Domain(), domainNameMode)
+		domainName   = resolveDomainNameForTag(options.FieldNaming.Domain(), domainNameMode, fieldExtensions)
 		outboundName = resolveNameForTag(options.FieldNaming.Outbound(), outboundNameMode)
 	)
 
@@ -66,6 +66,21 @@ func NewFieldTag(options *FieldTagOptions) (*FieldTag, error) {
 		outboundFieldName: outboundName,
 		inboundTag:        buildInboundTag(options.FieldNaming.Inbound()),
 	}, nil
+}
+
+func resolveDomainNameForTag(fieldName string, mode extensions.NamingMode, ext *extensions.MikrosFieldExtensions) string {
+	if domain := ext.GetDomain(); domain != nil {
+		for _, tag := range domain.GetStructTag() {
+			if tag.GetName() == "json" {
+				parts := strings.SplitN(tag.GetValue(), ",", 2)
+				if parts[0] != "" {
+					return parts[0]
+				}
+			}
+		}
+	}
+
+	return resolveNameForTag(fieldName, mode)
 }
 
 func resolveNameForTag(fieldName string, mode extensions.NamingMode) string {
@@ -79,33 +94,67 @@ func resolveNameForTag(fieldName string, mode extensions.NamingMode) string {
 
 func buildDomainTag(fieldName string, ext *extensions.MikrosFieldExtensions, db TagGenerator) string {
 	var (
-		tags []*extensions.FieldStructTag
-		tag  = "omitempty"
+		tags          []*extensions.FieldStructTag
+		tag           = "omitempty"
+		customJSONTag string
 	)
 
 	if domain := ext.GetDomain(); domain != nil {
-		tags = domain.GetStructTag()
+		for _, structTag := range domain.GetStructTag() {
+			if structTag.GetName() == "json" {
+				customJSONTag = structTag.GetValue()
+				continue
+			}
+			tags = append(tags, structTag)
+		}
 
 		if domain.GetAllowEmpty() {
 			tag = ""
 		}
 	}
 
+	if customJSONTag != "" {
+		return buildTagFromCustomJSON(customJSONTag, db.GenerateTag(fieldName), tags)
+	}
+
 	return buildTag(fieldName, tag, db.GenerateTag(fieldName), tags)
+}
+
+func buildTagFromCustomJSON(jsonTag, dbTag string, structTags []*extensions.FieldStructTag) string {
+	tags := []string{fmt.Sprintf("json:%q", jsonTag)}
+	if dbTag != "" {
+		tags = append(tags, dbTag)
+	}
+	for _, structTag := range structTags {
+		tags = append(tags, fmt.Sprintf("%s:%q", structTag.GetName(), structTag.GetValue()))
+	}
+
+	return "`" + strings.Join(filterEmpty(tags), " ") + "`"
 }
 
 func buildOutboundTag(fieldName string, ext *extensions.MikrosFieldExtensions) string {
 	var (
-		tags []*extensions.FieldStructTag
-		tag  = "omitempty"
+		tags          []*extensions.FieldStructTag
+		tag           = "omitempty"
+		customJSONTag string
 	)
 
 	if outbound := ext.GetOutbound(); outbound != nil {
-		tags = outbound.GetStructTag()
+		for _, structTag := range outbound.GetStructTag() {
+			if structTag.GetName() == "json" {
+				customJSONTag = structTag.GetValue()
+				continue
+			}
+			tags = append(tags, structTag)
+		}
 
 		if outbound.GetAllowEmpty() {
 			tag = ""
 		}
+	}
+
+	if customJSONTag != "" {
+		return buildTagFromCustomJSON(customJSONTag, "", tags)
 	}
 
 	return buildTag(fieldName, tag, "", tags)
