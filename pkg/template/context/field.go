@@ -108,31 +108,11 @@ func (f *Field) Validate() error {
 		return fmt.Errorf("field '%s' has an unsupported type '%s' to be a bitflag", f.ProtoName, f.GoType)
 	}
 
-	if f.hasJSONStructTag() {
-		return fmt.Errorf("field '%s' cannot have a custom json struct tag", f.ProtoName)
-	}
-
 	return nil
 }
 
 func (f *Field) isBitflag() bool {
 	return f.extensions != nil && f.extensions.GetOutbound() != nil && f.extensions.GetOutbound().GetBitflag() != nil
-}
-
-func (f *Field) hasJSONStructTag() bool {
-	if f.extensions == nil {
-		return false
-	}
-
-	if domain := f.extensions.GetDomain(); domain != nil {
-		for _, st := range domain.GetStructTag() {
-			if strings.Contains(st.GetName(), "json") {
-				return true
-			}
-		}
-	}
-
-	return false
 }
 
 // IsPointer returns true if the field is a pointer.
